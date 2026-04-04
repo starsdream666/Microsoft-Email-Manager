@@ -735,7 +735,8 @@
         .flex { display: flex; }
         .items-center { align-items: center; }
         .justify-between { justify-content: space-between; }
-        .gap-2 { gap: 0.5rem; }
+        .gap-2 { gap: 0.875rem; }
+        .gap-3 { gap: 1rem; }
         .gap-4 { gap: 1rem; }
 
         /* 鍒嗛〉 */
@@ -1359,7 +1360,7 @@
         }
 
         .sidebar {
-            width: 264px;
+            width: 288px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             background: var(--ui-surface-dark);
             border-radius: 28px;
@@ -1368,6 +1369,9 @@
             top: 24px;
             height: calc(100vh - 48px);
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.24s ease, box-shadow 0.24s ease;
         }
 
         .sidebar::before {
@@ -1382,45 +1386,103 @@
 
         .sidebar-header {
             position: relative;
-            padding: 28px 24px 18px;
+            padding: 24px 20px 18px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        .sidebar-header h1 {
+        .sidebar-brand {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
+            justify-content: space-between;
             gap: 14px;
-            font-size: 1.25rem;
-            letter-spacing: -0.02em;
-            color: #f8fafc;
-            margin-bottom: 10px;
         }
 
-        .brand-mark {
-            width: 42px;
-            height: 42px;
+        .sidebar-brand-main {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .sidebar-logo {
+            width: 72px;
+            height: 72px;
+            border-radius: 22px;
+            position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 14px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 18px 32px rgba(15, 23, 42, 0.22);
+            overflow: hidden;
+        }
+
+        .sidebar-logo-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 10px;
+            display: block;
+        }
+
+        .sidebar-logo.is-placeholder .sidebar-logo-image {
+            display: none;
+        }
+
+        .sidebar-logo:not(.is-placeholder) .brand-mark {
+            display: none;
+        }
+
+        .sidebar-title-stack {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 8px;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+
+        .sidebar-title-stack h1 {
+            display: block;
+            font-size: 1.18rem;
+            line-height: 1.15;
+            letter-spacing: -0.03em;
+            color: #f8fafc;
+            margin: 0;
+        }
+
+        .brand-mark {
+            width: 46px;
+            height: 46px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
             background: linear-gradient(135deg, #60a5fa 0%, #38bdf8 42%, #f8fafc 100%);
             color: #0f172a;
             font-weight: 700;
-            font-size: 0.95rem;
+            font-size: 1rem;
             box-shadow: 0 18px 30px rgba(37, 99, 235, 0.3);
         }
 
+        .sidebar-title-stack p,
         .sidebar-header p {
             color: rgba(226, 232, 240, 0.74);
-            line-height: 1.7;
+            line-height: 1.5;
+            margin: 0;
         }
 
         .sidebar-nav {
             position: relative;
-            padding: 18px 14px 20px;
+            padding: 18px 14px 16px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
+            flex: 1;
+            overflow-y: auto;
         }
 
         .nav-item {
@@ -1431,6 +1493,10 @@
             gap: 14px;
             position: relative;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            text-align: left;
+            transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease, padding 0.18s ease;
         }
 
         .nav-item::before {
@@ -1459,27 +1525,191 @@
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 16px 28px rgba(37, 99, 235, 0.3);
         }
 
+        .nav-item-text {
+            white-space: nowrap;
+        }
+
+        .sidebar-footer {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px 14px 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .sidebar-utility,
+        .sidebar-toggle {
+            min-height: 44px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 0 14px;
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(241, 245, 249, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+        }
+
+        .sidebar-utility:hover,
+        .sidebar-toggle:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+        }
+
+        .sidebar-utility .ui-icon,
+        .sidebar-toggle .ui-icon {
+            width: 18px;
+            height: 18px;
+            position: relative;
+        }
+
+        .sidebar-logout {
+            margin-top: auto;
+            background: rgba(239, 68, 68, 0.08);
+            color: #fecaca;
+            border-color: rgba(248, 113, 113, 0.16);
+        }
+
+        .sidebar-logout:hover {
+            background: rgba(239, 68, 68, 0.14);
+            border-color: rgba(248, 113, 113, 0.28);
+            color: #ffffff;
+        }
+
+        .sidebar-utility-label {
+            white-space: nowrap;
+        }
+
+        .sidebar-toggle {
+            width: 44px;
+            justify-content: center;
+            flex-shrink: 0;
+            padding: 0;
+            margin-top: 12px;
+        }
+
+        .sidebar.is-collapsed {
+            width: 96px;
+        }
+
+        .sidebar.is-collapsed .sidebar-header {
+            padding: 22px 12px 16px;
+        }
+
+        .sidebar.is-collapsed .sidebar-brand {
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .sidebar.is-collapsed .sidebar-brand-main {
+            width: 100%;
+            flex-direction: column;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .sidebar.is-collapsed .sidebar-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
+        }
+
+        .sidebar.is-collapsed .sidebar-title-stack,
+        .sidebar.is-collapsed .nav-item-text,
+        .sidebar.is-collapsed .sidebar-utility-label {
+            opacity: 0;
+            width: 0;
+            max-width: 0;
+            overflow: hidden;
+            pointer-events: none;
+            transform: translateX(-8px);
+        }
+
+        .sidebar.is-collapsed .sidebar-nav {
+            padding-inline: 10px;
+        }
+
+        .sidebar.is-collapsed .nav-item,
+        .sidebar.is-collapsed .sidebar-utility {
+            justify-content: center;
+            padding-inline: 0;
+        }
+
+        .sidebar.is-collapsed .sidebar-footer {
+            padding-inline: 10px;
+        }
+
+        .sidebar.is-collapsed #sidebarToggle .ui-icon svg {
+            transform: rotate(180deg);
+        }
+
+        .sidebar.is-collapsed .nav-item::after,
+        .sidebar.is-collapsed .sidebar-utility::after,
+        .sidebar.is-collapsed .sidebar-toggle::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: calc(100% + 16px);
+            top: 50%;
+            transform: translateY(-50%) translateX(-6px);
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.94);
+            color: #f8fafc;
+            font-size: 0.82rem;
+            line-height: 1;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            box-shadow: 0 18px 28px rgba(15, 23, 42, 0.28);
+            transition: opacity 0.16s ease, transform 0.16s ease;
+            z-index: 20;
+        }
+
+        .sidebar.is-collapsed .nav-item .icon::before,
+        .sidebar.is-collapsed .sidebar-utility .ui-icon::before,
+        .sidebar.is-collapsed .sidebar-toggle .ui-icon::before {
+            content: "";
+            position: absolute;
+            left: calc(100% + 9px);
+            top: 50%;
+            width: 10px;
+            height: 10px;
+            background: rgba(15, 23, 42, 0.94);
+            transform: translateY(-50%) rotate(45deg) scale(0.88);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.16s ease, transform 0.16s ease;
+            z-index: 19;
+        }
+
+        .sidebar.is-collapsed .nav-item:hover::after,
+        .sidebar.is-collapsed .sidebar-utility:hover::after,
+        .sidebar.is-collapsed .sidebar-toggle:hover::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(0);
+        }
+
+        .sidebar.is-collapsed .nav-item:hover .icon::before,
+        .sidebar.is-collapsed .sidebar-utility:hover .ui-icon::before,
+        .sidebar.is-collapsed .sidebar-toggle:hover .ui-icon::before {
+            opacity: 1;
+            visibility: visible;
+        }
+
         .main-content {
             min-width: 0;
             border-radius: 30px;
         }
 
         .main-header {
-            padding: 20px 28px;
-            margin-bottom: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.55);
-            border-radius: 26px;
-            background: rgba(255, 255, 255, 0.66);
-            backdrop-filter: blur(16px);
-            box-shadow: var(--ui-shadow-soft);
-            position: sticky;
-            top: 24px;
-            z-index: 10;
-        }
-
-        .main-header h2 {
-            font-size: 1.45rem;
-            letter-spacing: -0.03em;
+            display: none !important;
         }
 
         .main-body {
@@ -1521,6 +1751,21 @@
             transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
         }
 
+        .btn:focus,
+        .btn:focus-visible,
+        .nav-item:focus,
+        .nav-item:focus-visible,
+        .sidebar-utility:focus,
+        .sidebar-utility:focus-visible,
+        .sidebar-toggle:focus,
+        .sidebar-toggle:focus-visible {
+            outline: none;
+        }
+
+        .btn:focus-visible {
+            box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.18), 0 12px 22px rgba(15, 23, 42, 0.08);
+        }
+
         .btn:hover {
             transform: translateY(-1px);
         }
@@ -1550,6 +1795,11 @@
             border-color: rgba(37, 99, 235, 0.18);
             color: var(--ui-brand-strong);
             box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .btn-secondary:focus-visible {
+            border-color: rgba(148, 163, 184, 0.3);
+            box-shadow: 0 0 0 3px rgba(226, 232, 240, 0.95);
         }
 
         .btn-danger {
@@ -1721,6 +1971,7 @@
         .account-actions {
             flex-wrap: wrap;
             justify-content: flex-end;
+            gap: 12px;
         }
 
         .account-tags {
@@ -1765,8 +2016,13 @@
         }
 
         .pagination {
-            gap: 10px;
+            gap: 14px;
             margin-top: 24px;
+            flex-wrap: wrap;
+        }
+
+        .flex.items-center.justify-between {
+            gap: 18px;
             flex-wrap: wrap;
         }
 
@@ -1931,6 +2187,7 @@
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.08);
             color: inherit;
+            position: relative;
         }
 
         .nav-item.active .icon {
@@ -2011,7 +2268,8 @@
                 gap: 16px;
             }
 
-            .sidebar {
+            .sidebar,
+            .sidebar.is-collapsed {
                 width: 100%;
                 height: auto;
                 position: relative;
@@ -2025,6 +2283,38 @@
 
             .nav-item {
                 min-width: max-content;
+            }
+
+            .sidebar-footer {
+                flex-direction: row;
+                padding: 14px;
+            }
+
+            .sidebar.is-collapsed .sidebar-title-stack,
+            .sidebar.is-collapsed .nav-item-text,
+            .sidebar.is-collapsed .sidebar-utility-label {
+                opacity: 1;
+                width: auto;
+                max-width: none;
+                overflow: visible;
+                pointer-events: auto;
+                transform: none;
+            }
+
+            .sidebar.is-collapsed .sidebar-brand {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+
+            .sidebar.is-collapsed .sidebar-brand-main {
+                width: auto;
+                flex-direction: row;
+            }
+
+            .sidebar.is-collapsed .nav-item,
+            .sidebar.is-collapsed .sidebar-utility {
+                justify-content: flex-start;
+                padding-inline: 14px;
             }
 
             .main-header {
@@ -2338,8 +2628,21 @@
         <!-- 宸︿晶鑿滃崟 -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <h1>Outlook 邮件管理</h1>
-                <p>账户、邮件与接口统一管理</p>
+                <div class="sidebar-brand">
+                    <div class="sidebar-brand-main">
+                        <div class="sidebar-logo is-placeholder" id="sidebarLogoWrap">
+                            <img id="sidebarLogo" class="sidebar-logo-image" src="/static/assets/logo.png" alt="OutlookManager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
+                            <span class="brand-mark">OM</span>
+                        </div>
+                        <div class="sidebar-title-stack">
+                            <h1>OutlookManager</h1>
+                            <p>Outlook账户与邮件后台</p>
+                        </div>
+                    </div>
+                    <button id="sidebarToggle" class="sidebar-toggle" type="button" onclick="toggleSidebar()" data-tooltip="收起侧栏" aria-label="收起侧栏">
+                        <span></span>
+                    </button>
+                </div>
             </div>
             <nav class="sidebar-nav">
                 <button class="nav-item active" onclick="showPage('accounts', this)">
@@ -2363,6 +2666,12 @@
                     邮件列表
                 </button>
             </nav>
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="sidebar-utility sidebar-logout" type="button" onclick="logout()" data-tooltip="退出登录" aria-label="退出登录">
+                    <span></span>
+                    <span class="sidebar-utility-label">退出登录</span>
+                </button>
+            </div>
         </div>
 
         <!-- 涓诲唴瀹瑰尯鍩?-->
@@ -3071,6 +3380,7 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
         let currentTagSearch = '';
         let authState = null;
         let appBootstrapped = false;
+        const SIDEBAR_STORAGE_KEY = 'outlookmanager-sidebar-collapsed';
 
         // 鍏ㄥ眬鍙橀噺锛岀敤浜庡瓨鍌ㄥ綋鍓嶇紪杈戠殑璐︽埛淇℃伅
         let currentEditAccount = null;
@@ -3246,19 +3556,58 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
             }
         }
 
-        function decorateStaticUi() {
-            const sidebarHeader = document.querySelector('.sidebar-header');
-            if (sidebarHeader) {
-                sidebarHeader.innerHTML = `
-                    <h1><span class="brand-mark">OM</span><span>邮件管理</span></h1>
-                    <p>Outlook 账户与邮件后台</p>
-                `;
+        function readSidebarState() {
+            try {
+                return localStorage.getItem(SIDEBAR_STORAGE_KEY) === '1';
+            } catch (error) {
+                return false;
             }
+        }
 
+        function applySidebarState(collapsed) {
+            const sidebar = document.querySelector('.sidebar');
+            const toggleButton = document.getElementById('sidebarToggle');
+            if (!sidebar || !toggleButton) return;
+
+            sidebar.classList.toggle('is-collapsed', collapsed);
+
+            const nextLabel = collapsed ? '展开侧栏' : '收起侧栏';
+            toggleButton.dataset.tooltip = nextLabel;
+            toggleButton.setAttribute('aria-label', nextLabel);
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            if (!sidebar) return;
+
+            const collapsed = !sidebar.classList.contains('is-collapsed');
+            applySidebarState(collapsed);
+
+            try {
+                localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? '1' : '0');
+            } catch (error) {
+                console.warn('Unable to persist sidebar state', error);
+            }
+        }
+
+        function decorateStaticUi() {
             const navButtons = document.querySelectorAll('.sidebar .nav-item');
             ['accounts', 'plus', 'batch', 'api', 'mail'].forEach((name, index) => {
                 setButtonIcon(navButtons[index], name, true);
             });
+
+            const navLabels = ['邮箱账户管理', '添加账户', '批量添加', 'API 文档', '邮件列表'];
+            navButtons.forEach((button, index) => {
+                const label = navLabels[index];
+                if (!label) return;
+                button.dataset.tooltip = label;
+                const iconMarkup = button.querySelector('.icon')?.outerHTML || '<span class="icon"></span>';
+                button.innerHTML = `${iconMarkup}<span class="nav-item-text">${label}</span>`;
+            });
+
+            setButtonIcon(document.getElementById('sidebarToggle'), 'arrow-left');
+            setButtonIcon(document.getElementById('logoutBtn'), 'logout');
+            applySidebarState(readSidebarState());
 
             setButtonIcon(document.querySelector('#accountsPage .btn-primary.btn-sm[onclick="showPage(\'addAccount\')"]'), 'plus');
             setButtonIcon(document.querySelector('#accountsPage .btn-secondary.btn-sm[onclick="showPage(\'batchAdd\')"]'), 'batch');
@@ -3308,11 +3657,6 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                 iconElement.innerHTML = UI_ICONS[name] || UI_ICONS.info;
             });
 
-            const headerActions = document.getElementById('headerActions');
-            if (headerActions) {
-                headerActions.innerHTML = '<button id="logoutBtn" class="btn btn-secondary btn-sm" onclick="logout()"><span></span>退出登录</button>';
-                setButtonIcon(document.getElementById('logoutBtn'), 'logout');
-            }
         }
 
         function decorateAccountList(root = document) {
