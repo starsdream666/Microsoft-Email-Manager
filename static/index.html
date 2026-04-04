@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Outlook邮件管理系统</title>
+    <title>Outlook閭欢绠＄悊绯荤粺</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -19,7 +19,7 @@
             height: 100vh;
         }
 
-        /* 左侧菜单 */
+        /* 宸︿晶鑿滃崟 */
         .sidebar {
             width: 180px;
             background: #ffffff;
@@ -81,7 +81,7 @@
             font-size: 1rem;
         }
 
-        /* 主内容区域 */
+        /* 涓诲唴瀹瑰尯鍩?*/
         .main-content {
             flex: 1;
             display: flex;
@@ -120,7 +120,7 @@
             border: 1px solid #e2e8f0;
         }
 
-        /* 表单样式 */
+        /* 琛ㄥ崟鏍峰紡 */
         .form-group {
             margin-bottom: 20px;
         }
@@ -149,7 +149,7 @@
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
-        /* 表单控件 */
+        /* 琛ㄥ崟鎺т欢 */
         .form-control {
             width: 100%;
             padding: 10px 12px;
@@ -203,7 +203,7 @@
             min-height: 80px;
         }
 
-        /* 按钮样式 */
+        /* 鎸夐挳鏍峰紡 */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -252,7 +252,7 @@
             font-size: 0.75rem;
         }
 
-        /* 邮箱账户列表 */
+        /* 閭璐︽埛鍒楄〃 */
         .account-list {
             display: grid;
             gap: 12px;
@@ -312,7 +312,7 @@
             gap: 8px;
         }
 
-        /* 邮件列表 */
+        /* 閭欢鍒楄〃 */
         .email-list {
             display: grid;
             gap: 12px;
@@ -396,7 +396,7 @@
             overflow: hidden;
         }
 
-        /* 邮件详情模态框 */
+        /* 閭欢璇︽儏妯℃€佹 */
         .modal {
             position: fixed;
             top: 0;
@@ -517,7 +517,7 @@
             line-height: 1.6;
         }
 
-        /* 邮箱复制功能样式 */
+        /* 閭澶嶅埗鍔熻兘鏍峰紡 */
         .email-copyable {
             transition: all 0.2s ease;
             border-radius: 4px;
@@ -543,7 +543,7 @@
             opacity: 1 !important;
         }
 
-        /* 复制成功动画 */
+        /* 澶嶅埗鎴愬姛鍔ㄧ敾 */
         @keyframes copySuccess {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
@@ -556,10 +556,10 @@
             color: #16a34a !important;
         }
 
-        /* 工具类 */
+        /* 宸ュ叿绫?*/
         .hidden { display: none !important; }
 
-        /* 加载状态 */
+        /* 鍔犺浇鐘舵€?*/
         .loading {
             display: flex;
             align-items: center;
@@ -584,7 +584,7 @@
             to { transform: rotate(360deg); }
         }
 
-        /* 进度条 */
+        /* 杩涘害鏉?*/
         .progress-bar {
             width: 100%;
             height: 4px;
@@ -613,7 +613,7 @@
             100% { background-position: -200% 0; }
         }
 
-        /* 通知系统 */
+        /* 閫氱煡绯荤粺 */
         .notification-container {
             position: fixed;
             top: 20px;
@@ -697,7 +697,7 @@
             animation: slideOut 0.3s ease-in forwards;
         }
 
-        /* 传统错误/成功消息样式（保留兼容性） */
+        /* 浼犵粺閿欒/鎴愬姛娑堟伅鏍峰紡锛堜繚鐣欏吋瀹规€э級 */
         .error {
             background: #fef2f2;
             color: #dc2626;
@@ -738,7 +738,7 @@
         .gap-2 { gap: 0.5rem; }
         .gap-4 { gap: 1rem; }
 
-        /* 分页 */
+        /* 鍒嗛〉 */
         .pagination {
             display: flex;
             justify-content: center;
@@ -789,7 +789,7 @@
             color: #cbd5e1;
         }
 
-        /* 右键菜单样式 */
+        /* 鍙抽敭鑿滃崟鏍峰紡 */
         .context-menu {
             position: fixed;
             background: white;
@@ -831,7 +831,7 @@
             margin: 4px 0;
         }
 
-        /* 标签页 */
+        /* 鏍囩椤?*/
         .tabs {
             display: flex;
             border-bottom: 1px solid #e2e8f0;
@@ -859,7 +859,7 @@
             border-bottom: 2px solid #3b82f6;
         }
 
-        /* 搜索和过滤 */
+        /* 鎼滅储鍜岃繃婊?*/
         .search-container {
             position: relative;
             margin-bottom: 20px;
@@ -924,7 +924,7 @@
             border-color: #3b82f6;
         }
 
-        /* 统计信息 */
+        /* 缁熻淇℃伅 */
         .stats-container {
             display: flex;
             gap: 16px;
@@ -954,7 +954,7 @@
             letter-spacing: 0.05em;
         }
 
-        /* 表单页面样式 */
+        /* 琛ㄥ崟椤甸潰鏍峰紡 */
         .form-page {
             max-width: 600px;
             margin: 0 auto;
@@ -992,7 +992,7 @@
             text-decoration: underline;
         }
 
-        /* 代码样式 */
+        /* 浠ｇ爜鏍峰紡 */
         code {
             background: #f1f5f9;
             padding: 2px 6px;
@@ -1002,7 +1002,7 @@
             color: #1e293b;
         }
 
-        /* API文档样式 */
+        /* API鏂囨。鏍峰紡 */
         .api-docs {
             max-width: 1000px;
         }
@@ -1171,7 +1171,7 @@
             color: #15803d;
         }
 
-        /* 账户标签样式 */
+        /* 璐︽埛鏍囩鏍峰紡 */
         .account-tags {
             display: flex;
             flex-wrap: wrap;
@@ -1187,8 +1187,8 @@
             border-radius: 12px;
         }
 
-        /* 标签管理样式 */
-        /* 修改标签模态框样式 */
+        /* 鏍囩绠＄悊鏍峰紡 */
+        /* 淇敼鏍囩妯℃€佹鏍峰紡 */
         #tagsModal {
             display: none;
             position: fixed;
@@ -1246,7 +1246,7 @@
             flex: 1;
         }
 
-        /* 响应式设计 */
+        /* 鍝嶅簲寮忚璁?*/
         @media (max-width: 768px) {
             .app-container {
                 flex-direction: column;
@@ -1305,305 +1305,1042 @@
                 font-size: 0.875rem;
             }
         }
+
+        :root {
+            --ui-bg: #eef2f7;
+            --ui-bg-deep: #dfe7f1;
+            --ui-surface: rgba(255, 255, 255, 0.86);
+            --ui-surface-strong: #ffffff;
+            --ui-surface-dark: linear-gradient(180deg, #0f172a 0%, #162033 52%, #1b2941 100%);
+            --ui-line: rgba(148, 163, 184, 0.18);
+            --ui-line-strong: rgba(148, 163, 184, 0.28);
+            --ui-text: #0f172a;
+            --ui-text-soft: #64748b;
+            --ui-brand: #2563eb;
+            --ui-brand-strong: #1d4ed8;
+            --ui-brand-soft: rgba(37, 99, 235, 0.14);
+            --ui-success: #0f9f6e;
+            --ui-danger: #dc2626;
+            --ui-warning: #d97706;
+            --ui-shadow: 0 24px 50px rgba(15, 23, 42, 0.08);
+            --ui-shadow-soft: 0 12px 28px rgba(15, 23, 42, 0.06);
+            --ui-radius: 22px;
+            --ui-radius-sm: 14px;
+        }
+
+        body {
+            font-family: "IBM Plex Sans", "Segoe UI Variable", "Segoe UI", "PingFang SC", "Microsoft YaHei UI", sans-serif;
+            color: var(--ui-text);
+            background:
+                radial-gradient(circle at top left, rgba(59, 130, 246, 0.14), transparent 30%),
+                radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 22%),
+                linear-gradient(180deg, #f7f9fc 0%, var(--ui-bg) 100%);
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+            background-size: 32px 32px;
+            mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 90%);
+            z-index: -1;
+        }
+
+        .app-container {
+            min-height: 100vh;
+            gap: 24px;
+            padding: 24px;
+            align-items: stretch;
+        }
+
+        .sidebar {
+            width: 264px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: var(--ui-surface-dark);
+            border-radius: 28px;
+            box-shadow: 0 28px 60px rgba(15, 23, 42, 0.24);
+            position: sticky;
+            top: 24px;
+            height: calc(100vh - 48px);
+            overflow: hidden;
+        }
+
+        .sidebar::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at top, rgba(96, 165, 250, 0.22), transparent 34%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 18%);
+            pointer-events: none;
+        }
+
+        .sidebar-header {
+            position: relative;
+            padding: 28px 24px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .sidebar-header h1 {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+            color: #f8fafc;
+            margin-bottom: 10px;
+        }
+
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #60a5fa 0%, #38bdf8 42%, #f8fafc 100%);
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 0.95rem;
+            box-shadow: 0 18px 30px rgba(37, 99, 235, 0.3);
+        }
+
+        .sidebar-header p {
+            color: rgba(226, 232, 240, 0.74);
+            line-height: 1.7;
+        }
+
+        .sidebar-nav {
+            position: relative;
+            padding: 18px 14px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-item {
+            border-radius: 18px;
+            padding: 14px 16px;
+            color: rgba(226, 232, 240, 0.84);
+            font-weight: 600;
+            gap: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent 65%);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            transform: translateX(3px);
+        }
+
+        .nav-item:hover::before,
+        .nav-item.active::before {
+            opacity: 1;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(14, 165, 233, 0.8));
+            color: #ffffff;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 16px 28px rgba(37, 99, 235, 0.3);
+        }
+
+        .main-content {
+            min-width: 0;
+            border-radius: 30px;
+        }
+
+        .main-header {
+            padding: 20px 28px;
+            margin-bottom: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            border-radius: 26px;
+            background: rgba(255, 255, 255, 0.66);
+            backdrop-filter: blur(16px);
+            box-shadow: var(--ui-shadow-soft);
+            position: sticky;
+            top: 24px;
+            z-index: 10;
+        }
+
+        .main-header h2 {
+            font-size: 1.45rem;
+            letter-spacing: -0.03em;
+        }
+
+        .main-body {
+            padding: 0;
+            background: transparent;
+        }
+
+        .page:not(.hidden) {
+            animation: pageReveal 0.34s ease;
+        }
+
+        .card {
+            border: 1px solid rgba(255, 255, 255, 0.72);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.84));
+            backdrop-filter: blur(18px);
+            border-radius: var(--ui-radius);
+            padding: 28px;
+            box-shadow: var(--ui-shadow);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.32), transparent 26%);
+            pointer-events: none;
+        }
+
+        .btn {
+            position: relative;
+            overflow: hidden;
+            border-radius: 14px;
+            min-height: 42px;
+            padding: 11px 16px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--ui-brand) 0%, #0ea5e9 100%);
+            color: #ffffff;
+            box-shadow: 0 16px 28px rgba(37, 99, 235, 0.24);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--ui-brand-strong) 0%, #0284c7 100%);
+        }
+
+        .btn-secondary {
+            background: rgba(248, 250, 252, 0.9);
+            color: #334155;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+        }
+
+        .btn-secondary:hover {
+            background: #ffffff;
+            border-color: rgba(37, 99, 235, 0.18);
+            color: var(--ui-brand-strong);
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: #ffffff;
+            box-shadow: 0 14px 24px rgba(220, 38, 38, 0.18);
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+
+        .btn-sm {
+            min-height: 38px;
+            padding: 9px 14px;
+        }
+
+        .form-control,
+        .form-input,
+        .filter-select,
+        .search-input {
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+        }
+
+        .form-control:focus,
+        .form-input:focus,
+        .filter-select:focus,
+        .search-input:focus {
+            border-color: rgba(37, 99, 235, 0.4);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .search-container,
+        .filter-container,
+        .stats-container {
+            border-radius: 20px;
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            background: rgba(245, 247, 251, 0.78);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+        }
+
+        .search-container {
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--ui-brand-soft);
+            color: var(--ui-brand-strong);
+            flex-shrink: 0;
+        }
+
+        .search-input {
+            border: none;
+            background: transparent;
+            box-shadow: none;
+            padding: 0;
+        }
+
+        .search-input:focus {
+            box-shadow: none;
+        }
+
+        .filter-container {
+            padding: 18px;
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--ui-text-soft);
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            padding: 16px;
+            margin-bottom: 18px;
+        }
+
+        .stat-item {
+            padding: 18px 16px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #ffffff, #f8fbff);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            box-shadow: 0 12px 20px rgba(15, 23, 42, 0.05);
+        }
+
+        .stat-value {
+            font-size: 1.65rem;
+            line-height: 1;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            color: var(--ui-text);
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: var(--ui-text-soft);
+            font-size: 0.82rem;
+        }
+
+        #accountsStats .flex span {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.08);
+            color: #1e3a8a;
+            font-weight: 600;
+        }
+
+        .account-list,
+        .email-list {
+            gap: 16px;
+        }
+
+        .account-item,
+        .email-item {
+            border-radius: 20px;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92));
+            box-shadow: 0 16px 28px rgba(15, 23, 42, 0.05);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .account-item:hover,
+        .email-item:hover {
+            transform: translateY(-3px);
+            border-color: rgba(37, 99, 235, 0.22);
+            box-shadow: 0 22px 38px rgba(15, 23, 42, 0.08);
+        }
+
+        .account-avatar,
+        .email-avatar {
+            border-radius: 16px;
+            background: linear-gradient(135deg, #1d4ed8 0%, #0ea5e9 100%);
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
+        }
+
+        .account-details h4,
+        .email-subject {
+            letter-spacing: -0.02em;
+        }
+
+        .account-actions {
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .account-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .account-tag,
+        .tag-item {
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.08);
+            color: #1d4ed8;
+            border: 1px solid rgba(37, 99, 235, 0.1);
+        }
+
+        .email-item.unread {
+            border-left: 1px solid rgba(148, 163, 184, 0.16);
+            box-shadow:
+                inset 4px 0 0 rgba(37, 99, 235, 0.96),
+                0 16px 28px rgba(15, 23, 42, 0.05);
+        }
+
+        .email-from {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .email-from-text {
+            min-width: 0;
+        }
+
+        .email-meta-icon {
+            color: var(--ui-brand-strong);
+        }
+
+        .email-meta-icon.attachment {
+            color: var(--ui-warning);
+        }
+
+        .pagination {
+            gap: 10px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+
+        .pagination .btn,
+        .pagination .page-number {
+            border-radius: 12px;
+        }
+
+        .pagination .page-number {
+            border-color: rgba(148, 163, 184, 0.2);
+        }
+
+        .pagination .page-number.active {
+            background: linear-gradient(135deg, var(--ui-brand) 0%, #0ea5e9 100%);
+            border-color: transparent;
+        }
+
+        .modal,
+        #tagsModal {
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(8px);
+        }
+
+        .modal-content {
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.68);
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 28px 56px rgba(15, 23, 42, 0.18);
+        }
+
+        .modal-header,
+        .modal-footer {
+            background: linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(255, 255, 255, 0.9));
+        }
+
+        .modal-close,
+        .close,
+        .tag-delete {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            transition: background 0.18s ease, color 0.18s ease;
+        }
+
+        .modal-close:hover,
+        .close:hover,
+        .tag-delete:hover {
+            background: rgba(15, 23, 42, 0.06);
+            color: var(--ui-danger);
+        }
+
+        .notification-container {
+            top: 28px;
+            right: 28px;
+        }
+
+        .notification {
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-left-width: 1px;
+            border-radius: 18px;
+            box-shadow: 0 22px 44px rgba(15, 23, 42, 0.12);
+            backdrop-filter: blur(18px);
+            background: rgba(255, 255, 255, 0.94);
+            min-width: 320px;
+            transform: translateY(12px);
+        }
+
+        .notification.success { box-shadow: 0 22px 44px rgba(15, 159, 110, 0.12); }
+        .notification.error { box-shadow: 0 22px 44px rgba(220, 38, 38, 0.12); }
+        .notification.warning { box-shadow: 0 22px 44px rgba(217, 119, 6, 0.12); }
+
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(37, 99, 235, 0.08);
+            color: var(--ui-brand-strong);
+        }
+
+        .notification.success .notification-icon {
+            background: rgba(15, 159, 110, 0.1);
+            color: var(--ui-success);
+        }
+
+        .notification.error .notification-icon {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--ui-danger);
+        }
+
+        .notification.warning .notification-icon {
+            background: rgba(217, 119, 6, 0.1);
+            color: var(--ui-warning);
+        }
+
+        .context-menu {
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.72);
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 36px rgba(15, 23, 42, 0.16);
+            padding: 8px;
+        }
+
+        .context-menu-item {
+            border-radius: 12px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.18s ease, transform 0.18s ease, color 0.18s ease;
+        }
+
+        .context-menu-item:hover {
+            background: rgba(37, 99, 235, 0.08);
+            color: var(--ui-brand-strong);
+            transform: translateX(2px);
+        }
+
+        .context-menu-item.danger:hover {
+            background: rgba(220, 38, 38, 0.08);
+            color: var(--ui-danger);
+        }
+
+        .ui-icon {
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            vertical-align: middle;
+        }
+
+        .ui-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.9;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .icon.ui-icon,
+        .search-icon .ui-icon,
+        .notification-icon .ui-icon {
+            width: 18px;
+            height: 18px;
+        }
+
+        .nav-item .icon {
+            width: 38px;
+            height: 38px;
+            margin-right: 0;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            color: inherit;
+        }
+
+        .nav-item.active .icon {
+            background: rgba(255, 255, 255, 0.16);
+        }
+
+        .btn .ui-icon {
+            width: 15px;
+            height: 15px;
+        }
+
+        .ui-icon.spinning svg {
+            animation: iconSpin 0.9s linear infinite;
+        }
+
+        .copy-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(37, 99, 235, 0.08);
+            color: var(--ui-brand-strong);
+            opacity: 0.9 !important;
+        }
+
+        .loading {
+            color: var(--ui-text-soft);
+        }
+
+        .loading-spinner {
+            border-color: rgba(148, 163, 184, 0.25);
+            border-top-color: var(--ui-brand);
+        }
+
+        .progress-bar {
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.14);
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #2563eb, #0ea5e9);
+            border-radius: 999px;
+        }
+
+        @keyframes pageReveal {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes iconSpin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .filter-container,
+            .stats-container {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 16px;
+                gap: 16px;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                top: 0;
+            }
+
+            .sidebar-nav {
+                flex-direction: row;
+                padding: 14px;
+            }
+
+            .nav-item {
+                min-width: max-content;
+            }
+
+            .main-header {
+                top: 0;
+                margin-bottom: 14px;
+                padding: 18px 20px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .filter-container,
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+
+            .notification {
+                min-width: 0;
+                width: calc(100vw - 32px);
+            }
+        }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- 左侧菜单 -->
+        <!-- 宸︿晶鑿滃崟 -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <h1>📧 邮件管理</h1>
-                <p>Outlook邮件管理系统</p>
+                <h1>馃摟 閭欢绠＄悊</h1>
+                <p>Outlook閭欢绠＄悊绯荤粺</p>
             </div>
             <nav class="sidebar-nav">
                 <button class="nav-item active" onclick="showPage('accounts', this)">
-                    <span class="icon">👥</span>
-                    邮箱账户
+                    <span class="icon">馃懃</span>
+                    閭璐︽埛
                 </button>
                 <button class="nav-item" onclick="showPage('addAccount', this)">
-                    <span class="icon">➕</span>
-                    添加账户
+                    <span class="icon">鉃?/span>
+                    娣诲姞璐︽埛
                 </button>
                 <button class="nav-item" onclick="showPage('batchAdd', this)">
-                    <span class="icon">📦</span>
-                    批量添加
+                    <span class="icon">馃摝</span>
+                    鎵归噺娣诲姞
                 </button>
                 <button class="nav-item" onclick="showPage('apiDocs', this)">
-                    <span class="icon">📖</span>
-                    API管理
+                    <span class="icon">馃摉</span>
+                    API绠＄悊
                 </button>
                 <button class="nav-item" onclick="showPage('emails', this)" oncontextmenu="showEmailsContextMenu(event)" id="emailsNav" style="display: none;">
-                    <span class="icon">📧</span>
-                    邮件列表
+                    <span class="icon">馃摟</span>
+                    閭欢鍒楄〃
                 </button>
             </nav>
         </div>
 
-        <!-- 主内容区域 -->
+        <!-- 涓诲唴瀹瑰尯鍩?-->
         <div class="main-content">
             <div class="main-header">
-                <h2 id="pageTitle">邮箱账户管理</h2>
+                <h2 id="pageTitle">閭璐︽埛绠＄悊</h2>
                 <div id="headerActions"></div>
             </div>
 
             <div class="main-body">
-                <!-- 邮箱账户列表页面 -->
+                <!-- 閭璐︽埛鍒楄〃椤甸潰 -->
                 <div id="accountsPage" class="page">
                     <div class="card">
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <h3 class="font-semibold">邮箱账户管理</h3>
-                                <p class="text-sm" style="color: #64748b;">管理所有已添加的邮箱账户</p>
+                                <h3 class="font-semibold">閭璐︽埛绠＄悊</h3>
+                                <p class="text-sm" style="color: #64748b;">绠＄悊鎵€鏈夊凡娣诲姞鐨勯偖绠辫处鎴?/p>
                             </div>
                             <div class="flex gap-2">
                                 <button class="btn btn-primary btn-sm" onclick="showPage('addAccount')">
-                                    <span>➕</span>
-                                    添加账户
+                                    <span>鉃?/span>
+                                    娣诲姞璐︽埛
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="showPage('batchAdd')">
-                                    <span>📦</span>
-                                    批量添加
+                                    <span>馃摝</span>
+                                    鎵归噺娣诲姞
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="loadAccounts()">
-                                    <span>🔄</span>
-                                    刷新列表
+                                    <span>馃攧</span>
+                                    鍒锋柊鍒楄〃
                                 </button>
                             </div>
                         </div>
                         
-                        <!-- 搜索和过滤区域 -->
+                        <!-- 鎼滅储鍜岃繃婊ゅ尯鍩?-->
                         <div class="search-container">
                             <div class="flex gap-3 mb-4">
                                 <div class="flex-1">
-                                    <input type="text" id="emailSearch" class="form-control" placeholder="按邮箱账号搜索..." onkeypress="handleSearchKeyPress(event)">
+                                    <input type="text" id="emailSearch" class="form-control" placeholder="鎸夐偖绠辫处鍙锋悳绱?.." onkeypress="handleSearchKeyPress(event)">
                                 </div>
                                 <div class="flex-1">
-                                    <input type="text" id="tagSearch" class="form-control" placeholder="按标签搜索..." onkeypress="handleSearchKeyPress(event)">
+                                    <input type="text" id="tagSearch" class="form-control" placeholder="鎸夋爣绛炬悳绱?.." onkeypress="handleSearchKeyPress(event)">
                                 </div>
                                 <button class="btn btn-primary" onclick="searchAccounts()">
-                                    <span>🔍</span>
-                                    搜索
+                                    <span>馃攳</span>
+                                    鎼滅储
                                 </button>
                                 <button class="btn btn-secondary" onclick="clearSearch()">
-                                    <span>🗑️</span>
-                                    清除
+                                    <span>馃棏锔?/span>
+                                    娓呴櫎
                                 </button>
                             </div>
                         </div>
                         
-                        <!-- 统计信息 -->
+                        <!-- 缁熻淇℃伅 -->
                         <div id="accountsStats" class="mb-4" style="display: none;">
                             <div class="flex gap-4 text-sm">
-                                <span>总数：<strong id="totalAccounts">0</strong></span>
-                                <span>当前页：<strong id="currentPage">1</strong></span>
-                                <span>每页：<strong id="pageSize">10</strong></span>
+                                <span>鎬绘暟锛?strong id="totalAccounts">0</strong></span>
+                                <span>褰撳墠椤碉細<strong id="currentPage">1</strong></span>
+                                <span>姣忛〉锛?strong id="pageSize">10</strong></span>
                             </div>
                         </div>
 
                         <div id="accountsList" class="account-list">
                             <div class="loading">
                                 <div class="loading-spinner"></div>
-                                正在加载账户列表...
+                                姝ｅ湪鍔犺浇璐︽埛鍒楄〃...
                             </div>
                         </div>
                         
-                        <!-- 分页控件 -->
+                        <!-- 鍒嗛〉鎺т欢 -->
                         <div id="accountsPagination" class="pagination" style="display: none;">
                             <button class="btn btn-sm" id="prevPageBtn" onclick="changePage('prev')" disabled>
-                                <span>←</span>
-                                上一页
-                            </button>
+                                <span>鈫?/span>
+                                涓婁竴椤?                            </button>
                             <div id="pageNumbers" class="flex gap-1"></div>
                             <button class="btn btn-sm" id="nextPageBtn" onclick="changePage('next')">
-                                下一页
-                                <span>→</span>
+                                涓嬩竴椤?                                <span>鈫?/span>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 添加单个账户页面 -->
+                <!-- 娣诲姞鍗曚釜璐︽埛椤甸潰 -->
                 <div id="addAccountPage" class="page hidden">
                     <div class="card">
                         <div class="flex items-center justify-between mb-6">
                             <div>
-                                <h3 class="font-semibold">添加邮箱账户</h3>
-                                <p class="text-sm" style="color: #64748b;">添加单个Outlook邮箱账户到系统</p>
+                                <h3 class="font-semibold">娣诲姞閭璐︽埛</h3>
+                                <p class="text-sm" style="color: #64748b;">娣诲姞鍗曚釜Outlook閭璐︽埛鍒扮郴缁?/p>
                             </div>
                             <button class="btn btn-secondary btn-sm" onclick="showPage('accounts')">
-                                <span>←</span>
-                                返回列表
+                                <span>鈫?/span>
+                                杩斿洖鍒楄〃
                             </button>
                         </div>
 
                         <div style="max-width: 600px;">
                             <div class="form-group">
-                                <label class="form-label">邮箱地址 *</label>
+                                <label class="form-label">閭鍦板潃 *</label>
                                 <input type="email" id="email" class="form-input" placeholder="example@outlook.com" required>
-                                <p class="text-xs" style="color: #64748b; margin-top: 4px;">请输入有效的Outlook邮箱地址</p>
+                                <p class="text-xs" style="color: #64748b; margin-top: 4px;">璇疯緭鍏ユ湁鏁堢殑Outlook閭鍦板潃</p>
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">刷新令牌 (Refresh Token) *</label>
-                                <textarea id="refreshToken" class="form-input form-textarea" rows="4" placeholder="从Azure应用获取的refresh_token" required></textarea>
+                                <label class="form-label">鍒锋柊浠ょ墝 (Refresh Token) *</label>
+                                <textarea id="refreshToken" class="form-input form-textarea" rows="4" placeholder="浠嶢zure搴旂敤鑾峰彇鐨剅efresh_token" required></textarea>
                                 <p class="text-xs" style="color: #64748b; margin-top: 4px;">
-                                    从Azure应用程序注册中获取的刷新令牌，用于OAuth2认证
+                                    浠嶢zure搴旂敤绋嬪簭娉ㄥ唽涓幏鍙栫殑鍒锋柊浠ょ墝锛岀敤浜嶰Auth2璁よ瘉
                                 </p>
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">客户端ID (Client ID) *</label>
-                                <input type="text" id="clientId" class="form-input" placeholder="Azure应用的client_id" required>
+                                <label class="form-label">瀹㈡埛绔疘D (Client ID) *</label>
+                                <input type="text" id="clientId" class="form-input" placeholder="Azure搴旂敤鐨刢lient_id" required>
                                 <p class="text-xs" style="color: #64748b; margin-top: 4px;">
-                                    Azure应用程序的客户端标识符
-                                </p>
+                                    Azure搴旂敤绋嬪簭鐨勫鎴风鏍囪瘑绗?                                </p>
                             </div>
 
                             <div class="form-group">
                                 <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                                    <h4 style="margin: 0 0 8px 0; font-size: 0.875rem; font-weight: 600; color: #374151;">📋 获取步骤：</h4>
+                                    <h4 style="margin: 0 0 8px 0; font-size: 0.875rem; font-weight: 600; color: #374151;">馃搵 鑾峰彇姝ラ锛?/h4>
                                     <ol style="margin: 0; padding-left: 20px; font-size: 0.75rem; color: #6b7280; line-height: 1.5;">
-                                        <li>访问 <a href="https://portal.azure.com" target="_blank" style="color: #3b82f6;">Azure Portal</a></li>
-                                        <li>注册应用程序并配置权限</li>
-                                        <li>获取Client ID和Refresh Token</li>
-                                        <li>确保应用有邮件读取权限</li>
+                                        <li>璁块棶 <a href="https://portal.azure.com" target="_blank" style="color: #3b82f6;">Azure Portal</a></li>
+                                        <li>娉ㄥ唽搴旂敤绋嬪簭骞堕厤缃潈闄?/li>
+                                        <li>鑾峰彇Client ID鍜孯efresh Token</li>
+                                        <li>纭繚搴旂敤鏈夐偖浠惰鍙栨潈闄?/li>
                                     </ol>
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label for="accountTags">标签 (可选，用逗号分隔)</label>
-                                <input type="text" id="accountTags" class="form-control" placeholder="工作,个人,重要">
+                                <label for="accountTags">鏍囩 (鍙€夛紝鐢ㄩ€楀彿鍒嗛殧)</label>
+                                <input type="text" id="accountTags" class="form-control" placeholder="宸ヤ綔,涓汉,閲嶈">
                             </div>
 
                             <div class="flex gap-3">
                                 <button class="btn btn-primary" onclick="addAccount()" id="addAccountBtn">
-                                    <span>➕</span>
-                                    添加账户
+                                    <span>鉃?/span>
+                                    娣诲姞璐︽埛
                                 </button>
                                 <button class="btn btn-secondary" onclick="clearAddAccountForm()">
-                                    <span>🗑️</span>
-                                    清空表单
+                                    <span>馃棏锔?/span>
+                                    娓呯┖琛ㄥ崟
                                 </button>
                                 <button class="btn btn-secondary" onclick="testAccountConnection()" id="testBtn">
-                                    <span>🔍</span>
-                                    测试连接
+                                    <span>馃攳</span>
+                                    娴嬭瘯杩炴帴
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 批量添加账户页面 -->
+                <!-- 鎵归噺娣诲姞璐︽埛椤甸潰 -->
                 <div id="batchAddPage" class="page hidden">
                     <div class="card">
                         <div class="flex items-center justify-between mb-6">
                             <div>
-                                <h3 class="font-semibold">批量添加邮箱账户</h3>
-                                <p class="text-sm" style="color: #64748b;">一次性添加多个邮箱账户到系统</p>
+                                <h3 class="font-semibold">鎵归噺娣诲姞閭璐︽埛</h3>
+                                <p class="text-sm" style="color: #64748b;">涓€娆℃€ф坊鍔犲涓偖绠辫处鎴峰埌绯荤粺</p>
                             </div>
                             <button class="btn btn-secondary btn-sm" onclick="showPage('accounts')">
-                                <span>←</span>
-                                返回列表
+                                <span>鈫?/span>
+                                杩斿洖鍒楄〃
                             </button>
                         </div>
 
                         <div style="max-width: 800px;">
                             <div class="form-group">
-                                <label class="form-label">批量账户信息</label>
+                                <label class="form-label">鎵归噺璐︽埛淇℃伅</label>
                                 <p class="text-sm" style="color: #64748b; margin-bottom: 8px;">
-                                    每行格式：<code>邮箱----密码----刷新令牌----客户端ID</code>
+                                    姣忚鏍煎紡锛?code>閭----瀵嗙爜----鍒锋柊浠ょ墝----瀹㈡埛绔疘D</code>
                                 </p>
                                 <p class="text-sm" style="color: #64748b; margin-bottom: 12px;">
-                                    📧 推荐购买地址（非广告，只是推荐）：
-                                    <a target="_blank" href="http://wmemail.com" style="color: #3b82f6; margin: 0 8px;">wmemail.com</a>
+                                    馃摟 鎺ㄨ崘璐拱鍦板潃锛堥潪骞垮憡锛屽彧鏄帹鑽愶級锛?                                    <a target="_blank" href="http://wmemail.com" style="color: #3b82f6; margin: 0 8px;">wmemail.com</a>
                                 </p>
                                 <textarea id="batchAccounts" class="form-input form-textarea" rows="12" placeholder="example1@outlook.com----password1----refresh_token1----client_id1
 example2@outlook.com----password2----refresh_token2----client_id2
 example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                                 <p class="text-xs" style="color: #64748b; margin-top: 8px;">
-                                    💡 提示：每行一个账户，使用四个连字符(----)分隔字段
+                                    馃挕 鎻愮ず锛氭瘡琛屼竴涓处鎴凤紝浣跨敤鍥涗釜杩炲瓧绗?----)鍒嗛殧瀛楁
                                 </p>
                             </div>
 
                             <div class="form-group">
                                 <div style="background: #fef3c7; padding: 16px; border-radius: 8px; border: 1px solid #fbbf24;">
-                                    <h4 style="margin: 0 0 8px 0; font-size: 0.875rem; font-weight: 600; color: #92400e;">⚠️ 注意事项：</h4>
+                                    <h4 style="margin: 0 0 8px 0; font-size: 0.875rem; font-weight: 600; color: #92400e;">鈿狅笍 娉ㄦ剰浜嬮」锛?/h4>
                                     <ul style="margin: 0; padding-left: 20px; font-size: 0.75rem; color: #92400e; line-height: 1.5;">
-                                        <li>确保所有账户信息格式正确</li>
-                                        <li>建议先测试少量账户再批量添加</li>
-                                        <li>添加过程中请勿关闭页面</li>
-                                        <li>失败的账户会在结果中显示</li>
+                                        <li>纭繚鎵€鏈夎处鎴蜂俊鎭牸寮忔纭?/li>
+                                        <li>寤鸿鍏堟祴璇曞皯閲忚处鎴峰啀鎵归噺娣诲姞</li>
+                                        <li>娣诲姞杩囩▼涓鍕垮叧闂〉闈?/li>
+                                        <li>澶辫触鐨勮处鎴蜂細鍦ㄧ粨鏋滀腑鏄剧ず</li>
                                     </ul>
                                 </div>
                             </div>
 
                             <div class="flex gap-3">
                                 <button class="btn btn-primary" onclick="batchAddAccounts()" id="batchAddBtn">
-                                    <span>📦</span>
-                                    开始批量添加
-                                </button>
+                                    <span>馃摝</span>
+                                    寮€濮嬫壒閲忔坊鍔?                                </button>
                                 <button class="btn btn-secondary" onclick="clearBatchForm()">
-                                    <span>🗑️</span>
-                                    清空表单
+                                    <span>馃棏锔?/span>
+                                    娓呯┖琛ㄥ崟
                                 </button>
                                 <button class="btn btn-secondary" onclick="validateBatchFormat()">
-                                    <span>✅</span>
-                                    验证格式
+                                    <span>鉁?/span>
+                                    楠岃瘉鏍煎紡
                                 </button>
                                 <button class="btn btn-secondary" onclick="loadSampleData()">
-                                    <span>📝</span>
-                                    加载示例
+                                    <span>馃摑</span>
+                                    鍔犺浇绀轰緥
                                 </button>
                             </div>
 
-                            <!-- 批量添加进度 -->
+                            <!-- 鎵归噺娣诲姞杩涘害 -->
                             <div id="batchProgress" class="hidden" style="margin-top: 24px;">
-                                <h4 style="margin-bottom: 12px; font-size: 0.875rem; font-weight: 600;">添加进度：</h4>
+                                <h4 style="margin-bottom: 12px; font-size: 0.875rem; font-weight: 600;">娣诲姞杩涘害锛?/h4>
                                 <div class="progress-bar">
                                     <div class="progress-fill" id="batchProgressFill"></div>
                                 </div>
                                 <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-top: 8px;">
-                                    <span id="batchProgressText">准备中...</span>
+                                    <span id="batchProgressText">鍑嗗涓?..</span>
                                     <span id="batchProgressCount">0 / 0</span>
                                 </div>
                             </div>
 
-                            <!-- 批量添加结果 -->
+                            <!-- 鎵归噺娣诲姞缁撴灉 -->
                             <div id="batchResults" class="hidden" style="margin-top: 24px;">
-                                <h4 style="margin-bottom: 12px; font-size: 0.875rem; font-weight: 600;">添加结果：</h4>
+                                <h4 style="margin-bottom: 12px; font-size: 0.875rem; font-weight: 600;">娣诲姞缁撴灉锛?/h4>
                                 <div id="batchResultsList"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- API文档页面 -->
+                <!-- API鏂囨。椤甸潰 -->
                 <div id="apiDocsPage" class="page hidden">
                     <div class="card">
                         <div class="flex items-center justify-between mb-6">
                             <div>
-                                <h3 class="font-semibold">API接口文档</h3>
-                                <p class="text-sm" style="color: #64748b;">邮件管理系统的RESTful API接口说明</p>
+                                <h3 class="font-semibold">API鎺ュ彛鏂囨。</h3>
+                                <p class="text-sm" style="color: #64748b;">閭欢绠＄悊绯荤粺鐨凴ESTful API鎺ュ彛璇存槑</p>
                             </div>
                             <div class="flex gap-2">
                                 <button class="btn btn-secondary btn-sm" onclick="copyApiBaseUrl()">
-                                    <span>📋</span>
-                                    复制Base URL
+                                    <span>馃搵</span>
+                                    澶嶅埗Base URL
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="downloadApiDocs()">
-                                    <span>📥</span>
-                                    下载文档
+                                    <span>馃摜</span>
+                                    涓嬭浇鏂囨。
                                 </button>
                             </div>
                         </div>
 
                         <div class="api-docs">
-                            <!-- API基础信息 -->
+                            <!-- API鍩虹淇℃伅 -->
                             <div class="api-endpoint">
                                 <div class="api-header">
                                     <div>
-                                        <h3 style="margin: 0; color: #1f2937;">📡 API基础信息</h3>
+                                        <h3 style="margin: 0; color: #1f2937;">馃摗 API鍩虹淇℃伅</h3>
                                     </div>
                                 </div>
                                 <div class="api-body">
@@ -1612,56 +2349,56 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                                         <div class="api-example" id="baseUrlExample">http://localhost:8001</div>
                                     </div>
                                     <div class="api-section">
-                                        <h4>认证方式</h4>
-                                        <p class="api-description">当前版本无需认证，直接调用接口即可。</p>
+                                        <h4>璁よ瘉鏂瑰紡</h4>
+                                        <p class="api-description">褰撳墠鐗堟湰鏃犻渶璁よ瘉锛岀洿鎺ヨ皟鐢ㄦ帴鍙ｅ嵆鍙€?/p>
                                     </div>
                                     <div class="api-section">
-                                        <h4>响应格式</h4>
-                                        <p class="api-description">所有接口返回JSON格式数据，HTTP状态码表示请求结果。</p>
+                                        <h4>鍝嶅簲鏍煎紡</h4>
+                                        <p class="api-description">鎵€鏈夋帴鍙ｈ繑鍥濲SON鏍煎紡鏁版嵁锛孒TTP鐘舵€佺爜琛ㄧず璇锋眰缁撴灉銆?/p>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- 获取邮箱列表接口 -->
+                            <!-- 鑾峰彇閭鍒楄〃鎺ュ彛 -->
                             <div class="api-endpoint">
                                 <div class="api-header">
                                     <div style="display: flex; align-items: center;">
                                         <span class="api-method get">GET</span>
                                         <span class="api-path">/accounts</span>
                                     </div>
-                                    <button class="api-try-button" onclick="tryApi('accounts')">🚀 试用接口</button>
+                                    <button class="api-try-button" onclick="tryApi('accounts')">馃殌 璇曠敤鎺ュ彛</button>
                                 </div>
                                 <div class="api-body">
-                                    <p class="api-description">获取系统中所有已添加的邮箱账户列表，支持分页和模糊搜索。</p>
+                                    <p class="api-description">鑾峰彇绯荤粺涓墍鏈夊凡娣诲姞鐨勯偖绠辫处鎴峰垪琛紝鏀寔鍒嗛〉鍜屾ā绯婃悳绱€?/p>
 
                                     <div class="api-section">
-                                        <h4>请求参数</h4>
+                                        <h4>璇锋眰鍙傛暟</h4>
                                         <div class="api-params">
                                             <div class="api-param">
                                                 <span class="api-param-name">page</span>
                                                 <span class="api-param-type">integer</span>
-                                                <span class="api-param-desc">页码，从1开始，默认: 1</span>
+                                                <span class="api-param-desc">椤电爜锛屼粠1寮€濮嬶紝榛樿: 1</span>
                                             </div>
                                             <div class="api-param">
                                                 <span class="api-param-name">page_size</span>
                                                 <span class="api-param-type">integer</span>
-                                                <span class="api-param-desc">每页数量，范围1-100，默认: 10</span>
+                                                <span class="api-param-desc">姣忛〉鏁伴噺锛岃寖鍥?-100锛岄粯璁? 10</span>
                                             </div>
                                             <div class="api-param">
                                                 <span class="api-param-name">email_search</span>
                                                 <span class="api-param-type">string</span>
-                                                <span class="api-param-desc">邮箱账号模糊搜索，可选</span>
+                                                <span class="api-param-desc">閭璐﹀彿妯＄硦鎼滅储锛屽彲閫?/span>
                                             </div>
                                             <div class="api-param">
                                                 <span class="api-param-name">tag_search</span>
                                                 <span class="api-param-type">string</span>
-                                                <span class="api-param-desc">标签模糊搜索，可选</span>
+                                                <span class="api-param-desc">鏍囩妯＄硦鎼滅储锛屽彲閫?/span>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div class="api-section">
-                                        <h4>响应示例</h4>
+                                        <h4>鍝嶅簲绀轰緥</h4>
                                         <div class="api-example">{
   "total_accounts": 25,
   "page": 1,
@@ -1672,75 +2409,75 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
       "email_id": "example@outlook.com",
       "client_id": "your-client-id",
       "status": "active",
-      "tags": ["工作", "个人"]
+      "tags": ["宸ヤ綔", "涓汉"]
     }
   ]
 }</div>
                                     </div>
 
                                     <div class="api-response" id="accountsResponse">
-                                        <h4 style="margin-bottom: 8px; color: #15803d;">响应结果：</h4>
+                                        <h4 style="margin-bottom: 8px; color: #15803d;">鍝嶅簲缁撴灉锛?/h4>
                                         <pre id="accountsResponseData"></pre>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- 获取邮件列表接口 -->
+                            <!-- 鑾峰彇閭欢鍒楄〃鎺ュ彛 -->
                             <div class="api-endpoint">
                                 <div class="api-header">
                                     <div style="display: flex; align-items: center;">
                                         <span class="api-method get">GET</span>
                                         <span class="api-path">/emails/{email_id}</span>
                                     </div>
-                                    <button class="api-try-button" onclick="tryApi('emails')">🚀 试用接口</button>
+                                    <button class="api-try-button" onclick="tryApi('emails')">馃殌 璇曠敤鎺ュ彛</button>
                                 </div>
                                 <div class="api-body">
-                                    <p class="api-description">获取指定邮箱的邮件列表，支持分页和过滤。</p>
+                                    <p class="api-description">鑾峰彇鎸囧畾閭鐨勯偖浠跺垪琛紝鏀寔鍒嗛〉鍜岃繃婊ゃ€?/p>
 
                                     <div class="api-section">
-                                        <h4>路径参数</h4>
+                                        <h4>璺緞鍙傛暟</h4>
                                         <div class="api-params">
                                             <div class="api-param">
                                                 <span class="api-param-name">email_id</span>
                                                 <span class="api-param-type">string</span>
-                                                <span class="api-param-desc">邮箱地址，需要URL编码</span>
+                                                <span class="api-param-desc">閭鍦板潃锛岄渶瑕乁RL缂栫爜</span>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div class="api-section">
-                                        <h4>查询参数</h4>
+                                        <h4>鏌ヨ鍙傛暟</h4>
                                         <div class="api-params">
                                             <div class="api-param">
                                                 <span class="api-param-name">folder</span>
                                                 <span class="api-param-type">string</span>
-                                                <span class="api-param-desc">邮件文件夹 (all, inbox, junk)，默认: all</span>
+                                                <span class="api-param-desc">閭欢鏂囦欢澶?(all, inbox, junk)锛岄粯璁? all</span>
                                             </div>
                                             <div class="api-param">
                                                 <span class="api-param-name">page</span>
                                                 <span class="api-param-type">integer</span>
-                                                <span class="api-param-desc">页码，从1开始，默认: 1</span>
+                                                <span class="api-param-desc">椤电爜锛屼粠1寮€濮嬶紝榛樿: 1</span>
                                             </div>
                                             <div class="api-param">
                                                 <span class="api-param-name">page_size</span>
                                                 <span class="api-param-type">integer</span>
-                                                <span class="api-param-desc">每页数量，范围1-500，默认: 100</span>
+                                                <span class="api-param-desc">姣忛〉鏁伴噺锛岃寖鍥?-500锛岄粯璁? 100</span>
                                             </div>
                                             <div class="api-param">
                                                 <span class="api-param-name">refresh</span>
                                                 <span class="api-param-type">boolean</span>
-                                                <span class="api-param-desc">是否强制刷新缓存，默认: false</span>
+                                                <span class="api-param-desc">鏄惁寮哄埗鍒锋柊缂撳瓨锛岄粯璁? false</span>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div class="api-section">
-                                        <h4>请求示例</h4>
+                                        <h4>璇锋眰绀轰緥</h4>
                                         <div class="api-example">GET /emails/example%40outlook.com?folder=inbox&page=1&page_size=20&refresh=true</div>
                                     </div>
 
                                     <div class="api-section">
-                                        <h4>响应示例</h4>
+                                        <h4>鍝嶅簲绀轰緥</h4>
                                         <div class="api-example">{
   "email_id": "example@outlook.com",
   "folder_view": "inbox",
@@ -1751,7 +2488,7 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
     {
       "message_id": "INBOX-1",
       "folder": "INBOX",
-      "subject": "邮件主题",
+      "subject": "閭欢涓婚",
       "from_email": "sender@example.com",
       "date": "2024-01-01T12:00:00Z",
       "is_read": false,
@@ -1763,60 +2500,60 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                                     </div>
 
                                     <div class="api-response" id="emailsResponse">
-                                        <h4 style="margin-bottom: 8px; color: #15803d;">响应结果：</h4>
+                                        <h4 style="margin-bottom: 8px; color: #15803d;">鍝嶅簲缁撴灉锛?/h4>
                                         <pre id="emailsResponseData"></pre>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- 获取邮件详情接口 -->
+                            <!-- 鑾峰彇閭欢璇︽儏鎺ュ彛 -->
                             <div class="api-endpoint">
                                 <div class="api-header">
                                     <div style="display: flex; align-items: center;">
                                         <span class="api-method get">GET</span>
                                         <span class="api-path">/emails/{email_id}/{message_id}</span>
                                     </div>
-                                    <button class="api-try-button" onclick="tryApi('emailDetail')">🚀 试用接口</button>
+                                    <button class="api-try-button" onclick="tryApi('emailDetail')">馃殌 璇曠敤鎺ュ彛</button>
                                 </div>
                                 <div class="api-body">
-                                    <p class="api-description">获取指定邮件的详细内容，包括邮件正文。</p>
+                                    <p class="api-description">鑾峰彇鎸囧畾閭欢鐨勮缁嗗唴瀹癸紝鍖呮嫭閭欢姝ｆ枃銆?/p>
 
                                     <div class="api-section">
-                                        <h4>路径参数</h4>
+                                        <h4>璺緞鍙傛暟</h4>
                                         <div class="api-params">
                                             <div class="api-param">
                                                 <span class="api-param-name">email_id</span>
                                                 <span class="api-param-type">string</span>
-                                                <span class="api-param-desc">邮箱地址，需要URL编码</span>
+                                                <span class="api-param-desc">閭鍦板潃锛岄渶瑕乁RL缂栫爜</span>
                                             </div>
                                             <div class="api-param">
                                                 <span class="api-param-name">message_id</span>
                                                 <span class="api-param-type">string</span>
-                                                <span class="api-param-desc">邮件ID，格式: {folder}-{id}</span>
+                                                <span class="api-param-desc">閭欢ID锛屾牸寮? {folder}-{id}</span>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div class="api-section">
-                                        <h4>请求示例</h4>
+                                        <h4>璇锋眰绀轰緥</h4>
                                         <div class="api-example">GET /emails/example%40outlook.com/INBOX-1</div>
                                     </div>
 
                                     <div class="api-section">
-                                        <h4>响应示例</h4>
+                                        <h4>鍝嶅簲绀轰緥</h4>
                                         <div class="api-example">{
   "message_id": "INBOX-1",
-  "subject": "邮件主题",
+  "subject": "閭欢涓婚",
   "from_email": "sender@example.com",
   "to_email": "example@outlook.com",
   "date": "2024-01-01T12:00:00Z",
-  "body_plain": "纯文本邮件内容",
-  "body_html": "&lt;html&gt;&lt;body&gt;HTML邮件内容&lt;/body&gt;&lt;/html&gt;"
+  "body_plain": "绾枃鏈偖浠跺唴瀹?,
+  "body_html": "&lt;html&gt;&lt;body&gt;HTML閭欢鍐呭&lt;/body&gt;&lt;/html&gt;"
 }</div>
                                     </div>
 
                                     <div class="api-response" id="emailDetailResponse">
-                                        <h4 style="margin-bottom: 8px; color: #15803d;">响应结果：</h4>
+                                        <h4 style="margin-bottom: 8px; color: #15803d;">鍝嶅簲缁撴灉锛?/h4>
                                         <pre id="emailDetailResponseData"></pre>
                                     </div>
                                 </div>
@@ -1825,114 +2562,112 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                     </div>
                 </div>
 
-                <!-- 邮件列表页面 -->
+                <!-- 閭欢鍒楄〃椤甸潰 -->
                 <div id="emailsPage" class="page hidden">
                     <div class="card">
-                        <!-- 账户信息和操作按钮 -->
+                        <!-- 璐︽埛淇℃伅鍜屾搷浣滄寜閽?-->
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <h3 class="font-semibold">当前账户：
-                                    <span id="currentAccountEmail"
+                                <h3 class="font-semibold">褰撳墠璐︽埛锛?                                    <span id="currentAccountEmail"
                                           class="text-sm font-medium email-copyable"
                                           style="color: #3b82f6; cursor: pointer; position: relative;"
                                           onclick="copyEmailAddress(this.textContent)"
-                                          title="点击复制邮箱地址">
+                                          title="鐐瑰嚮澶嶅埗閭鍦板潃">
                                     </span>
-                                    <span class="copy-icon" style="margin-left: 6px; opacity: 0.6; font-size: 0.8em;">📋</span>
+                                    <span class="copy-icon" style="margin-left: 6px; opacity: 0.6; font-size: 0.8em;">馃搵</span>
                                 </h3>
-                                <p class="text-sm" style="color: #64748b;">最后更新：<span id="lastUpdateTime">-</span></p>
+                                <p class="text-sm" style="color: #64748b;">鏈€鍚庢洿鏂帮細<span id="lastUpdateTime">-</span></p>
                             </div>
                             <div class="flex gap-2">
                                 <button class="btn btn-secondary btn-sm" onclick="refreshEmails()" id="refreshBtn">
-                                    <span>🔄</span>
-                                    刷新
+                                    <span>馃攧</span>
+                                    鍒锋柊
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="clearCache()">
-                                    <span>🗑️</span>
-                                    清除缓存
+                                    <span>馃棏锔?/span>
+                                    娓呴櫎缂撳瓨
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="exportEmails()">
-                                    <span>📤</span>
-                                    导出
+                                    <span>馃摛</span>
+                                    瀵煎嚭
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="backToAccounts()">
-                                    <span>←</span>
-                                    返回账户
+                                    <span>鈫?/span>
+                                    杩斿洖璐︽埛
                                 </button>
                             </div>
                         </div>
 
-                        <!-- 统计信息 -->
+                        <!-- 缁熻淇℃伅 -->
                         <div class="stats-container">
                             <div class="stat-item">
                                 <div class="stat-value" id="totalEmailCount">0</div>
-                                <div class="stat-label">总邮件数</div>
+                                <div class="stat-label">鎬婚偖浠舵暟</div>
                             </div>
                             <div class="stat-item">
                                 <div class="stat-value" id="unreadEmailCount">0</div>
-                                <div class="stat-label">未读邮件</div>
+                                <div class="stat-label">鏈閭欢</div>
                             </div>
                             <div class="stat-item">
                                 <div class="stat-value" id="todayEmailCount">0</div>
-                                <div class="stat-label">今日邮件</div>
+                                <div class="stat-label">浠婃棩閭欢</div>
                             </div>
                             <div class="stat-item">
                                 <div class="stat-value" id="attachmentEmailCount">0</div>
-                                <div class="stat-label">带附件</div>
+                                <div class="stat-label">甯﹂檮浠?/div>
                             </div>
                         </div>
 
-                        <!-- 搜索和过滤 -->
+                        <!-- 鎼滅储鍜岃繃婊?-->
                         <div class="search-container">
-                            <span class="search-icon">🔍</span>
-                            <input type="text" class="search-input" id="emailSearch" placeholder="搜索邮件标题、发件人或内容..." onkeyup="searchEmails()">
+                            <span class="search-icon">馃攳</span>
+                            <input type="text" class="search-input" id="emailSearch" placeholder="鎼滅储閭欢鏍囬銆佸彂浠朵汉鎴栧唴瀹?.." onkeyup="searchEmails()">
                         </div>
 
                         <div class="filter-container">
                             <div class="filter-group">
-                                <label class="filter-label">文件夹:</label>
+                                <label class="filter-label">鏂囦欢澶?</label>
                                 <select class="filter-select" id="folderFilter" onchange="applyFilters()">
-                                    <option value="all">全部邮件</option>
-                                    <option value="inbox">收件箱</option>
-                                    <option value="junk">垃圾邮件</option>
+                                    <option value="all">鍏ㄩ儴閭欢</option>
+                                    <option value="inbox">鏀朵欢绠?/option>
+                                    <option value="junk">鍨冨溇閭欢</option>
                                 </select>
                             </div>
                             <div class="filter-group">
-                                <label class="filter-label">状态:</label>
+                                <label class="filter-label">鐘舵€?</label>
                                 <select class="filter-select" id="statusFilter" onchange="applyFilters()">
-                                    <option value="all">全部状态</option>
-                                    <option value="unread">未读</option>
-                                    <option value="read">已读</option>
+                                    <option value="all">鍏ㄩ儴鐘舵€?/option>
+                                    <option value="unread">鏈</option>
+                                    <option value="read">宸茶</option>
                                 </select>
                             </div>
                             <div class="filter-group">
-                                <label class="filter-label">时间:</label>
+                                <label class="filter-label">鏃堕棿:</label>
                                 <select class="filter-select" id="timeFilter" onchange="applyFilters()">
-                                    <option value="all">全部时间</option>
-                                    <option value="today">今天</option>
-                                    <option value="week">本周</option>
-                                    <option value="month">本月</option>
+                                    <option value="all">鍏ㄩ儴鏃堕棿</option>
+                                    <option value="today">浠婂ぉ</option>
+                                    <option value="week">鏈懆</option>
+                                    <option value="month">鏈湀</option>
                                 </select>
                             </div>
                             <div class="filter-group">
-                                <label class="filter-label">附件:</label>
+                                <label class="filter-label">闄勪欢:</label>
                                 <select class="filter-select" id="attachmentFilter" onchange="applyFilters()">
-                                    <option value="all">全部</option>
-                                    <option value="with">有附件</option>
-                                    <option value="without">无附件</option>
+                                    <option value="all">鍏ㄩ儴</option>
+                                    <option value="with">鏈夐檮浠?/option>
+                                    <option value="without">鏃犻檮浠?/option>
                                 </select>
                             </div>
                             <button class="btn btn-secondary btn-sm" onclick="clearFilters()">
-                                <span>🗑️</span>
-                                清除筛选
-                            </button>
+                                <span>馃棏锔?/span>
+                                娓呴櫎绛涢€?                            </button>
                         </div>
 
-                        <!-- 邮件列表 -->
+                        <!-- 閭欢鍒楄〃 -->
                         <div id="emailsList" class="email-list">
                             <div class="loading">
                                 <div class="loading-spinner"></div>
-                                正在加载邮件...
+                                姝ｅ湪鍔犺浇閭欢...
                             </div>
                         </div>
 
@@ -1943,81 +2678,106 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
         </div>
     </div>
 
-    <!-- 通知容器 -->
+    <!-- 閫氱煡瀹瑰櫒 -->
     <div id="notificationContainer" class="notification-container"></div>
 
-    <!-- 邮件详情模态框 -->
+    <!-- 閭欢璇︽儏妯℃€佹 -->
     <div id="emailModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="emailModalTitle">邮件详情</h3>
+                <h3 id="emailModalTitle">閭欢璇︽儏</h3>
                 <button class="modal-close" onclick="closeEmailModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <div id="emailModalContent">
-                    <div class="loading">正在加载邮件详情...</div>
+                    <div class="loading">姝ｅ湪鍔犺浇閭欢璇︽儏...</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 标签管理模态框 -->
+    <!-- 鏍囩绠＄悊妯℃€佹 -->
     <div id="tagsModal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
-                <h3>管理账户标签</h3>
+                <h3>绠＄悊璐︽埛鏍囩</h3>
                 <span class="close" onclick="closeTagsModal()">&times;</span>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="currentTags">当前标签</label>
+                    <label for="currentTags">褰撳墠鏍囩</label>
                     <div id="currentTagsList" class="tags-list"></div>
                 </div>
                 <div class="form-group">
-                    <label for="newTag">添加新标签</label>
+                    <label for="newTag">娣诲姞鏂版爣绛?/label>
                     <div class="input-group">
-                        <input type="text" id="newTag" class="form-control" placeholder="输入标签名称">
-                        <button class="btn btn-primary" onclick="addTag()">添加</button>
+                        <input type="text" id="newTag" class="form-control" placeholder="杈撳叆鏍囩鍚嶇О">
+                        <button class="btn btn-primary" onclick="addTag()">娣诲姞</button>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeTagsModal()">取消</button>
-                <button class="btn btn-primary" onclick="saveAccountTags()">保存</button>
+                <button class="btn btn-secondary" onclick="closeTagsModal()">鍙栨秷</button>
+                <button class="btn btn-primary" onclick="saveAccountTags()">淇濆瓨</button>
             </div>
         </div>
     </div>
 
-    <!-- 右键菜单 -->
+    <!-- 鍙抽敭鑿滃崟 -->
     <div id="contextMenu" class="context-menu">
         <div class="context-menu-item" onclick="openInNewTab()">
-            <span>🔗</span>
-            在新标签页中打开
+            <span>馃敆</span>
+            鍦ㄦ柊鏍囩椤典腑鎵撳紑
         </div>
         <div class="context-menu-item" onclick="copyAccountLink()">
-            <span>📋</span>
-            复制链接
+            <span>馃搵</span>
+            澶嶅埗閾炬帴
         </div>
         <div class="context-menu-divider"></div>
         <div class="context-menu-item" onclick="contextEditTags()">
-            <span>🏷️</span>
-            管理标签
+            <span>馃彿锔?/span>
+            绠＄悊鏍囩
         </div>
         <div class="context-menu-item danger" onclick="contextDeleteAccount()">
-            <span>🗑️</span>
-            删除账户
+            <span>馃棏锔?/span>
+            鍒犻櫎璐︽埛
         </div>
     </div>
 
     <script>
-        // 全局变量
+        // 鍏ㄥ眬鍙橀噺
         const API_BASE = '';
+        const UI_ICONS = {
+            accounts: '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
+            plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>',
+            batch: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="7" rx="2"></rect><rect x="14" y="4" width="7" height="7" rx="2"></rect><rect x="14" y="15" width="7" height="7" rx="2"></rect><rect x="3" y="15" width="7" height="7" rx="2"></rect></svg>',
+            api: '<svg viewBox="0 0 24 24"><path d="M8 9l-4 3 4 3"></path><path d="M16 9l4 3-4 3"></path><path d="M14 4l-4 16"></path></svg>',
+            mail: '<svg viewBox="0 0 24 24"><path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"></path><path d="M22 7l-10 7L2 7"></path></svg>',
+            search: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.35-4.35"></path></svg>',
+            clear: '<svg viewBox="0 0 24 24"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>',
+            refresh: '<svg viewBox="0 0 24 24"><path d="M21 2v6h-6"></path><path d="M3 22v-6h6"></path><path d="M20 8a9 9 0 0 0-15.5-3.5L3 8"></path><path d="M4 16a9 9 0 0 0 15.5 3.5L21 16"></path></svg>',
+            export: '<svg viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>',
+            tags: '<svg viewBox="0 0 24 24"><path d="M20.59 13.41L11 3H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg>',
+            docs: '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h5"></path></svg>',
+            copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>',
+            open: '<svg viewBox="0 0 24 24"><path d="M14 3h7v7"></path><path d="M10 14L21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>',
+            'arrow-left': '<svg viewBox="0 0 24 24"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg>',
+            'arrow-right': '<svg viewBox="0 0 24 24"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>',
+            success: '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg>',
+            error: '<svg viewBox="0 0 24 24"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg>',
+            warning: '<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18A2 2 0 0 0 3.53 21h16.94a2 2 0 0 0 1.71-3l-8.47-14.14a2 2 0 0 0-3.42 0z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>',
+            info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>',
+            loading: '<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3.02-6.72"></path></svg>',
+            unread: '<svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"></path><path d="M4 6l8 6 8-6"></path></svg>',
+            read: '<svg viewBox="0 0 24 24"><path d="M22 6l-10 7L2 6"></path><path d="M2 6v12h20V6"></path><path d="M2 18l6-6"></path><path d="M22 18l-6-6"></path></svg>',
+            attachment: '<svg viewBox="0 0 24 24"><path d="M21.44 11.05l-8.49 8.49a6 6 0 1 1-8.49-8.49l9.19-9.19a4 4 0 1 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.82-2.83l8.48-8.48"></path></svg>'
+        };
         let currentAccount = null;
         let currentEmailFolder = 'all';
         let currentEmailPage = 1;
         let accounts = [];
         
-        // 账户管理分页相关变量
+        // 璐︽埛绠＄悊鍒嗛〉鐩稿叧鍙橀噺
         let accountsCurrentPage = 1;
         let accountsPageSize = 10;
         let accountsTotalPages = 0;
@@ -2025,26 +2785,127 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
         let currentEmailSearch = '';
         let currentTagSearch = '';
 
-        // 全局变量，用于存储当前编辑的账户信息
+        // 鍏ㄥ眬鍙橀噺锛岀敤浜庡瓨鍌ㄥ綋鍓嶇紪杈戠殑璐︽埛淇℃伅
         let currentEditAccount = null;
         let currentEditTags = [];
 
-        // 页面管理
+        // 椤甸潰绠＄悊
+        function icon(name, extraClass = '') {
+            const className = extraClass ? `ui-icon ${extraClass}` : 'ui-icon';
+            return `<span class="${className}" aria-hidden="true">${UI_ICONS[name] || UI_ICONS.info}</span>`;
+        }
+
+        function buttonLabel(iconName, text, extraClass = '') {
+            return `${icon(iconName, extraClass)} ${text}`;
+        }
+
+        function setButtonIcon(button, iconName, isNav = false) {
+            if (!button) return;
+            const iconElement = button.querySelector('span');
+            if (!iconElement) return;
+            iconElement.className = isNav ? 'icon ui-icon' : 'ui-icon';
+            iconElement.innerHTML = UI_ICONS[iconName] || UI_ICONS.info;
+        }
+
+        function decorateStaticUi() {
+            const sidebarHeader = document.querySelector('.sidebar-header');
+            if (sidebarHeader) {
+                sidebarHeader.innerHTML = `
+                    <h1><span class="brand-mark">OM</span><span>閭欢绠＄悊</span></h1>
+                    <p>Outlook 閭欢璐︽埛涓庢敹浠跺悗鍙?/p>
+                `;
+            }
+
+            const navButtons = document.querySelectorAll('.sidebar .nav-item');
+            ['accounts', 'plus', 'batch', 'api', 'mail'].forEach((name, index) => {
+                setButtonIcon(navButtons[index], name, true);
+            });
+
+            setButtonIcon(document.querySelector('#accountsPage .btn-primary.btn-sm[onclick="showPage(\'addAccount\')"]'), 'plus');
+            setButtonIcon(document.querySelector('#accountsPage .btn-secondary.btn-sm[onclick="showPage(\'batchAdd\')"]'), 'batch');
+            setButtonIcon(document.querySelector('#accountsPage .btn-secondary.btn-sm[onclick="loadAccounts()"]'), 'refresh');
+            setButtonIcon(document.querySelector('#accountsPage .btn-primary[onclick="searchAccounts()"]'), 'search');
+            setButtonIcon(document.querySelector('#accountsPage .btn-secondary[onclick="clearSearch()"]'), 'clear');
+            setButtonIcon(document.getElementById('prevPageBtn'), 'arrow-left');
+            setButtonIcon(document.getElementById('nextPageBtn'), 'arrow-right');
+
+            setButtonIcon(document.querySelector('#addAccountPage .btn-secondary.btn-sm[onclick="showPage(\'accounts\')"]'), 'arrow-left');
+            setButtonIcon(document.getElementById('addAccountBtn'), 'plus');
+            setButtonIcon(document.querySelector('#addAccountPage .btn-secondary[onclick="clearAddAccountForm()"]'), 'clear');
+            setButtonIcon(document.getElementById('testBtn'), 'search');
+
+            setButtonIcon(document.querySelector('#batchAddPage .btn-secondary.btn-sm[onclick="showPage(\'accounts\')"]'), 'arrow-left');
+            setButtonIcon(document.getElementById('batchAddBtn'), 'batch');
+            setButtonIcon(document.querySelector('#batchAddPage .btn-secondary[onclick="clearBatchForm()"]'), 'clear');
+            setButtonIcon(document.querySelector('#batchAddPage .btn-secondary[onclick="validateBatchFormat()"]'), 'success');
+            setButtonIcon(document.querySelector('#batchAddPage .btn-secondary[onclick="loadSampleData()"]'), 'docs');
+
+            setButtonIcon(document.querySelector('#apiDocsPage .btn-secondary.btn-sm[onclick="downloadApiDocs()"]'), 'docs');
+            setButtonIcon(document.querySelector('#apiDocsPage .btn-secondary.btn-sm[onclick="copyApiBaseUrl()"]'), 'copy');
+
+            setButtonIcon(document.getElementById('refreshBtn'), 'refresh');
+            setButtonIcon(document.querySelector('#emailsPage .btn-secondary.btn-sm[onclick="clearCache()"]'), 'clear');
+            setButtonIcon(document.querySelector('#emailsPage .btn-secondary.btn-sm[onclick="exportEmails()"]'), 'export');
+            setButtonIcon(document.querySelector('#emailsPage .btn-secondary.btn-sm[onclick="backToAccounts()"]'), 'arrow-left');
+            setButtonIcon(document.querySelector('#emailsPage .btn-secondary.btn-sm[onclick="clearFilters()"]'), 'clear');
+
+            const searchIcon = document.querySelector('#emailsPage .search-icon');
+            if (searchIcon) {
+                searchIcon.innerHTML = icon('search');
+            }
+
+            const copyIcon = document.querySelector('.copy-icon');
+            if (copyIcon) {
+                copyIcon.innerHTML = icon('copy');
+            }
+
+            const contextItems = document.querySelectorAll('#contextMenu .context-menu-item');
+            ['open', 'copy', 'tags', 'clear'].forEach((name, index) => {
+                const item = contextItems[index];
+                if (!item) return;
+                const iconElement = item.querySelector('span');
+                if (!iconElement) return;
+                iconElement.className = 'ui-icon';
+                iconElement.innerHTML = UI_ICONS[name] || UI_ICONS.info;
+            });
+        }
+
+        function decorateAccountList(root = document) {
+            root.querySelectorAll('.account-actions').forEach(actions => {
+                const buttons = actions.querySelectorAll('.btn');
+                setButtonIcon(buttons[0], 'mail');
+                setButtonIcon(buttons[1], 'tags');
+                setButtonIcon(buttons[2], 'clear');
+            });
+        }
+
+        function decorateEmailList(root = document) {
+            const items = root.querySelectorAll('.email-item');
+            items.forEach((item, index) => {
+                const email = filteredEmails[index];
+                const fromElement = item.querySelector('.email-from');
+                if (!email || !fromElement) return;
+                fromElement.innerHTML = `
+                    ${email.is_read ? icon('read', 'email-meta-icon') : icon('unread', 'email-meta-icon')}
+                    <span class="email-from-text">${email.from_email}</span>
+                    ${email.has_attachments ? icon('attachment', 'email-meta-icon attachment') : ''}
+                `;
+            });
+        }
+
         function showPage(pageName, targetElement = null) {
-            // 隐藏所有页面
             document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
 
-            // 显示指定页面
+            // 鏄剧ず鎸囧畾椤甸潰
             document.getElementById(pageName + 'Page').classList.remove('hidden');
 
             // 更新导航状态
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
 
-            // 如果有目标元素，激活它；否则根据页面名称查找对应的导航项
+            // 有显式目标时直接激活，否则根据页面名称回填导航状态
             if (targetElement) {
                 targetElement.classList.add('active');
             } else {
-                // 根据页面名称查找对应的导航按钮
                 const navButtons = document.querySelectorAll('.nav-item');
                 navButtons.forEach(button => {
                     if (button.onclick && button.onclick.toString().includes(`'${pageName}'`)) {
@@ -2053,17 +2914,17 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                 });
             }
 
-            // 更新页面标题
+            // 鏇存柊椤甸潰鏍囬
             const titles = {
-                'accounts': '邮箱账户管理',
-                'addAccount': '添加邮箱账户',
-                'batchAdd': '批量添加账户',
-                'apiDocs': 'API接口文档',
-                'emails': '邮件列表'
+                'accounts': '閭璐︽埛绠＄悊',
+                'addAccount': '娣诲姞閭璐︽埛',
+                'batchAdd': '鎵归噺娣诲姞璐︽埛',
+                'apiDocs': 'API鎺ュ彛鏂囨。',
+                'emails': '閭欢鍒楄〃'
             };
             document.getElementById('pageTitle').textContent = titles[pageName] || '';
 
-            // 页面特定逻辑
+            // 椤甸潰鐗瑰畾閫昏緫
             if (pageName === 'accounts') {
                 loadAccounts();
             } else if (pageName === 'addAccount') {
@@ -2078,10 +2939,48 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
             }
         }
 
-        // 工具函数
+        // 宸ュ叿鍑芥暟
+        function showPage(pageName, targetElement = null) {
+            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
+            document.getElementById(pageName + 'Page').classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+
+            if (targetElement) {
+                targetElement.classList.add('active');
+            } else {
+                document.querySelectorAll('.nav-item').forEach(button => {
+                    if (button.onclick && button.onclick.toString().includes(`'${pageName}'`)) {
+                        button.classList.add('active');
+                    }
+                });
+            }
+
+            const titles = {
+                accounts: '閭璐︽埛绠＄悊',
+                addAccount: '娣诲姞閭璐︽埛',
+                batchAdd: '鎵归噺娣诲姞璐︽埛',
+                apiDocs: 'API 鎺ュ彛鏂囨。',
+                emails: '閭欢鍒楄〃'
+            };
+            document.getElementById('pageTitle').textContent = titles[pageName] || '';
+
+            if (pageName === 'accounts') {
+                loadAccounts();
+            } else if (pageName === 'addAccount') {
+                clearAddAccountForm();
+            } else if (pageName === 'batchAdd') {
+                clearBatchForm();
+                hideBatchProgress();
+            } else if (pageName === 'apiDocs') {
+                initApiDocs();
+            } else if (pageName === 'emails') {
+                loadEmails();
+            }
+        }
+
         function formatEmailDate(dateString) {
             try {
-                if (!dateString) return '未知时间';
+                if (!dateString) return '鏈煡鏃堕棿';
 
                 let date = new Date(dateString);
 
@@ -2090,7 +2989,7 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                         date = new Date(dateString + 'Z');
                     }
                     if (isNaN(date.getTime())) {
-                        return '日期格式错误';
+                        return '鏃ユ湡鏍煎紡閿欒';
                     }
                 }
 
@@ -2101,9 +3000,9 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                 if (diffDays === 0) {
                     return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
                 } else if (diffDays === 1) {
-                    return '昨天 ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                    return '鏄ㄥぉ ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
                 } else if (diffDays < 7) {
-                    return `${diffDays}天前`;
+                    return `${diffDays}澶╁墠`;
                 } else if (diffDays < 365) {
                     return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
                 } else {
@@ -2111,28 +3010,28 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                 }
             } catch (error) {
                 console.error('Date formatting error:', error);
-                return '时间解析失败';
+                return '鏃堕棿瑙ｆ瀽澶辫触';
             }
         }
 
-        // 新的通知系统
+        // 鏂扮殑閫氱煡绯荤粺
         function showNotification(message, type = 'info', title = '', duration = 5000) {
             const container = document.getElementById('notificationContainer');
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
 
-            const icons = {
-                success: '✅',
-                error: '❌',
-                warning: '⚠️',
-                info: 'ℹ️'
+                        const icons = {
+                success: icon('success'),
+                error: icon('error'),
+                warning: icon('warning'),
+                info: icon('info')
             };
 
             const titles = {
-                success: title || '成功',
-                error: title || '错误',
-                warning: title || '警告',
-                info: title || '提示'
+                success: title || '鎴愬姛',
+                error: title || '閿欒',
+                warning: title || '璀﹀憡',
+                info: title || '鎻愮ず'
             };
 
             notification.innerHTML = `
@@ -2141,12 +3040,49 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                     <div class="notification-title">${titles[type]}</div>
                     <div class="notification-message">${message}</div>
                 </div>
-                <button class="notification-close" onclick="closeNotification(this)">×</button>
+                <button class="notification-close" onclick="closeNotification(this)">脳</button>
             `;
 
             container.appendChild(notification);
 
-            // 自动关闭
+            // 鑷姩鍏抽棴
+            if (duration > 0) {
+                setTimeout(() => {
+                    closeNotification(notification.querySelector('.notification-close'));
+                }, duration);
+            }
+        }
+
+        function showNotification(message, type = 'info', title = '', duration = 5000) {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+
+            const icons = {
+                success: icon('success'),
+                error: icon('error'),
+                warning: icon('warning'),
+                info: icon('info')
+            };
+
+            const titles = {
+                success: title || '鎴愬姛',
+                error: title || '閿欒',
+                warning: title || '璀﹀憡',
+                info: title || '鎻愮ず'
+            };
+
+            notification.innerHTML = `
+                <div class="notification-icon">${icons[type] || icons.info}</div>
+                <div class="notification-content">
+                    <div class="notification-title">${titles[type] || titles.info}</div>
+                    <div class="notification-message">${message}</div>
+                </div>
+                <button class="notification-close" onclick="closeNotification(this)">脳</button>
+            `;
+
+            container.appendChild(notification);
+
             if (duration > 0) {
                 setTimeout(() => {
                     closeNotification(notification.querySelector('.notification-close'));
@@ -2160,7 +3096,7 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
             setTimeout(() => notification.remove(), 300);
         }
 
-        // 兼容旧的消息提示函数
+        // 鍏煎鏃х殑娑堟伅鎻愮ず鍑芥暟
         function showError(msg) {
             showNotification(msg, 'error');
         }
@@ -2177,7 +3113,7 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
             showNotification(msg, 'info');
         }
 
-        // API请求
+        // API璇锋眰
         async function apiRequest(url, options = {}) {
             try {
                 const response = await fetch(API_BASE + url, {
@@ -2194,12 +3130,12 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
 
                 return await response.json();
             } catch (error) {
-                console.error('API请求失败:', error);
+                console.error('API璇锋眰澶辫触:', error);
                 throw error;
             }
         }
 
-        // 表单管理函数
+        // 琛ㄥ崟绠＄悊鍑芥暟
         function clearAddAccountForm() {
             document.getElementById('email').value = '';
             document.getElementById('refreshToken').value = '';
@@ -2215,13 +3151,13 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
 example2@outlook.com----password2----refresh_token_here_2----client_id_here_2
 example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
             document.getElementById('batchAccounts').value = sampleData;
-            showNotification('示例数据已加载，请替换为真实数据', 'info');
+            showNotification('绀轰緥鏁版嵁宸插姞杞斤紝璇锋浛鎹负鐪熷疄鏁版嵁', 'info');
         }
 
         function validateBatchFormat() {
             const batchText = document.getElementById('batchAccounts').value.trim();
             if (!batchText) {
-                showNotification('请先输入账户信息', 'warning');
+                showNotification('璇峰厛杈撳叆璐︽埛淇℃伅', 'warning');
                 return;
             }
 
@@ -2239,9 +3175,9 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
             });
 
             if (invalidLines.length === 0) {
-                showNotification(`格式验证通过！共 ${validCount} 个有效账户`, 'success');
+                showNotification('格式验证通过', 'success');
             } else {
-                showNotification(`发现 ${invalidLines.length} 行格式错误：第 ${invalidLines.join(', ')} 行`, 'error');
+                showNotification('发现格式错误，请检查输入内容', 'error');
             }
         }
 
@@ -2251,29 +3187,28 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
             const clientId = document.getElementById('clientId').value.trim();
 
             if (!email || !refreshToken || !clientId) {
-                showNotification('请填写所有必需字段', 'warning');
+                showNotification('璇峰～鍐欐墍鏈夊繀闇€瀛楁', 'warning');
                 return;
             }
 
             const testBtn = document.getElementById('testBtn');
             testBtn.disabled = true;
-            testBtn.innerHTML = '<span>⏳</span> 测试中...';
+            testBtn.innerHTML = buttonLabel('loading', '娴嬭瘯涓?..', 'spinning');
 
             try {
-                // 这里可以调用一个测试接口
-                await new Promise(resolve => setTimeout(resolve, 2000)); // 模拟测试
-                showNotification('连接测试成功！账户配置正确', 'success');
+            await new Promise(resolve => setTimeout(resolve, 2000)); // 妯℃嫙娴嬭瘯
+                showNotification('连接测试成功，账户配置正确', 'success');
             } catch (error) {
                 showNotification('连接测试失败：' + error.message, 'error');
             } finally {
                 testBtn.disabled = false;
-                testBtn.innerHTML = '<span>🔍</span> 测试连接';
+                testBtn.innerHTML = buttonLabel('search', '娴嬭瘯杩炴帴');
             }
         }
 
         async function loadAccounts(page = 1, resetSearch = false) {
             if (resetSearch) {
-                // 重置搜索条件
+                // 閲嶇疆鎼滅储鏉′欢
                 currentEmailSearch = '';
                 currentTagSearch = '';
                 document.getElementById('emailSearch').value = '';
@@ -2287,12 +3222,12 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
             const accountsStats = document.getElementById('accountsStats');
             const accountsPagination = document.getElementById('accountsPagination');
             
-            accountsList.innerHTML = '<div class="loading">正在加载账户列表...</div>';
+            accountsList.innerHTML = '<div class="loading">姝ｅ湪鍔犺浇璐︽埛鍒楄〃...</div>';
             accountsStats.style.display = 'none';
             accountsPagination.style.display = 'none';
 
             try {
-                // 构建请求参数
+                // 鏋勫缓璇锋眰鍙傛暟
                 const params = new URLSearchParams({
                     page: accountsCurrentPage,
                     page_size: accountsPageSize
@@ -2306,22 +3241,22 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
                     params.append('tag_search', currentTagSearch);
                 }
                 
-                const data = await apiRequest(`/accounts?${params.toString()}`);
+                const data = await apiRequest('/accounts?' + params.toString());
                 
                 accounts = data.accounts || [];
                 accountsTotalCount = data.total_accounts || 0;
                 accountsTotalPages = data.total_pages || 0;
                 
-                // 更新统计信息
+                // 鏇存柊缁熻淇℃伅
                 updateAccountsStats();
                 
                 if (accounts.length === 0) {
-                    accountsList.innerHTML = '<div class="text-center" style="padding: 40px; color: #64748b;">暂无符合条件的账户</div>';
+                    accountsList.innerHTML = '<div class="text-center" style="padding: 40px; color: #64748b;">鏆傛棤绗﹀悎鏉′欢鐨勮处鎴?/div>';
                     return;
                 }
 
                 accountsList.innerHTML = accounts.map(account => {
-                    // 生成标签HTML
+                    // 鐢熸垚鏍囩HTML
                     const tagsHtml = account.tags && account.tags.length > 0 
                         ? `<div class="account-tags">${account.tags.map(tag => 
                             `<span class="account-tag">${tag}</span>`).join('')}</div>` 
@@ -2333,33 +3268,34 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
                                 <div class="account-avatar">${account.email_id.charAt(0).toUpperCase()}</div>
                                 <div class="account-details">
                                     <h4>${account.email_id}</h4>
-                                    <p>状态: ${account.status === 'active' ? '正常' : '异常'}</p>
+                                    <p>鐘舵€? ${account.status === 'active' ? '姝ｅ父' : '寮傚父'}</p>
                                     ${tagsHtml}
                                 </div>
                             </div>
                             <div class="account-actions" onclick="event.stopPropagation()">
                                 <button class="btn btn-primary btn-sm" onclick="viewAccountEmails('${account.email_id}')">
-                                    <span>📧</span>
-                                    查看邮件
+                                    <span>馃摟</span>
+                                    鏌ョ湅閭欢
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="editAccountTags('${account.email_id}', ${JSON.stringify(account.tags || [])})">
-                                    <span>🏷️</span>
-                                    管理标签
+                                    <span>馃彿锔?/span>
+                                    绠＄悊鏍囩
                                 </button>
                                 <button class="btn btn-danger btn-sm" onclick="deleteAccount('${account.email_id}')">
-                                    <span>🗑️</span>
-                                    删除
+                                    <span>馃棏锔?/span>
+                                    鍒犻櫎
                                 </button>
                             </div>
                         </div>
                     `;
                 }).join('');
+                decorateAccountList(accountsList);
                 
-                // 更新分页控件
+                // 鏇存柊鍒嗛〉鎺т欢
                 updateAccountsPagination();
 
             } catch (error) {
-                accountsList.innerHTML = '<div class="error">加载失败: ' + error.message + '</div>';
+                accountsList.innerHTML = '<div class="error">鍔犺浇澶辫触: ' + error.message + '</div>';
             }
         }
 
@@ -2369,7 +3305,7 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
             const clientId = document.getElementById('clientId').value.trim();
             const tagsInput = document.getElementById('accountTags').value.trim();
             
-            // 处理标签
+            // 澶勭悊鏍囩
             const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
 
             if (!email || !refreshToken || !clientId) {
@@ -2379,7 +3315,7 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
 
             const addBtn = document.getElementById('addAccountBtn');
             addBtn.disabled = true;
-            addBtn.innerHTML = '<span>⏳</span> 添加中...';
+            addBtn.innerHTML = buttonLabel('loading', '娣诲姞涓?..', 'spinning');
 
             try {
                 const response = await apiRequest('/accounts', {
@@ -2392,15 +3328,15 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
                     })
                 });
 
-                showSuccess('账户添加成功');
+                showSuccess('璐︽埛娣诲姞鎴愬姛');
                 clearAddAccountForm();
                 showPage('accounts');
                 loadAccounts();
             } catch (error) {
-                showNotification('添加账户失败: ' + error.message, 'error');
+                showNotification('娣诲姞璐︽埛澶辫触: ' + error.message, 'error');
             } finally {
                 addBtn.disabled = false;
-                addBtn.innerHTML = '<span>➕</span> 添加账户';
+                addBtn.innerHTML = buttonLabel('plus', '娣诲姞璐︽埛');
             }
         }
 
@@ -2417,11 +3353,11 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
                 return;
             }
 
-            // 显示进度
+            // 鏄剧ず杩涘害
             showBatchProgress();
             const batchBtn = document.getElementById('batchAddBtn');
             batchBtn.disabled = true;
-            batchBtn.innerHTML = '<span>⏳</span> 添加中...';
+            batchBtn.innerHTML = buttonLabel('loading', '娣诲姞涓?..', 'spinning');
 
             let successCount = 0;
             let failCount = 0;
@@ -2431,15 +3367,15 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
                 const line = lines[i];
                 const parts = line.split('----').map(p => p.trim());
 
-                // 更新进度
-                updateBatchProgress(i + 1, lines.length, `处理第 ${i + 1} 个账户...`);
+                // 鏇存柊杩涘害
+                updateBatchProgress(i + 1, lines.length, `澶勭悊绗?${i + 1} 涓处鎴?..`);
 
                 if (parts.length !== 4) {
                     failCount++;
                     results.push({
-                        email: parts[0] || '格式错误',
+                        email: parts[0] || '鏍煎紡閿欒',
                         status: 'error',
-                        message: '格式错误：应为 邮箱----密码----刷新令牌----客户端ID'
+                        message: '鏍煎紡閿欒锛氬簲涓?閭----瀵嗙爜----鍒锋柊浠ょ墝----瀹㈡埛绔疘D'
                     });
                     continue;
                 }
@@ -2459,7 +3395,7 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
                     results.push({
                         email: email,
                         status: 'success',
-                        message: '添加成功'
+                        message: '娣诲姞鎴愬姛'
                     });
                 } catch (error) {
                     failCount++;
@@ -2470,18 +3406,17 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
                     });
                 }
 
-                // 添加小延迟避免请求过快
-                await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
             }
 
-            // 完成进度
-            updateBatchProgress(lines.length, lines.length, '批量添加完成！');
+            // 瀹屾垚杩涘害
+            updateBatchProgress(lines.length, lines.length, '批量添加完成');
 
-            // 显示结果
+            // 鏄剧ず缁撴灉
             showBatchResults(results);
 
             if (successCount > 0) {
-                showNotification(`批量添加完成！成功 ${successCount} 个，失败 ${failCount} 个`, 'success');
+                showNotification('批量添加完成', 'success');
                 if (failCount === 0) {
                     setTimeout(() => {
                         clearBatchForm();
@@ -2493,7 +3428,7 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
             }
 
             batchBtn.disabled = false;
-            batchBtn.innerHTML = '<span>📦</span> 开始批量添加';
+            batchBtn.innerHTML = buttonLabel('batch', '开始批量添加');
         }
 
         function showBatchProgress() {
@@ -2522,21 +3457,21 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
 
             if (successResults.length > 0) {
                 html += `<div style="margin-bottom: 16px;">
-                    <h5 style="color: #16a34a; margin-bottom: 8px;">✅ 成功添加 (${successResults.length})</h5>
+                    <h5 style="color: #16a34a; margin-bottom: 8px;">鉁?鎴愬姛娣诲姞 (${successResults.length})</h5>
                     <div style="background: #f0fdf4; padding: 12px; border-radius: 6px; border: 1px solid #bbf7d0;">`;
                 successResults.forEach(result => {
-                    html += `<div style="font-size: 0.875rem; color: #15803d; margin-bottom: 4px;">• ${result.email}</div>`;
+                    html += `<div style="font-size: 0.875rem; color: #15803d; margin-bottom: 4px;">鈥?${result.email}</div>`;
                 });
                 html += `</div></div>`;
             }
 
             if (errorResults.length > 0) {
                 html += `<div>
-                    <h5 style="color: #dc2626; margin-bottom: 8px;">❌ 添加失败 (${errorResults.length})</h5>
+                    <h5 style="color: #dc2626; margin-bottom: 8px;">鉂?娣诲姞澶辫触 (${errorResults.length})</h5>
                     <div style="background: #fef2f2; padding: 12px; border-radius: 6px; border: 1px solid #fecaca;">`;
                 errorResults.forEach(result => {
                     html += `<div style="font-size: 0.875rem; color: #dc2626; margin-bottom: 8px;">
-                        <strong>• ${result.email}</strong><br>
+                        <strong>鈥?${result.email}</strong><br>
                         <span style="color: #991b1b; font-size: 0.75rem;">&nbsp;&nbsp;${result.message}</span>
                     </div>`;
                 });
@@ -2547,9 +3482,9 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
             document.getElementById('batchResults').classList.remove('hidden');
         }
 
-        // API文档相关函数
+        // API鏂囨。鐩稿叧鍑芥暟
         function initApiDocs() {
-            // 更新Base URL
+            // 鏇存柊Base URL
             const baseUrl = window.location.origin;
             document.getElementById('baseUrlExample').textContent = baseUrl;
         }
@@ -2557,27 +3492,27 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
         function copyApiBaseUrl() {
             const baseUrl = window.location.origin;
             navigator.clipboard.writeText(baseUrl).then(() => {
-                showNotification('Base URL已复制到剪贴板', 'success');
+                showNotification('Base URL 已复制到剪贴板', 'success');
             }).catch(() => {
-                showNotification('复制失败，请手动复制', 'error');
+                showNotification('澶嶅埗澶辫触锛岃鎵嬪姩澶嶅埗', 'error');
             });
         }
 
         function copyEmailAddress(emailAddress) {
-            // 清理邮箱地址（去除可能的空格和特殊字符）
+            // 娓呯悊閭鍦板潃锛堝幓闄ゅ彲鑳界殑绌烘牸鍜岀壒娈婂瓧绗︼級
             const cleanEmail = emailAddress.trim();
 
             if (!cleanEmail) {
-                showNotification('邮箱地址为空', 'error');
+                showNotification('閭鍦板潃涓虹┖', 'error');
                 return;
             }
 
-            // 复制到剪贴板
+            // 澶嶅埗鍒板壀璐存澘
             navigator.clipboard.writeText(cleanEmail).then(() => {
-                // 显示成功通知
-                showNotification(`邮箱地址已复制: ${cleanEmail}`, 'success');
+                // 鏄剧ず鎴愬姛閫氱煡
+                showNotification('邮箱地址已复制到剪贴板', 'success');
 
-                // 添加视觉反馈
+                // 娣诲姞瑙嗚鍙嶉
                 const emailElement = document.getElementById('currentAccountEmail');
                 if (emailElement) {
                     emailElement.classList.add('copy-success');
@@ -2586,10 +3521,9 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
                     }, 300);
                 }
             }).catch((error) => {
-                console.error('复制失败:', error);
+                console.error('澶嶅埗澶辫触:', error);
 
-                // 降级方案：尝试使用旧的复制方法
-                try {
+            try {
                     const textArea = document.createElement('textarea');
                     textArea.value = cleanEmail;
                     textArea.style.position = 'fixed';
@@ -2599,12 +3533,12 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
                     document.execCommand('copy');
                     document.body.removeChild(textArea);
 
-                    showNotification(`邮箱地址已复制: ${cleanEmail}`, 'success');
+                    showNotification('邮箱地址已复制到剪贴板', 'success');
                 } catch (fallbackError) {
-                    console.error('降级复制方案也失败:', fallbackError);
-                    showNotification('复制失败，请手动复制邮箱地址', 'error');
+                    console.error('闄嶇骇澶嶅埗鏂规涔熷け璐?', fallbackError);
+                    showNotification('澶嶅埗澶辫触锛岃鎵嬪姩澶嶅埗閭鍦板潃', 'error');
 
-                    // 选中文本以便用户手动复制
+                    // 閫変腑鏂囨湰浠ヤ究鐢ㄦ埛鎵嬪姩澶嶅埗
                     const emailElement = document.getElementById('currentAccountEmail');
                     if (emailElement && window.getSelection) {
                         const selection = window.getSelection();
@@ -2628,29 +3562,29 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            showNotification('API文档已下载', 'success');
+            showNotification('API 文档已下载', 'success');
         }
 
         function generateApiDocsMarkdown() {
             const baseUrl = window.location.origin;
-            return `# Outlook邮件管理系统 API文档
+            return `# Outlook閭欢绠＄悊绯荤粺 API鏂囨。
 
-## 基础信息
+## 鍩虹淇℃伅
 
 - **Base URL**: ${baseUrl}
-- **认证方式**: 无需认证
-- **响应格式**: JSON
+- **璁よ瘉鏂瑰紡**: 鏃犻渶璁よ瘉
+- **鍝嶅簲鏍煎紡**: JSON
 
-## 接口列表
+## 鎺ュ彛鍒楄〃
 
-### 1. 获取邮箱列表
+### 1. 鑾峰彇閭鍒楄〃
 
-**请求**
+**璇锋眰**
 \`\`\`
 GET /accounts
 \`\`\`
 
-**响应示例**
+**鍝嶅簲绀轰緥**
 \`\`\`json
 {
   "accounts": [
@@ -2664,21 +3598,20 @@ GET /accounts
 }
 \`\`\`
 
-### 2. 获取邮件列表
+### 2. 鑾峰彇閭欢鍒楄〃
 
-**请求**
+**璇锋眰**
 \`\`\`
 GET /emails/{email_id}?folder=inbox&page=1&page_size=20&refresh=false
 \`\`\`
 
-**参数说明**
-- \`email_id\`: 邮箱地址（URL编码）
-- \`folder\`: 文件夹 (all, inbox, junk)
-- \`page\`: 页码
-- \`page_size\`: 每页数量
-- \`refresh\`: 是否强制刷新
+**鍙傛暟璇存槑**
+- \`email_id\`: 閭鍦板潃锛圲RL缂栫爜锛?- \`folder\`: 鏂囦欢澶?(all, inbox, junk)
+- \`page\`: 椤电爜
+- \`page_size\`: 姣忛〉鏁伴噺
+- \`refresh\`: 鏄惁寮哄埗鍒锋柊
 
-**响应示例**
+**鍝嶅簲绀轰緥**
 \`\`\`json
 {
   "email_id": "example@outlook.com",
@@ -2690,32 +3623,31 @@ GET /emails/{email_id}?folder=inbox&page=1&page_size=20&refresh=false
 }
 \`\`\`
 
-### 3. 获取邮件详情
+### 3. 鑾峰彇閭欢璇︽儏
 
-**请求**
+**璇锋眰**
 \`\`\`
 GET /emails/{email_id}/{message_id}
 \`\`\`
 
-**参数说明**
-- \`email_id\`: 邮箱地址（URL编码）
-- \`message_id\`: 邮件ID
+**鍙傛暟璇存槑**
+- \`email_id\`: 閭鍦板潃锛圲RL缂栫爜锛?- \`message_id\`: 閭欢ID
 
-**响应示例**
+**鍝嶅簲绀轰緥**
 \`\`\`json
 {
   "message_id": "INBOX-1",
-  "subject": "邮件主题",
+  "subject": "閭欢涓婚",
   "from_email": "sender@example.com",
   "to_email": "example@outlook.com",
   "date": "2024-01-01T12:00:00Z",
-  "body_plain": "纯文本内容",
-  "body_html": "HTML内容"
+  "body_plain": "绾枃鏈唴瀹?,
+  "body_html": "HTML鍐呭"
 }
 \`\`\`
 
 ---
-生成时间: ${new Date().toLocaleString()}
+鐢熸垚鏃堕棿: ${new Date().toLocaleString()}
 `;
         }
 
@@ -2729,29 +3661,28 @@ GET /emails/{email_id}/{message_id}
                     responseElementId = 'accountsResponse';
                     break;
                 case 'emails':
-                    // 需要先获取一个邮箱账户
-                    try {
+            try {
                         const accountsData = await apiRequest('/accounts');
                         if (accountsData.accounts && accountsData.accounts.length > 0) {
                             const emailId = encodeURIComponent(accountsData.accounts[0].email_id);
                             url = `${baseUrl}/emails/${emailId}?folder=inbox&page=1&page_size=5`;
                             responseElementId = 'emailsResponse';
                         } else {
-                            showNotification('没有可用的邮箱账户，请先添加账户', 'warning');
+                            showNotification('娌℃湁鍙敤鐨勯偖绠辫处鎴凤紝璇峰厛娣诲姞璐︽埛', 'warning');
                             return;
                         }
                     } catch (error) {
-                        showNotification('获取邮箱账户失败: ' + error.message, 'error');
+                        showNotification('鑾峰彇閭璐︽埛澶辫触: ' + error.message, 'error');
                         return;
                     }
                     break;
                 case 'emailDetail':
-                    // 需要先获取一个邮件ID
+                    // 闇€瑕佸厛鑾峰彇涓€涓偖浠禝D
                     try {
                         const accountsData = await apiRequest('/accounts');
                         if (accountsData.accounts && accountsData.accounts.length > 0) {
                             const emailId = encodeURIComponent(accountsData.accounts[0].email_id);
-                            const emailsData = await apiRequest(`/emails/${emailId}?folder=all&page=1&page_size=1`);
+                            const emailsData = await apiRequest('/emails/' + emailId + '?folder=all&page=1&page_size=1');
                             if (emailsData.emails && emailsData.emails.length > 0) {
                                 const messageId = emailsData.emails[0].message_id;
                                 url = `${baseUrl}/emails/${emailId}/${messageId}`;
@@ -2761,11 +3692,11 @@ GET /emails/{email_id}/{message_id}
                                 return;
                             }
                         } else {
-                            showNotification('没有可用的邮箱账户，请先添加账户', 'warning');
+                            showNotification('娌℃湁鍙敤鐨勯偖绠辫处鎴凤紝璇峰厛娣诲姞璐︽埛', 'warning');
                             return;
                         }
                     } catch (error) {
-                        showNotification('获取邮件数据失败: ' + error.message, 'error');
+                        showNotification('鑾峰彇閭欢鏁版嵁澶辫触: ' + error.message, 'error');
                         return;
                     }
                     break;
@@ -2774,36 +3705,35 @@ GET /emails/{email_id}/{message_id}
             }
 
             try {
-                showNotification('正在调用API...', 'info', '', 2000);
+                showNotification('姝ｅ湪璋冪敤API...', 'info', '', 2000);
                 const response = await fetch(url);
                 const data = await response.json();
 
-                // 显示响应结果
+                // 鏄剧ず鍝嶅簲缁撴灉
                 const responseElement = document.getElementById(responseElementId);
                 const responseDataElement = document.getElementById(responseElementId.replace('Response', 'ResponseData'));
 
                 responseDataElement.textContent = JSON.stringify(data, null, 2);
                 responseElement.classList.add('show');
 
-                showNotification('API调用成功！', 'success');
+                showNotification('API 调用成功', 'success');
 
             } catch (error) {
-                showNotification('API调用失败: ' + error.message, 'error');
+                showNotification('API璋冪敤澶辫触: ' + error.message, 'error');
             }
         }
 
-        // 全局变量
-        let allEmails = []; // 存储所有邮件数据
-        let filteredEmails = []; // 存储过滤后的邮件数据
+        // 鍏ㄥ眬鍙橀噺
+        let allEmails = [];
+        let filteredEmails = [];
         let searchTimeout = null;
 
-        // 邮件管理
+        // 閭欢绠＄悊
         function viewAccountEmails(emailId) {
             currentAccount = emailId;
             document.getElementById('currentAccountEmail').textContent = emailId;
             document.getElementById('emailsNav').style.display = 'block';
 
-            // 重置过滤器
             clearFilters();
 
             showPage('emails');
@@ -2819,14 +3749,12 @@ GET /emails/{email_id}/{message_id}
             currentEmailFolder = folder;
             currentEmailPage = 1;
 
-            // 更新标签状态
             document.querySelectorAll('#emailsPage .tab').forEach(t => t.classList.remove('active'));
 
             if (targetElement) {
                 targetElement.classList.add('active');
             } else {
-                // 根据folder名称查找对应的标签按钮
-                document.querySelectorAll('#emailsPage .tab').forEach(t => {
+            document.querySelectorAll('#emailsPage .tab').forEach(t => {
                     if (t.onclick && t.onclick.toString().includes(`'${folder}'`)) {
                         t.classList.add('active');
                     }
@@ -2842,39 +3770,38 @@ GET /emails/{email_id}/{message_id}
             const emailsList = document.getElementById('emailsList');
             const refreshBtn = document.getElementById('refreshBtn');
 
-            // 显示加载状态
-            emailsList.innerHTML = '<div class="loading"><div class="loading-spinner"></div>正在加载邮件...</div>';
+            // Show loading state
+            emailsList.innerHTML = '<div class="loading"><div class="loading-spinner"></div>姝ｅ湪鍔犺浇閭欢...</div>';
             refreshBtn.disabled = true;
-            refreshBtn.innerHTML = '<span>⏳</span> 加载中...';
+            refreshBtn.innerHTML = buttonLabel('loading', '鍔犺浇涓?..', 'spinning');
 
             try {
                 const refreshParam = forceRefresh ? '&refresh=true' : '';
                 const url = `/emails/${currentAccount}?folder=${currentEmailFolder}&page=${currentEmailPage}&page_size=100${refreshParam}`;
                 const data = await apiRequest(url);
 
-                // 存储所有邮件数据
+                // Store full email dataset
                 allEmails = data.emails || [];
 
-                // 更新统计信息
+                // 鏇存柊缁熻淇℃伅
                 updateEmailStats(allEmails);
 
-                // 应用当前过滤器
+                // Apply active filters
                 applyFilters();
 
-                // 更新最后更新时间
-                document.getElementById('lastUpdateTime').textContent = new Date().toLocaleString();
+            document.getElementById('lastUpdateTime').textContent = new Date().toLocaleString();
 
                 if (forceRefresh) {
                     showNotification('邮件列表已刷新', 'success');
                 }
 
             } catch (error) {
-                emailsList.innerHTML = '<div class="error">❌ 加载失败: ' + error.message + '</div>';
-                showNotification('加载邮件失败: ' + error.message, 'error');
+                emailsList.innerHTML = '<div class="error">鉂?鍔犺浇澶辫触: ' + error.message + '</div>';
+                showNotification('鍔犺浇閭欢澶辫触: ' + error.message, 'error');
             } finally {
-                // 恢复刷新按钮状态
+                // Restore refresh button state
                 refreshBtn.disabled = false;
-                refreshBtn.innerHTML = '<span>🔄</span> 刷新';
+                refreshBtn.innerHTML = buttonLabel('refresh', '鍒锋柊');
             }
         }
 
@@ -2894,12 +3821,11 @@ GET /emails/{email_id}/{message_id}
             document.getElementById('attachmentEmailCount').textContent = withAttachments;
         }
 
-        // 搜索和过滤功能
         function searchEmails() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 applyFilters();
-            }, 300); // 防抖，300ms后执行搜索
+            }, 300);
         }
 
         function applyFilters() {
@@ -2910,7 +3836,7 @@ GET /emails/{email_id}/{message_id}
             const attachmentFilter = document.getElementById('attachmentFilter').value;
 
             filteredEmails = allEmails.filter(email => {
-                // 搜索过滤
+                // 鎼滅储杩囨护
                 if (searchTerm) {
                     const searchableText = `${email.subject || ''} ${email.from_email || ''}`.toLowerCase();
                     if (!searchableText.includes(searchTerm)) {
@@ -2918,16 +3844,14 @@ GET /emails/{email_id}/{message_id}
                     }
                 }
 
-                // 文件夹过滤
-                if (folderFilter !== 'all' && email.folder.toLowerCase() !== folderFilter) {
+            if (folderFilter !== 'all' && email.folder.toLowerCase() !== folderFilter) {
                     return false;
                 }
 
-                // 状态过滤
-                if (statusFilter === 'read' && !email.is_read) return false;
+            if (statusFilter === 'read' && !email.is_read) return false;
                 if (statusFilter === 'unread' && email.is_read) return false;
 
-                // 时间过滤
+                // 鏃堕棿杩囨护
                 if (timeFilter !== 'all') {
                     const emailDate = new Date(email.date);
                     const now = new Date();
@@ -2947,7 +3871,7 @@ GET /emails/{email_id}/{message_id}
                     }
                 }
 
-                // 附件过滤
+                // 闄勪欢杩囨护
                 if (attachmentFilter === 'with' && !email.has_attachments) return false;
                 if (attachmentFilter === 'without' && email.has_attachments) return false;
 
@@ -2961,11 +3885,12 @@ GET /emails/{email_id}/{message_id}
             const emailsList = document.getElementById('emailsList');
 
             if (filteredEmails.length === 0) {
-                emailsList.innerHTML = '<div class="text-center" style="padding: 40px; color: #64748b;">没有找到匹配的邮件</div>';
+                emailsList.innerHTML = '<div class="text-center" style="padding: 40px; color: #64748b;">娌℃湁鎵惧埌鍖归厤鐨勯偖浠?/div>';
                 return;
             }
 
             emailsList.innerHTML = filteredEmails.map(email => createEmailItem(email)).join('');
+            decorateEmailList(emailsList);
         }
 
         function clearFilters() {
@@ -2981,19 +3906,19 @@ GET /emails/{email_id}/{message_id}
 
         function createEmailItem(email) {
             const unreadClass = email.is_read ? '' : 'unread';
-            const attachmentIcon = email.has_attachments ? '<span style="color: #8b5cf6;">📎</span>' : '';
-            const readIcon = email.is_read ? '📖' : '📧';
+            const attachmentIcon = email.has_attachments ? '<span style="color: #8b5cf6;">馃搸</span>' : '';
+            const readIcon = email.is_read ? '馃摉' : '馃摟';
 
             return `
                 <div class="email-item ${unreadClass}" onclick="showEmailDetail('${email.message_id}')">
                     <div class="email-avatar">${email.sender_initial}</div>
                     <div class="email-content">
                         <div class="email-header">
-                            <div class="email-subject">${email.subject || '(无主题)'}</div>
+                            <div class="email-subject">${email.subject || '(鏃犱富棰?'}</div>
                             <div class="email-date">${formatEmailDate(email.date)}</div>
                         </div>
                         <div class="email-from">${readIcon} ${email.from_email} ${attachmentIcon}</div>
-                        <div class="email-preview">文件夹: ${email.folder} | 点击查看详情</div>
+                        <div class="email-preview">鏂囦欢澶? ${email.folder} | 鐐瑰嚮鏌ョ湅璇︽儏</div>
                     </div>
                 </div>
             `;
@@ -3001,25 +3926,25 @@ GET /emails/{email_id}/{message_id}
 
         async function showEmailDetail(messageId) {
             document.getElementById('emailModal').classList.remove('hidden');
-            document.getElementById('emailModalTitle').textContent = '邮件详情';
-            document.getElementById('emailModalContent').innerHTML = '<div class="loading">正在加载邮件详情...</div>';
+            document.getElementById('emailModalTitle').textContent = '閭欢璇︽儏';
+            document.getElementById('emailModalContent').innerHTML = '<div class="loading">姝ｅ湪鍔犺浇閭欢璇︽儏...</div>';
 
             try {
-                const data = await apiRequest(`/emails/${currentAccount}/${messageId}`);
+                const data = await apiRequest('/emails/' + currentAccount + '/' + messageId);
 
-                document.getElementById('emailModalTitle').textContent = data.subject || '(无主题)';
+                document.getElementById('emailModalTitle').textContent = data.subject || '(鏃犱富棰?';
                 document.getElementById('emailModalContent').innerHTML = `
                     <div class="email-detail-meta">
-                        <p><strong>发件人:</strong> ${data.from_email}</p>
-                        <p><strong>收件人:</strong> ${data.to_email}</p>
-                        <p><strong>日期:</strong> ${formatEmailDate(data.date)} (${new Date(data.date).toLocaleString()})</p>
-                        <p><strong>邮件ID:</strong> ${data.message_id}</p>
+                        <p><strong>鍙戜欢浜?</strong> ${data.from_email}</p>
+                        <p><strong>鏀朵欢浜?</strong> ${data.to_email}</p>
+                        <p><strong>鏃ユ湡:</strong> ${formatEmailDate(data.date)} (${new Date(data.date).toLocaleString()})</p>
+                        <p><strong>閭欢ID:</strong> ${data.message_id}</p>
                     </div>
                     ${renderEmailContent(data)}
                 `;
 
             } catch (error) {
-                document.getElementById('emailModalContent').innerHTML = '<div class="error">加载失败: ' + error.message + '</div>';
+                document.getElementById('emailModalContent').innerHTML = '<div class="error">鍔犺浇澶辫触: ' + error.message + '</div>';
             }
         }
 
@@ -3028,7 +3953,7 @@ GET /emails/{email_id}/{message_id}
             const hasPlain = email.body_plain && email.body_plain.trim();
 
             if (!hasHtml && !hasPlain) {
-                return '<p style="color: #9ca3af; font-style: italic;">此邮件无内容</p>';
+                return '<p style="color: #9ca3af; font-style: italic;">姝ら偖浠舵棤鍐呭</p>';
             }
 
             if (hasHtml) {
@@ -3036,9 +3961,9 @@ GET /emails/{email_id}/{message_id}
 
                 return `
                     <div class="email-content-tabs">
-                        <button class="content-tab active" onclick="showEmailContentTab('html', this)">HTML视图</button>
-                        ${hasPlain ? '<button class="content-tab" onclick="showEmailContentTab(\'plain\', this)">纯文本</button>' : ''}
-                        <button class="content-tab" onclick="showEmailContentTab('raw', this)">源码</button>
+                        <button class="content-tab active" onclick="showEmailContentTab('html', this)">HTML瑙嗗浘</button>
+                        ${hasPlain ? '<button class="content-tab" onclick="showEmailContentTab(\'plain\', this)">绾枃鏈?/button>' : ''}
+                        <button class="content-tab" onclick="showEmailContentTab('raw', this)">婧愮爜</button>
                     </div>
 
                     <div class="email-content-body">
@@ -3055,26 +3980,23 @@ GET /emails/{email_id}/{message_id}
         }
 
         function showEmailContentTab(type, targetElement = null) {
-            // 更新标签状态
             document.querySelectorAll('.content-tab').forEach(tab => tab.classList.remove('active'));
 
             if (targetElement) {
                 targetElement.classList.add('active');
             } else {
-                // 根据type查找对应的标签按钮
-                document.querySelectorAll('.content-tab').forEach(tab => {
+            document.querySelectorAll('.content-tab').forEach(tab => {
                     if (tab.onclick && tab.onclick.toString().includes(`'${type}'`)) {
                         tab.classList.add('active');
                     }
                 });
             }
 
-            // 隐藏所有内容
             document.querySelectorAll('#htmlContent, #plainContent, #rawContent').forEach(content => {
                 content.classList.add('hidden');
             });
 
-            // 显示对应内容
+            // 鏄剧ず瀵瑰簲鍐呭
             document.getElementById(type + 'Content').classList.remove('hidden');
         }
 
@@ -3083,18 +4005,18 @@ GET /emails/{email_id}/{message_id}
         }
 
         function refreshEmails() {
-            loadEmails(true); // 强制刷新
+            loadEmails(true); // 寮哄埗鍒锋柊
         }
 
         async function clearCache() {
             if (!currentAccount) return;
 
             try {
-                await apiRequest(`/cache/${currentAccount}`, { method: 'DELETE' });
+                await apiRequest('/cache/' + currentAccount, { method: 'DELETE' });
                 showNotification('缓存已清除', 'success');
                 loadEmails(true);
             } catch (error) {
-                showNotification('清除缓存失败: ' + error.message, 'error');
+                showNotification('娓呴櫎缂撳瓨澶辫触: ' + error.message, 'error');
             }
         }
 
@@ -3105,8 +4027,8 @@ GET /emails/{email_id}/{message_id}
             }
 
             const csvContent = generateEmailCSV(filteredEmails);
-            downloadCSV(csvContent, `emails_${currentAccount}_${new Date().toISOString().split('T')[0]}.csv`);
-            showNotification(`已导出 ${filteredEmails.length} 封邮件`, 'success');
+            downloadCSV(csvContent, 'emails_' + currentAccount + '_' + new Date().toISOString().split('T')[0] + '.csv');
+            showNotification('邮件已导出', 'success');
         }
 
         function generateEmailCSV(emails) {
@@ -3146,9 +4068,26 @@ GET /emails/{email_id}/{message_id}
 
             pagination.classList.remove('hidden');
             pagination.innerHTML = `
-                <button class="btn btn-secondary btn-sm" onclick="changeEmailPage(${currentEmailPage - 1})" ${currentEmailPage === 1 ? 'disabled' : ''}>‹ 上一页</button>
+                <button class="btn btn-secondary btn-sm" onclick="changeEmailPage(${currentEmailPage - 1})" ${currentEmailPage === 1 ? 'disabled' : ''}>鈥?涓婁竴椤?/button>
                 <span style="padding: 0 16px; color: #64748b;">${currentEmailPage} / ${totalPages}</span>
-                <button class="btn btn-secondary btn-sm" onclick="changeEmailPage(${currentEmailPage + 1})" ${currentEmailPage === totalPages ? 'disabled' : ''}>下一页 ›</button>
+                <button class="btn btn-secondary btn-sm" onclick="changeEmailPage(${currentEmailPage + 1})" ${currentEmailPage === totalPages ? 'disabled' : ''}>涓嬩竴椤?鈥?/button>
+            `;
+        }
+
+        function updateEmailsPagination(totalEmails, pageSize) {
+            const pagination = document.getElementById('emailsPagination');
+            const totalPages = Math.ceil(totalEmails / pageSize);
+
+            if (totalPages <= 1) {
+                pagination.classList.add('hidden');
+                return;
+            }
+
+            pagination.classList.remove('hidden');
+            pagination.innerHTML = `
+                <button class="btn btn-secondary btn-sm" onclick="changeEmailPage(${currentEmailPage - 1})" ${currentEmailPage === 1 ? 'disabled' : ''}>${icon('arrow-left')} 涓婁竴椤?/button>
+                <span style="padding: 0 16px; color: #64748b;">${currentEmailPage} / ${totalPages}</span>
+                <button class="btn btn-secondary btn-sm" onclick="changeEmailPage(${currentEmailPage + 1})" ${currentEmailPage === totalPages ? 'disabled' : ''}>涓嬩竴椤?${icon('arrow-right')}</button>
             `;
         }
 
@@ -3157,78 +4096,77 @@ GET /emails/{email_id}/{message_id}
             loadEmails();
         }
 
-        // 打开标签管理模态框
+        // 鎵撳紑鏍囩绠＄悊妯℃€佹
         function editAccountTags(emailId, tags) {
             currentEditAccount = emailId;
             currentEditTags = Array.isArray(tags) ? [...tags] : [];
             
-            // 更新模态框标题
+            // 鏇存柊妯℃€佹鏍囬
             document.querySelector('#tagsModal .modal-header h3').textContent = `管理 ${emailId} 的标签`;
             
-            // 显示当前标签
+            // 鏄剧ず褰撳墠鏍囩
             renderCurrentTags();
             
-            // 显示模态框
+            // 鏄剧ず妯℃€佹
             document.getElementById('tagsModal').style.display = 'flex';
         }
 
-        // 渲染当前标签列表
+        // 娓叉煋褰撳墠鏍囩鍒楄〃
         function renderCurrentTags() {
             const tagsList = document.getElementById('currentTagsList');
             
             if (currentEditTags.length === 0) {
-                tagsList.innerHTML = '<p class="text-muted">暂无标签</p>';
+                tagsList.innerHTML = '<p class="text-muted">鏆傛棤鏍囩</p>';
                 return;
             }
             
             tagsList.innerHTML = currentEditTags.map(tag => `
                 <div class="tag-item">
                     <span class="tag-name">${tag}</span>
-                    <button class="tag-delete" onclick="removeTag('${tag}')">×</button>
+                    <button class="tag-delete" onclick="removeTag('${tag}')">脳</button>
                 </div>
             `).join('');
         }
 
-        // 添加新标签
         function addTag() {
             const newTagInput = document.getElementById('newTag');
             const newTag = newTagInput.value.trim();
             
             if (!newTag) {
-                showNotification('标签名称不能为空', 'warning');
+                showNotification('鏍囩鍚嶇О涓嶈兘涓虹┖', 'warning');
                 return;
             }
             
-            // 检查标签是否已存在
+            // 妫€鏌ユ爣绛炬槸鍚﹀凡瀛樺湪
             if (currentEditTags.includes(newTag)) {
                 showNotification('标签已存在', 'warning');
                 return;
             }
             
-            // 添加新标签
+            // Add tag
             currentEditTags.push(newTag);
             
-            // 清空输入框
+            // Clear input
             newTagInput.value = '';
             
-            // 重新渲染标签列表
+            // 閲嶆柊娓叉煋鏍囩鍒楄〃
             renderCurrentTags();
         }
 
-        // 删除标签
+        // 鍒犻櫎鏍囩
         function removeTag(tag) {
             currentEditTags = currentEditTags.filter(t => t !== tag);
             renderCurrentTags();
         }
 
-        // 关闭标签管理模态框
+        // 鍏抽棴鏍囩绠＄悊妯℃€佹
         function closeTagsModal() {
             document.getElementById('tagsModal').style.display = 'none';
             currentEditAccount = null;
             currentEditTags = [];
         }
 
-        // 保存账户标签
+        // 淇濆瓨璐︽埛鏍囩
         async function saveAccountTags() {
             if (!currentEditAccount) {
                 closeTagsModal();
@@ -3236,22 +4174,21 @@ GET /emails/{email_id}/{message_id}
             }
             
             try {
-                const response = await apiRequest(`/accounts/${currentEditAccount}/tags`, {
+                const response = await apiRequest('/accounts/' + currentEditAccount + '/tags', {
                     method: 'PUT',
                     body: JSON.stringify({ tags: currentEditTags })
                 });
                 
-                showSuccess('标签更新成功');
+                showSuccess('鏍囩鏇存柊鎴愬姛');
                 closeTagsModal();
                 
-                // 重新加载账户列表
+                // 閲嶆柊鍔犺浇璐︽埛鍒楄〃
                 loadAccounts();
             } catch (error) {
-                showError('更新标签失败: ' + error.message);
+                showError('鏇存柊鏍囩澶辫触: ' + error.message);
             }
         }
 
-        // 新增的账户管理辅助函数
         function updateAccountsStats() {
             const accountsStats = document.getElementById('accountsStats');
             document.getElementById('totalAccounts').textContent = accountsTotalCount;
@@ -3273,11 +4210,11 @@ GET /emails/{email_id}/{message_id}
             
             accountsPagination.style.display = 'flex';
             
-            // 更新上一页/下一页按钮
+            // Update previous/next buttons
             prevBtn.disabled = accountsCurrentPage <= 1;
             nextBtn.disabled = accountsCurrentPage >= accountsTotalPages;
             
-            // 生成页码
+            // 鐢熸垚椤电爜
             pageNumbers.innerHTML = generatePageNumbers();
         }
         
@@ -3292,26 +4229,24 @@ GET /emails/{email_id}/{message_id}
             
             let html = '';
             
-            // 第一页
             if (startPage > 1) {
-                html += `<span class="page-number" onclick="changePage(1)">1</span>`;
+                html += '<span class="page-number" onclick="changePage(1)">1</span>';
                 if (startPage > 2) {
-                    html += `<span class="page-number disabled">...</span>`;
+                    html += '<span class="page-number disabled">...</span>';
                 }
             }
             
-            // 中间页码
+            // 涓棿椤电爜
             for (let i = startPage; i <= endPage; i++) {
                 const activeClass = i === accountsCurrentPage ? 'active' : '';
-                html += `<span class="page-number ${activeClass}" onclick="changePage(${i})">${i}</span>`;
+                html += '<span class="page-number ' + activeClass + '" onclick="changePage(' + i + ')">' + i + '</span>';
             }
             
-            // 最后一页
             if (endPage < accountsTotalPages) {
                 if (endPage < accountsTotalPages - 1) {
-                    html += `<span class="page-number disabled">...</span>`;
+                    html += '<span class="page-number disabled">...</span>';
                 }
-                html += `<span class="page-number" onclick="changePage(${accountsTotalPages})">${accountsTotalPages}</span>`;
+                html += '<span class="page-number" onclick="changePage(' + accountsTotalPages + ')">' + accountsTotalPages + '</span>';
             }
             
             return html;
@@ -3335,7 +4270,7 @@ GET /emails/{email_id}/{message_id}
         function searchAccounts() {
             currentEmailSearch = document.getElementById('emailSearch').value.trim();
             currentTagSearch = document.getElementById('tagSearch').value.trim();
-            loadAccounts(1); // 搜索时重置到第一页
+            loadAccounts(1);
         }
         
         function clearSearch() {
@@ -3353,23 +4288,23 @@ GET /emails/{email_id}/{message_id}
         }
         
         async function deleteAccount(emailId) {
-            if (!confirm(`确定要删除账户 ${emailId} 吗？`)) {
+            if (!confirm('确定要删除账户 ' + emailId + ' 吗？')) {
                 return;
             }
 
             try {
-                await apiRequest(`/accounts/${emailId}`, { method: 'DELETE' });
-                showSuccess('账户删除成功');
-                loadAccounts(accountsCurrentPage); // 保持当前页码
+                await apiRequest('/accounts/' + emailId, { method: 'DELETE' });
+                showSuccess('璐︽埛鍒犻櫎鎴愬姛');
+                loadAccounts(accountsCurrentPage); // 淇濇寔褰撳墠椤电爜
             } catch (error) {
-                showError('删除账户失败: ' + error.message);
+                showError('鍒犻櫎璐︽埛澶辫触: ' + error.message);
             }
         }
         
-        // 右键菜单相关变量
+        // 鍙抽敭鑿滃崟鐩稿叧鍙橀噺
         let contextMenuTarget = null;
         
-        // 显示右键菜单
+        // 鏄剧ず鍙抽敭鑿滃崟
         function showAccountContextMenu(event, emailId) {
             event.preventDefault();
             event.stopPropagation();
@@ -3377,18 +4312,18 @@ GET /emails/{email_id}/{message_id}
             contextMenuTarget = emailId;
             const contextMenu = document.getElementById('contextMenu');
             
-            // 设置菜单位置
+            // 璁剧疆鑿滃崟浣嶇疆
             contextMenu.style.left = event.pageX + 'px';
             contextMenu.style.top = event.pageY + 'px';
             contextMenu.style.display = 'block';
             
-            // 点击其他地方隐藏菜单
+            // 鐐瑰嚮鍏朵粬鍦版柟闅愯棌鑿滃崟
             setTimeout(() => {
                 document.addEventListener('click', hideContextMenu);
             }, 10);
         }
         
-        // 隐藏右键菜单
+        // 闅愯棌鍙抽敭鑿滃崟
         function hideContextMenu() {
             const contextMenu = document.getElementById('contextMenu');
             contextMenu.style.display = 'none';
@@ -3396,19 +4331,19 @@ GET /emails/{email_id}/{message_id}
             document.removeEventListener('click', hideContextMenu);
         }
         
-        // 在新标签页中打开
+        // 鍦ㄦ柊鏍囩椤典腑鎵撳紑
         function openInNewTab() {
             if (contextMenuTarget) {
-                const url = `${window.location.origin}/#/emails/${encodeURIComponent(contextMenuTarget)}`;
+                const url = window.location.origin + '/#/emails/' + encodeURIComponent(contextMenuTarget);
                 window.open(url, '_blank');
             }
             hideContextMenu();
         }
         
-        // 复制账户链接
+        // 澶嶅埗璐︽埛閾炬帴
         function copyAccountLink() {
             if (contextMenuTarget) {
-                const url = `${window.location.origin}/#/emails/${encodeURIComponent(contextMenuTarget)}`;
+                const url = window.location.origin + '/#/emails/' + encodeURIComponent(contextMenuTarget);
                 
                 if (navigator.clipboard) {
                     navigator.clipboard.writeText(url).then(() => {
@@ -3423,7 +4358,7 @@ GET /emails/{email_id}/{message_id}
             hideContextMenu();
         }
         
-        // 后备复制方法
+        // 鍚庡澶嶅埗鏂规硶
         function fallbackCopyText(text) {
             const textArea = document.createElement('textarea');
             textArea.value = text;
@@ -3433,12 +4368,11 @@ GET /emails/{email_id}/{message_id}
                 document.execCommand('copy');
                 showNotification('链接已复制到剪贴板', 'success');
             } catch (err) {
-                showNotification('复制失败，请手动复制', 'error');
+                showNotification('澶嶅埗澶辫触锛岃鎵嬪姩澶嶅埗', 'error');
             }
             document.body.removeChild(textArea);
         }
         
-        // 从右键菜单编辑标签
         function contextEditTags() {
             if (contextMenuTarget) {
                 const account = accounts.find(acc => acc.email_id === contextMenuTarget);
@@ -3449,7 +4383,6 @@ GET /emails/{email_id}/{message_id}
             hideContextMenu();
         }
         
-        // 从右键菜单删除账户
         function contextDeleteAccount() {
             if (contextMenuTarget) {
                 deleteAccount(contextMenuTarget);
@@ -3457,7 +4390,7 @@ GET /emails/{email_id}/{message_id}
             hideContextMenu();
         }
         
-        // 邮件列表右键菜单
+        // 閭欢鍒楄〃鍙抽敭鑿滃崟
         function showEmailsContextMenu(event) {
             if (!currentAccount) {
                 return;
@@ -3466,91 +4399,86 @@ GET /emails/{email_id}/{message_id}
             event.preventDefault();
             event.stopPropagation();
             
-            const url = `${window.location.origin}/#/emails/${encodeURIComponent(currentAccount)}`;
+            const url = window.location.origin + '/#/emails/' + encodeURIComponent(currentAccount);
             window.open(url, '_blank');
         }
 
-        // 点击模态框外部关闭
+        // 鐐瑰嚮妯℃€佹澶栭儴鍏抽棴
         document.getElementById('emailModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeEmailModal();
             }
         });
 
-        // 键盘快捷键
-        document.addEventListener('keydown', function(e) {
-            // Ctrl/Cmd + R: 刷新邮件
+            document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + R: 鍒锋柊閭欢
             if ((e.ctrlKey || e.metaKey) && e.key === 'r' && currentAccount) {
                 e.preventDefault();
                 refreshEmails();
             }
 
-            // Escape: 关闭模态框
+            // Escape: 鍏抽棴妯℃€佹
             if (e.key === 'Escape') {
                 closeEmailModal();
             }
 
-            // Ctrl/Cmd + F: 聚焦搜索框
             if ((e.ctrlKey || e.metaKey) && e.key === 'f' && document.getElementById('emailSearch')) {
                 e.preventDefault();
                 document.getElementById('emailSearch').focus();
             }
         });
 
-        // 页面可见性变化时刷新数据
+        // 椤甸潰鍙鎬у彉鍖栨椂鍒锋柊鏁版嵁
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden && currentAccount) {
-                // 页面重新可见时，如果超过5分钟则自动刷新
-                const lastUpdate = document.getElementById('lastUpdateTime').textContent;
+            const lastUpdate = document.getElementById('lastUpdateTime').textContent;
                 if (lastUpdate !== '-') {
                     const lastUpdateTime = new Date(lastUpdate);
                     const now = new Date();
                     const diffMinutes = (now - lastUpdateTime) / (1000 * 60);
 
                     if (diffMinutes > 5) {
-                        showNotification('检测到数据可能过期，正在刷新...', 'info', '', 2000);
+                        showNotification('妫€娴嬪埌鏁版嵁鍙兘杩囨湡锛屾鍦ㄥ埛鏂?..', 'info', '', 2000);
                         setTimeout(() => refreshEmails(), 1000);
                     }
                 }
             }
         });
 
-        // 初始化
         window.addEventListener('load', function() {
-            // 处理URL路由
+            decorateStaticUi();
+            // 澶勭悊URL璺敱
             handleUrlRouting();
             
-            // 如果没有路由匹配，显示默认页面
             if (!window.location.hash || window.location.hash === '#') {
                 showPage('accounts');
             }
 
-            // 显示欢迎消息
+            // 鏄剧ず娆㈣繋娑堟伅
             setTimeout(() => {
-                showNotification('欢迎使用邮件管理系统！', 'info', '欢迎', 3000);
+                showNotification('欢迎使用邮件管理系统', 'info', '欢迎', 3000);
             }, 500);
         });
         
-        // URL路由处理
+        // URL璺敱澶勭悊
         function handleUrlRouting() {
             const hash = window.location.hash;
             
             if (hash.startsWith('#/emails/')) {
                 const emailId = decodeURIComponent(hash.replace('#/emails/', ''));
                 if (emailId) {
-                    // 设置当前账户
+                    // 璁剧疆褰撳墠璐︽埛
                     currentAccount = emailId;
                     document.getElementById('currentAccountEmail').textContent = emailId;
                     document.getElementById('emailsNav').style.display = 'block';
                     
-                    // 显示邮件页面
+                    // 鏄剧ず閭欢椤甸潰
                     showPage('emails');
                     return;
                 }
             }
         }
         
-        // 监听浏览器返回按钮
         window.addEventListener('popstate', function() {
             handleUrlRouting();
         });
@@ -3558,6 +4486,8 @@ GET /emails/{email_id}/{message_id}
     </script>
 </body>
 </html>
-    </script>
-</body>
-</html>
+
+
+
+
+
