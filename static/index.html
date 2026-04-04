@@ -1487,15 +1487,17 @@
 
         .nav-item {
             border-radius: 18px;
-            padding: 14px 16px;
+            width: 100%;
+            min-height: 58px;
+            padding: 0;
             color: rgba(226, 232, 240, 0.84);
             font-weight: 600;
-            gap: 14px;
             position: relative;
             overflow: hidden;
             display: flex;
             align-items: center;
-            text-align: left;
+            justify-content: center;
+            text-align: center;
             transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease, padding 0.18s ease;
         }
 
@@ -1525,10 +1527,6 @@
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 16px 28px rgba(37, 99, 235, 0.3);
         }
 
-        .nav-item-text {
-            white-space: nowrap;
-        }
-
         .sidebar-footer {
             position: relative;
             display: flex;
@@ -1536,11 +1534,19 @@
             gap: 12px;
             padding: 16px 14px 18px;
             border-top: 1px solid rgba(255, 255, 255, 0.08);
+            margin-top: auto;
+        }
+
+        .sidebar-footer-divider {
+            height: 1px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.12);
+            margin: 2px 0;
         }
 
         .sidebar-utility,
         .sidebar-toggle {
-            min-height: 44px;
+            min-height: 46px;
             border-radius: 18px;
             display: flex;
             align-items: center;
@@ -1585,11 +1591,10 @@
         }
 
         .sidebar-toggle {
-            width: 44px;
+            width: 100%;
             justify-content: center;
-            flex-shrink: 0;
             padding: 0;
-            margin-top: 12px;
+            margin-top: 0;
         }
 
         .sidebar.is-collapsed {
@@ -1620,7 +1625,6 @@
         }
 
         .sidebar.is-collapsed .sidebar-title-stack,
-        .sidebar.is-collapsed .nav-item-text,
         .sidebar.is-collapsed .sidebar-utility-label {
             opacity: 0;
             width: 0;
@@ -2188,6 +2192,9 @@
             background: rgba(255, 255, 255, 0.08);
             color: inherit;
             position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .nav-item.active .icon {
@@ -2290,8 +2297,11 @@
                 padding: 14px;
             }
 
+            .sidebar-footer-divider {
+                display: none;
+            }
+
             .sidebar.is-collapsed .sidebar-title-stack,
-            .sidebar.is-collapsed .nav-item-text,
             .sidebar.is-collapsed .sidebar-utility-label {
                 opacity: 1;
                 width: auto;
@@ -2393,6 +2403,37 @@
             align-items: center;
             gap: 14px;
             margin-bottom: 28px;
+        }
+
+        .auth-brand-logo {
+            width: 58px;
+            height: 58px;
+            border-radius: 18px;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            box-shadow: 0 18px 34px rgba(37, 99, 235, 0.16);
+        }
+
+        .auth-brand-logo-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 8px;
+            display: block;
+        }
+
+        .auth-brand-logo.is-placeholder .auth-brand-logo-image {
+            display: none;
+        }
+
+        .auth-brand-logo:not(.is-placeholder) .auth-brand-mark {
+            display: none;
         }
 
         .auth-brand-mark {
@@ -2532,6 +2573,14 @@
             margin-top: 4px;
         }
 
+        .auth-actions.auth-setup-password-actions {
+            justify-content: space-between;
+        }
+
+        #authSetupSubmit {
+            margin-left: auto;
+        }
+
         .auth-muted {
             color: #64748b;
             font-size: 0.9rem;
@@ -2618,6 +2667,17 @@
 
         .auth-actions.full-width .btn {
             min-width: 180px;
+        }
+
+        #authAgreementContinue:disabled,
+        .btn:disabled {
+            background: #cbd5e1 !important;
+            color: #64748b !important;
+            border-color: rgba(148, 163, 184, 0.28) !important;
+            box-shadow: none !important;
+            cursor: not-allowed;
+            transform: none !important;
+            opacity: 1;
         }
 
         .auth-form .form-input {
@@ -2784,7 +2844,10 @@
             <section class="auth-panel">
                 <div class="auth-panel-header">
                     <div class="auth-brand">
-                        <span class="auth-brand-mark">OM</span>
+                        <div class="auth-brand-logo is-placeholder" id="authBrandLogoWrap">
+                            <img id="authBrandLogo" class="auth-brand-logo-image" src="/static/assets/logo.png" alt="OutlookManager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
+                            <span class="auth-brand-mark">OM</span>
+                        </div>
                         <div class="auth-brand-copy">
                             <h1>OutlookManager</h1>
                             <p>Outlook 账户、邮件与接口后台</p>
@@ -2822,7 +2885,7 @@
                             <input type="password" id="authSetupPassword" class="form-input" placeholder="设置管理员密码，至少 8 位" autocomplete="new-password">
                             <input type="password" id="authSetupPasswordConfirm" class="form-input" placeholder="再次输入管理员密码" autocomplete="new-password">
                             <div id="authSetupError" class="auth-error"></div>
-                            <div class="auth-actions">
+                            <div class="auth-actions auth-setup-password-actions">
                                 <button type="button" class="btn btn-secondary" onclick="backToAgreementStep()">返回协议</button>
                                 <button type="submit" id="authSetupSubmit" class="btn btn-primary">完成初始化</button>
                             </div>
@@ -2860,38 +2923,34 @@
                             <p>Outlook账户与邮件后台</p>
                         </div>
                     </div>
-                    <button id="sidebarToggle" class="sidebar-toggle" type="button" onclick="toggleSidebar()" data-tooltip="收起侧栏" aria-label="收起侧栏">
-                        <span></span>
-                    </button>
                 </div>
             </div>
             <nav class="sidebar-nav">
                 <button class="nav-item active" onclick="showPage('accounts', this)">
                     <span class="icon">馃懃</span>
-                    邮箱账户
                 </button>
                 <button class="nav-item" onclick="showPage('addAccount', this)">
                     <span class="icon"></span>
-                    添加账户
                 </button>
                 <button class="nav-item" onclick="showPage('batchAdd', this)">
                     <span class="icon">馃摝</span>
-                    批量添加
                 </button>
                 <button class="nav-item" onclick="showPage('apiKeys', this)">
                     <span class="icon">馃攽</span>
-                    API 密钥
                 </button>
                 <button class="nav-item" onclick="showPage('apiDocs', this)">
                     <span class="icon">馃摉</span>
-                    API 文档
                 </button>
                 <button class="nav-item" onclick="showPage('emails', this)" oncontextmenu="showEmailsContextMenu(event)" id="emailsNav" style="display: none;">
                     <span class="icon">馃摟</span>
-                    邮件列表
                 </button>
             </nav>
             <div class="sidebar-footer">
+                <button id="sidebarToggle" class="sidebar-toggle" type="button" onclick="toggleSidebar()" data-tooltip="收起侧栏" aria-label="收起侧栏">
+                    <span></span>
+                    <span class="sidebar-utility-label">展开 / 收起</span>
+                </button>
+                <div class="sidebar-footer-divider"></div>
                 <button id="logoutBtn" class="sidebar-utility sidebar-logout" type="button" onclick="logout()" data-tooltip="退出登录" aria-label="退出登录">
                     <span></span>
                     <span class="sidebar-utility-label">退出登录</span>
@@ -3994,8 +4053,12 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                 const label = navLabels[index];
                 if (!label) return;
                 button.dataset.tooltip = label;
-                const iconMarkup = button.querySelector('.icon')?.outerHTML || '<span class="icon"></span>';
-                button.innerHTML = `${iconMarkup}<span class="nav-item-text">${label}</span>`;
+                button.setAttribute('aria-label', label);
+                button.setAttribute('title', label);
+                const textNode = button.querySelector('.nav-item-text');
+                if (textNode) {
+                    textNode.remove();
+                }
             });
 
             setButtonIcon(document.getElementById('sidebarToggle'), 'arrow-left');
