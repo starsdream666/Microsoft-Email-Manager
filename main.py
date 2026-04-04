@@ -27,6 +27,7 @@ from itertools import groupby
 from pathlib import Path
 from queue import Empty, Queue
 from typing import Any, AsyncGenerator, List, Optional
+from urllib.parse import quote
 
 import httpx
 from email.header import decode_header
@@ -50,11 +51,18 @@ ACCOUNTS_FILE = Path(os.getenv("ACCOUNTS_FILE", str(DATA_DIR / "accounts.json"))
 AUTH_FILE = Path(os.getenv("AUTH_FILE", str(DATA_DIR / "auth.json")))
 SESSIONS_FILE = Path(os.getenv("SESSIONS_FILE", str(DATA_DIR / "sessions.json")))
 API_KEYS_FILE = Path(os.getenv("API_KEYS_FILE", str(DATA_DIR / "api_keys.json")))
+PUBLIC_SHARES_FILE = Path(os.getenv("PUBLIC_SHARES_FILE", str(DATA_DIR / "public_shares.json")))
+OPEN_ACCESS_SESSIONS_FILE = Path(os.getenv("OPEN_ACCESS_SESSIONS_FILE", str(DATA_DIR / "open_access_sessions.json")))
+ACCOUNT_HEALTH_FILE = Path(os.getenv("ACCOUNT_HEALTH_FILE", str(DATA_DIR / "account_health.json")))
 STATIC_DIR = BASE_DIR / "static"
 SESSION_COOKIE = "outlookmanager_session"
 SESSION_TTL_HOURS = max(1, int(os.getenv("SESSION_TTL_HOURS", "24")))
 API_KEY_PREFIX = "om_"
 API_KEY_USAGE_LOG_LIMIT = 500
+OPEN_ACCESS_SESSION_TTL_HOURS = max(1, int(os.getenv("OPEN_ACCESS_SESSION_TTL_HOURS", "12")))
+OPEN_ACCESS_FAILURE_LIMIT = max(1, int(os.getenv("OPEN_ACCESS_FAILURE_LIMIT", "5")))
+OPEN_ACCESS_FAILURE_WINDOW_MINUTES = max(1, int(os.getenv("OPEN_ACCESS_FAILURE_WINDOW_MINUTES", "15")))
+OPEN_ACCESS_LOCKOUT_MINUTES = max(1, int(os.getenv("OPEN_ACCESS_LOCKOUT_MINUTES", "15")))
 
 # OAuth2配置
 TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
@@ -173,6 +181,9 @@ class AccountInfo(BaseModel):
     client_id: str
     status: str = "active"
     tags: List[str] = []
+    health_score: int = 0
+    health_summary: str = "未检查"
+    health_checked_at: Optional[str] = None
 
 
 class AccountListResponse(BaseModel):
@@ -202,6 +213,18 @@ class ApiKeyCreatePayload(BaseModel):
     expires_at: Optional[datetime] = None
     request_mode: str = Field(default="unlimited")
     max_requests: Optional[int] = Field(default=None, ge=1)
+
+
+class PublicShareConfigPayload(BaseModel):
+    enabled: bool = Field(default=False)
+    expires_mode: str = Field(default="never")
+    expires_at: Optional[datetime] = None
+    access_password: Optional[str] = Field(default=None, max_length=256)
+    clear_password: bool = Field(default=False)
+
+
+class PublicShareAccessPayload(BaseModel):
+    password: str = Field(min_length=1, max_length=256)
 
 # ============================================================================
 # IMAP连接池管理
@@ -683,23 +706,22 @@ async def get_all_accounts(
 
         with open(ACCOUNTS_FILE, 'r', encoding='utf-8') as f:
             accounts_data = json.load(f)
+        health_data = load_account_health_data().get("accounts", {})
 
         all_accounts = []
         for email_id, account_info in accounts_data.items():
-            # 验证账户状态（可选：检查token是否有效）
-            status = "active"
-            try:
-                # 简单验证：检查必要字段是否存在
-                if not account_info.get('refresh_token') or not account_info.get('client_id'):
-                    status = "invalid"
-            except Exception:
-                status = "error"
+            health_record = health_data.get(email_id, {})
+            if not isinstance(health_record, dict):
+                health_record = build_account_health_record("unchecked", 0, "未检查")
 
             account = AccountInfo(
                 email_id=email_id,
                 client_id=account_info.get('client_id', ''),
-                status=status,
-                tags=account_info.get('tags', [])
+                status=str(health_record.get("status") or "unchecked"),
+                tags=account_info.get('tags', []),
+                health_score=max(0, min(int(health_record.get("score", 0) or 0), 100)),
+                health_summary=str(health_record.get("summary") or "未检查"),
+                health_checked_at=health_record.get("checked_at"),
             )
             all_accounts.append(account)
 
@@ -831,6 +853,52 @@ def save_api_keys_data(data: dict[str, Any]) -> None:
         )
 
 
+def load_account_health_data() -> dict[str, Any]:
+    with auth_lock:
+        data = _read_json_file(ACCOUNT_HEALTH_FILE, {"accounts": {}})
+        accounts = data.get("accounts")
+        return {"accounts": accounts if isinstance(accounts, dict) else {}}
+
+
+def save_account_health_data(data: dict[str, Any]) -> None:
+    with auth_lock:
+        _write_json_file(ACCOUNT_HEALTH_FILE, {"accounts": data.get("accounts", {})})
+
+
+def load_public_shares_data() -> dict[str, Any]:
+    with auth_lock:
+        data = _read_json_file(PUBLIC_SHARES_FILE, {"shares": {}})
+        shares = data.get("shares")
+        return {"shares": shares if isinstance(shares, dict) else {}}
+
+
+def save_public_shares_data(data: dict[str, Any]) -> None:
+    with auth_lock:
+        _write_json_file(PUBLIC_SHARES_FILE, {"shares": data.get("shares", {})})
+
+
+def load_open_access_data() -> dict[str, Any]:
+    with auth_lock:
+        data = _read_json_file(OPEN_ACCESS_SESSIONS_FILE, {"sessions": {}, "failed_attempts": {}})
+        sessions = data.get("sessions")
+        failed_attempts = data.get("failed_attempts")
+        return {
+            "sessions": sessions if isinstance(sessions, dict) else {},
+            "failed_attempts": failed_attempts if isinstance(failed_attempts, dict) else {},
+        }
+
+
+def save_open_access_data(data: dict[str, Any]) -> None:
+    with auth_lock:
+        _write_json_file(
+            OPEN_ACCESS_SESSIONS_FILE,
+            {
+                "sessions": data.get("sessions", {}),
+                "failed_attempts": data.get("failed_attempts", {}),
+            },
+        )
+
+
 def hash_password(password: str, salt_hex: str | None = None) -> str:
     salt = bytes.fromhex(salt_hex) if salt_hex else secrets.token_bytes(16)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 200_000)
@@ -872,6 +940,248 @@ def get_request_ip(request: Request) -> str:
     if request.client and request.client.host:
         return request.client.host
     return ""
+
+
+def request_uses_https(request: Request | None) -> bool:
+    if request is None:
+        return False
+    forwarded_proto = request.headers.get("X-Forwarded-Proto", "")
+    if forwarded_proto:
+        return forwarded_proto.split(",")[0].strip().lower() == "https"
+    return request.url.scheme == "https"
+
+
+def build_public_share_url(request: Request, email_id: str) -> str:
+    base_url = str(request.base_url).rstrip("/")
+    return f"{base_url}/open/emails/{quote(email_id, safe='')}"
+
+
+def get_public_share_cookie_name(email_id: str) -> str:
+    email_hash = hashlib.sha256(email_id.lower().encode("utf-8")).hexdigest()[:16]
+    return f"om_open_{email_hash}"
+
+
+def build_public_share_record(email_id: str, meta: dict[str, Any], request: Request) -> dict[str, Any]:
+    now = datetime.utcnow()
+    expires_at = parse_stored_datetime(meta.get("expires_at"))
+    status = "disabled"
+    if bool(meta.get("enabled", False)):
+        status = "expired" if expires_at and expires_at <= now else "active"
+
+    return {
+        "email_id": email_id,
+        "enabled": bool(meta.get("enabled", False)),
+        "status": status,
+        "expires_mode": "fixed" if meta.get("expires_at") else "never",
+        "expires_at": meta.get("expires_at"),
+        "requires_password": bool(meta.get("password_hash")),
+        "password_updated_at": meta.get("password_updated_at"),
+        "updated_at": meta.get("updated_at"),
+        "public_url": build_public_share_url(request, email_id),
+    }
+
+
+def get_public_share_meta(email_id: str) -> dict[str, Any]:
+    data = load_public_shares_data()
+    meta = data.get("shares", {}).get(email_id, {})
+    return meta if isinstance(meta, dict) else {}
+
+
+def is_public_share_active(meta: dict[str, Any]) -> bool:
+    if not bool(meta.get("enabled", False)):
+        return False
+    expires_at = parse_stored_datetime(meta.get("expires_at"))
+    return not expires_at or expires_at > datetime.utcnow()
+
+
+def cleanup_expired_open_access() -> None:
+    data = load_open_access_data()
+    now = datetime.utcnow()
+    now_ts = time.time()
+    sessions = data.get("sessions", {})
+    failed_attempts = data.get("failed_attempts", {})
+
+    active_sessions = {
+        token_hash: meta
+        for token_hash, meta in sessions.items()
+        if isinstance(meta, dict) and float(meta.get("expires_at_ts", 0)) > now_ts
+    }
+
+    active_failures = {}
+    failure_window = timedelta(minutes=OPEN_ACCESS_FAILURE_WINDOW_MINUTES)
+    for key, meta in failed_attempts.items():
+        if not isinstance(meta, dict):
+            continue
+        blocked_until = parse_stored_datetime(meta.get("blocked_until"))
+        last_failed_at = parse_stored_datetime(meta.get("last_failed_at"))
+        if blocked_until and blocked_until > now:
+            active_failures[key] = meta
+            continue
+        if last_failed_at and last_failed_at >= now - failure_window:
+            active_failures[key] = meta
+
+    if active_sessions != sessions or active_failures != failed_attempts:
+        save_open_access_data({"sessions": active_sessions, "failed_attempts": active_failures})
+
+
+def revoke_open_access_sessions(email_id: str) -> None:
+    data = load_open_access_data()
+    sessions = {
+        token_hash: meta
+        for token_hash, meta in data.get("sessions", {}).items()
+        if not (isinstance(meta, dict) and meta.get("email_id") == email_id)
+    }
+    failed_attempts = {
+        key: meta
+        for key, meta in data.get("failed_attempts", {}).items()
+        if not (isinstance(meta, dict) and meta.get("email_id") == email_id)
+    }
+    save_open_access_data({"sessions": sessions, "failed_attempts": failed_attempts})
+
+
+def create_open_access_session(email_id: str, meta: dict[str, Any]) -> tuple[str, str]:
+    cleanup_expired_open_access()
+    now = datetime.utcnow()
+    expires_at = now + timedelta(hours=OPEN_ACCESS_SESSION_TTL_HOURS)
+    share_expires_at = parse_stored_datetime(meta.get("expires_at"))
+    if share_expires_at and share_expires_at < expires_at:
+        expires_at = share_expires_at
+
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+    data = load_open_access_data()
+    data.setdefault("sessions", {})[token_hash] = {
+        "email_id": email_id,
+        "created_at": now.isoformat(),
+        "expires_at": expires_at.isoformat(),
+        "expires_at_ts": expires_at.timestamp(),
+    }
+    save_open_access_data(data)
+    return raw_token, expires_at.isoformat()
+
+
+def get_open_access_attempt_key(email_id: str, request: Request) -> str:
+    ip = get_request_ip(request) or "unknown"
+    return hashlib.sha256(f"{email_id.lower()}|{ip}".encode("utf-8")).hexdigest()
+
+
+def clear_open_access_failures(email_id: str, request: Request) -> None:
+    data = load_open_access_data()
+    attempt_key = get_open_access_attempt_key(email_id, request)
+    if attempt_key in data.get("failed_attempts", {}):
+        del data["failed_attempts"][attempt_key]
+        save_open_access_data(data)
+
+
+def get_open_access_block_state(email_id: str, request: Request) -> dict[str, Any] | None:
+    cleanup_expired_open_access()
+    data = load_open_access_data()
+    attempt_key = get_open_access_attempt_key(email_id, request)
+    meta = data.get("failed_attempts", {}).get(attempt_key)
+    if not isinstance(meta, dict):
+        return None
+    blocked_until = parse_stored_datetime(meta.get("blocked_until"))
+    if blocked_until and blocked_until > datetime.utcnow():
+        return meta
+    return None
+
+
+def record_open_access_failure(email_id: str, request: Request) -> dict[str, Any]:
+    cleanup_expired_open_access()
+    now = datetime.utcnow()
+    data = load_open_access_data()
+    attempt_key = get_open_access_attempt_key(email_id, request)
+    attempts = data.setdefault("failed_attempts", {})
+    existing = attempts.get(attempt_key)
+    failure_window = timedelta(minutes=OPEN_ACCESS_FAILURE_WINDOW_MINUTES)
+
+    if not isinstance(existing, dict):
+        count = 0
+        first_failed_at = now
+    else:
+        first_failed_at = parse_stored_datetime(existing.get("first_failed_at")) or now
+        if first_failed_at < now - failure_window:
+            count = 0
+            first_failed_at = now
+        else:
+            count = int(existing.get("count", 0) or 0)
+
+    count += 1
+    blocked_until = now + timedelta(minutes=OPEN_ACCESS_LOCKOUT_MINUTES) if count >= OPEN_ACCESS_FAILURE_LIMIT else None
+    attempts[attempt_key] = {
+        "email_id": email_id,
+        "ip": get_request_ip(request),
+        "count": count,
+        "first_failed_at": first_failed_at.isoformat(),
+        "last_failed_at": now.isoformat(),
+        "blocked_until": blocked_until.isoformat() if blocked_until else None,
+    }
+    save_open_access_data(data)
+    return attempts[attempt_key]
+
+
+def get_open_access_session(request: Request, email_id: str) -> dict[str, Any] | None:
+    cleanup_expired_open_access()
+    raw_token = request.cookies.get(get_public_share_cookie_name(email_id))
+    if not raw_token:
+        return None
+
+    token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+    sessions = load_open_access_data().get("sessions", {})
+    meta = sessions.get(token_hash)
+    if not isinstance(meta, dict):
+        return None
+    if meta.get("email_id") != email_id:
+        return None
+    if float(meta.get("expires_at_ts", 0)) <= time.time():
+        return None
+    return meta
+
+
+def require_public_share_access(request: Request, email_id: str) -> dict[str, Any]:
+    meta = get_public_share_meta(email_id)
+    if not is_public_share_active(meta):
+        raise HTTPException(status_code=404, detail="Public page unavailable")
+    if meta.get("password_hash") and not get_open_access_session(request, email_id):
+        raise HTTPException(status_code=401, detail="Access password required")
+    return meta
+
+
+def build_account_health_record(status: str, score: int, summary: str, detail: str = "", checked_at: str | None = None) -> dict[str, Any]:
+    return {
+        "status": status,
+        "score": max(0, min(int(score), 100)),
+        "summary": summary,
+        "detail": detail,
+        "checked_at": checked_at or datetime.utcnow().isoformat(),
+    }
+
+
+def get_account_health_record(email_id: str) -> dict[str, Any]:
+    data = load_account_health_data()
+    record = data.get("accounts", {}).get(email_id, {})
+    if not isinstance(record, dict):
+        return build_account_health_record("unchecked", 0, "未检查")
+    return {
+        "status": str(record.get("status") or "unchecked"),
+        "score": max(0, min(int(record.get("score", 0) or 0), 100)),
+        "summary": str(record.get("summary") or "未检查"),
+        "detail": str(record.get("detail") or ""),
+        "checked_at": record.get("checked_at"),
+    }
+
+
+def save_account_health_record(email_id: str, record: dict[str, Any]) -> None:
+    data = load_account_health_data()
+    data.setdefault("accounts", {})[email_id] = record
+    save_account_health_data(data)
+
+
+def remove_account_health_record(email_id: str) -> None:
+    data = load_account_health_data()
+    if email_id in data.get("accounts", {}):
+        del data["accounts"][email_id]
+        save_account_health_data(data)
 
 
 def extract_api_key_from_request(request: Request) -> str | None:
@@ -1041,7 +1351,12 @@ def require_authenticated(request: Request, allow_api_key: bool = False) -> dict
     return {"auth_type": "session"}
 
 
-def make_session_response(payload: dict[str, Any], raw_token: str | None = None, expires_at: str | None = None) -> JSONResponse:
+def make_session_response(
+    payload: dict[str, Any],
+    raw_token: str | None = None,
+    expires_at: str | None = None,
+    request: Request | None = None,
+) -> JSONResponse:
     response = JSONResponse(payload)
     if raw_token and expires_at:
         max_age = SESSION_TTL_HOURS * 60 * 60
@@ -1052,7 +1367,7 @@ def make_session_response(payload: dict[str, Any], raw_token: str | None = None,
             expires=max_age,
             httponly=True,
             samesite="lax",
-            secure=False,
+            secure=request_uses_https(request),
             path="/",
         )
     return response
@@ -1111,6 +1426,105 @@ async def get_access_token(credentials: AccountCredentials) -> str:
     except Exception as e:
         logger.error(f"Unexpected error getting access token for {credentials.email}: {e}")
         raise HTTPException(status_code=500, detail="Token acquisition failed")
+
+
+async def evaluate_account_health(credentials: AccountCredentials) -> dict[str, Any]:
+    missing_fields = [
+        field_name
+        for field_name, field_value in {
+            "refresh_token": credentials.refresh_token,
+            "client_id": credentials.client_id,
+        }.items()
+        if not field_value
+    ]
+    if missing_fields:
+        return build_account_health_record(
+            "config_error",
+            0,
+            "账户配置不完整",
+            f"缺少字段: {', '.join(missing_fields)}",
+        )
+
+    try:
+        access_token = await get_access_token(credentials)
+    except HTTPException as exc:
+        return build_account_health_record(
+            "auth_error",
+            20,
+            "OAuth 刷新失败",
+            str(exc.detail),
+        )
+    except Exception as exc:
+        return build_account_health_record(
+            "auth_error",
+            20,
+            "OAuth 刷新失败",
+            str(exc),
+        )
+
+    def _probe_imap() -> dict[str, Any]:
+        connection = None
+        try:
+            connection = imap_pool.get_connection(credentials.email, access_token)
+            connection.noop()
+            return build_account_health_record(
+                "healthy",
+                100,
+                "OAuth 与 IMAP 均正常",
+            )
+        except Exception as exc:
+            logger.warning(f"IMAP health probe failed for {credentials.email}: {exc}")
+            return build_account_health_record(
+                "imap_error",
+                60,
+                "OAuth 正常，但 IMAP 连接失败",
+                str(exc),
+            )
+        finally:
+            if connection is not None:
+                try:
+                    imap_pool.return_connection(credentials.email, connection)
+                except Exception:
+                    try:
+                        connection.logout()
+                    except Exception:
+                        pass
+
+    return await asyncio.to_thread(_probe_imap)
+
+
+async def refresh_account_health(email_id: str) -> dict[str, Any]:
+    credentials = await get_account_credentials(email_id)
+    record = await evaluate_account_health(credentials)
+    save_account_health_record(email_id, record)
+    return record
+
+
+async def refresh_all_account_health() -> dict[str, Any]:
+    if not ACCOUNTS_FILE.exists():
+        return {"total": 0, "checked": 0, "results": {}}
+
+    with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
+        accounts_data = json.load(f)
+
+    results: dict[str, Any] = {}
+    for email_id in accounts_data.keys():
+        try:
+            results[email_id] = await refresh_account_health(email_id)
+        except HTTPException as exc:
+            record = build_account_health_record("error", 10, "健康检查失败", str(exc.detail))
+            save_account_health_record(email_id, record)
+            results[email_id] = record
+        except Exception as exc:
+            record = build_account_health_record("error", 10, "健康检查失败", str(exc))
+            save_account_health_record(email_id, record)
+            results[email_id] = record
+
+    return {
+        "total": len(accounts_data),
+        "checked": len(results),
+        "results": results,
+    }
 
 
 # ============================================================================
@@ -1409,7 +1823,20 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         raise RuntimeError(f"API keys path is a directory, expected a file: {API_KEYS_FILE}")
     if not API_KEYS_FILE.exists():
         _write_json_file(API_KEYS_FILE, {"keys": {}, "usage_logs": []})
+    if PUBLIC_SHARES_FILE.exists() and PUBLIC_SHARES_FILE.is_dir():
+        raise RuntimeError(f"Public shares path is a directory, expected a file: {PUBLIC_SHARES_FILE}")
+    if not PUBLIC_SHARES_FILE.exists():
+        _write_json_file(PUBLIC_SHARES_FILE, {"shares": {}})
+    if OPEN_ACCESS_SESSIONS_FILE.exists() and OPEN_ACCESS_SESSIONS_FILE.is_dir():
+        raise RuntimeError(f"Open access sessions path is a directory, expected a file: {OPEN_ACCESS_SESSIONS_FILE}")
+    if not OPEN_ACCESS_SESSIONS_FILE.exists():
+        _write_json_file(OPEN_ACCESS_SESSIONS_FILE, {"sessions": {}, "failed_attempts": {}})
+    if ACCOUNT_HEALTH_FILE.exists() and ACCOUNT_HEALTH_FILE.is_dir():
+        raise RuntimeError(f"Account health path is a directory, expected a file: {ACCOUNT_HEALTH_FILE}")
+    if not ACCOUNT_HEALTH_FILE.exists():
+        _write_json_file(ACCOUNT_HEALTH_FILE, {"accounts": {}})
     cleanup_expired_sessions()
+    cleanup_expired_open_access()
 
     yield
 
@@ -1456,7 +1883,7 @@ async def auth_state(request: Request):
 
 
 @app.post("/api/auth/setup")
-async def auth_setup(payload: SetupPayload):
+async def auth_setup(payload: SetupPayload, request: Request):
     if auth_is_configured():
         raise HTTPException(status_code=409, detail="Admin password is already configured")
     if not payload.agreed_terms:
@@ -1469,18 +1896,18 @@ async def auth_setup(payload: SetupPayload):
         }
     )
     raw_token, expires_at = create_session_token()
-    return make_session_response({"ok": True, "configured": True}, raw_token, expires_at)
+    return make_session_response({"ok": True, "configured": True}, raw_token, expires_at, request)
 
 
 @app.post("/api/auth/login")
-async def auth_login(payload: PasswordPayload):
+async def auth_login(payload: PasswordPayload, request: Request):
     settings = load_auth_settings()
     if not auth_is_configured():
         raise HTTPException(status_code=403, detail="Admin password is not configured yet")
     if not verify_password(payload.password, settings.get("admin_password_hash")):
         raise HTTPException(status_code=401, detail="Password is incorrect")
     raw_token, expires_at = create_session_token()
-    return make_session_response({"ok": True, "configured": True}, raw_token, expires_at)
+    return make_session_response({"ok": True, "configured": True}, raw_token, expires_at, request)
 
 
 @app.post("/api/auth/logout")
@@ -1589,6 +2016,154 @@ async def revoke_api_key(key_id: str, request: Request):
     }
 
 
+@app.get("/api/public-shares/{email_id}")
+async def get_public_share_config(email_id: str, request: Request):
+    require_authenticated(request)
+    await get_account_credentials(email_id)
+    meta = get_public_share_meta(email_id)
+    return build_public_share_record(email_id, meta, request)
+
+
+@app.put("/api/public-shares/{email_id}")
+async def update_public_share_config(email_id: str, payload: PublicShareConfigPayload, request: Request):
+    require_authenticated(request)
+    await get_account_credentials(email_id)
+
+    now = datetime.utcnow()
+    expires_mode = (payload.expires_mode or "never").strip().lower()
+    if expires_mode not in {"never", "fixed"}:
+        raise HTTPException(status_code=400, detail="expires_mode must be never or fixed")
+    if payload.clear_password and payload.access_password:
+        raise HTTPException(status_code=400, detail="clear_password cannot be combined with access_password")
+
+    expires_at: datetime | None = None
+    if payload.enabled and expires_mode == "fixed":
+        if payload.expires_at is None:
+            raise HTTPException(status_code=400, detail="expires_at is required when expires_mode=fixed")
+        expires_at = normalize_utc_datetime(payload.expires_at)
+        if expires_at <= now:
+            raise HTTPException(status_code=400, detail="expires_at must be later than now")
+
+    new_password = (payload.access_password or "").strip()
+    if new_password and len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Access password must be at least 8 characters")
+
+    data = load_public_shares_data()
+    shares = data.setdefault("shares", {})
+    existing_meta = shares.get(email_id, {})
+    existing_meta = existing_meta if isinstance(existing_meta, dict) else {}
+
+    password_hash = existing_meta.get("password_hash", "")
+    password_updated_at = existing_meta.get("password_updated_at")
+    password_changed = False
+
+    if payload.clear_password:
+        password_hash = ""
+        password_updated_at = now.isoformat()
+        password_changed = True
+    elif new_password:
+        password_hash = hash_password(new_password)
+        password_updated_at = now.isoformat()
+        password_changed = True
+
+    shares[email_id] = {
+        "enabled": bool(payload.enabled),
+        "expires_at": expires_at.isoformat() if expires_at else None,
+        "password_hash": password_hash,
+        "password_updated_at": password_updated_at,
+        "created_at": existing_meta.get("created_at") or now.isoformat(),
+        "updated_at": now.isoformat(),
+    }
+    data["shares"] = shares
+    save_public_shares_data(data)
+
+    if not payload.enabled or password_changed:
+        revoke_open_access_sessions(email_id)
+
+    return build_public_share_record(email_id, shares[email_id], request)
+
+
+@app.get("/api/open/emails/{email_id}/status")
+async def get_open_email_status(email_id: str, request: Request):
+    meta = get_public_share_meta(email_id)
+    if not is_public_share_active(meta):
+        raise HTTPException(status_code=404, detail="Public page unavailable")
+    await get_account_credentials(email_id)
+
+    return {
+        "email_id": email_id,
+        "status": "active",
+        "expires_at": meta.get("expires_at"),
+        "requires_password": bool(meta.get("password_hash")),
+        "access_granted": not bool(meta.get("password_hash")) or bool(get_open_access_session(request, email_id)),
+        "public_url": build_public_share_url(request, email_id),
+    }
+
+
+@app.post("/api/open/emails/{email_id}/access")
+async def create_open_email_access(email_id: str, payload: PublicShareAccessPayload, request: Request):
+    meta = get_public_share_meta(email_id)
+    if not is_public_share_active(meta):
+        raise HTTPException(status_code=404, detail="Public page unavailable")
+    await get_account_credentials(email_id)
+
+    if not meta.get("password_hash"):
+        return {"ok": True, "requires_password": False}
+
+    blocked_state = get_open_access_block_state(email_id, request)
+    if blocked_state:
+        raise HTTPException(status_code=429, detail="Too many password attempts. Try again later.")
+
+    if not verify_password(payload.password, meta.get("password_hash")):
+        failure_state = record_open_access_failure(email_id, request)
+        if parse_stored_datetime(failure_state.get("blocked_until")):
+            raise HTTPException(status_code=429, detail="Too many password attempts. Try again later.")
+        raise HTTPException(status_code=401, detail="Access password is incorrect")
+
+    clear_open_access_failures(email_id, request)
+    raw_token, expires_at = create_open_access_session(email_id, meta)
+    response = JSONResponse(
+        {
+            "ok": True,
+            "expires_at": expires_at,
+            "access_granted": True,
+        }
+    )
+    max_age = max(60, int((parse_stored_datetime(expires_at) - datetime.utcnow()).total_seconds()))
+    response.set_cookie(
+        get_public_share_cookie_name(email_id),
+        raw_token,
+        max_age=max_age,
+        expires=max_age,
+        httponly=True,
+        samesite="lax",
+        secure=request_uses_https(request),
+        path="/",
+    )
+    return response
+
+
+@app.get("/api/open/emails/{email_id}", response_model=EmailListResponse)
+async def get_open_emails(
+    request: Request,
+    email_id: str,
+    folder: str = Query("all", regex="^(inbox|junk|all)$"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(100, ge=1, le=500),
+    refresh: bool = Query(False, description="强制刷新缓存")
+):
+    require_public_share_access(request, email_id)
+    credentials = await get_account_credentials(email_id)
+    return await list_emails(credentials, folder, page, page_size, refresh)
+
+
+@app.get("/api/open/emails/{email_id}/{message_id}", response_model=EmailDetailsResponse)
+async def get_open_email_detail(email_id: str, message_id: str, request: Request):
+    require_public_share_access(request, email_id)
+    credentials = await get_account_credentials(email_id)
+    return await get_email_details(credentials, message_id)
+
+
 @app.get("/accounts", response_model=AccountListResponse)
 async def get_accounts(
     request: Request,
@@ -1612,6 +2187,7 @@ async def register_account(credentials: AccountCredentials, request: Request):
 
         # 保存凭证
         await save_account_credentials(credentials.email, credentials)
+        save_account_health_record(credentials.email, build_account_health_record("unchecked", 0, "未检查"))
 
         return AccountResponse(
             email_id=credentials.email,
@@ -1623,6 +2199,12 @@ async def register_account(credentials: AccountCredentials, request: Request):
     except Exception as e:
         logger.error(f"Error registering account: {e}")
         raise HTTPException(status_code=500, detail="Account registration failed")
+
+
+@app.post("/accounts/health-check")
+async def run_accounts_health_check(request: Request):
+    require_authenticated(request, allow_api_key=True)
+    return await refresh_all_account_health()
 
 
 @app.get("/emails/{email_id}", response_model=EmailListResponse)
@@ -1718,6 +2300,13 @@ async def delete_account(email_id: str, request: Request):
             # 保存更新后的账户列表
             with open(ACCOUNTS_FILE, 'w', encoding='utf-8') as f:
                 json.dump(accounts, f, indent=2, ensure_ascii=False)
+
+            remove_account_health_record(email_id)
+            public_shares_data = load_public_shares_data()
+            if email_id in public_shares_data.get("shares", {}):
+                del public_shares_data["shares"][email_id]
+                save_public_shares_data(public_shares_data)
+            revoke_open_access_sessions(email_id)
             
             return AccountResponse(
                 email_id=email_id,
@@ -1731,6 +2320,10 @@ async def delete_account(email_id: str, request: Request):
     except Exception as e:
         logger.error(f"Error deleting account: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete account")
+
+@app.get("/open/emails/{email_id}")
+async def open_email_page(email_id: str):
+    return FileResponse(STATIC_DIR / "open.html")
 
 @app.get("/")
 async def root():

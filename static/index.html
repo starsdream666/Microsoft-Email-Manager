@@ -2437,6 +2437,49 @@
             padding: 18px 24px 22px;
         }
 
+        .public-share-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .public-share-url-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .public-share-url-row .form-input {
+            flex: 1;
+        }
+
+        .public-share-inline {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .public-share-help {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        .public-share-status {
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(148, 163, 184, 0.12);
+            color: #334155;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .public-share-status strong {
+            color: #0f172a;
+        }
+
         .modal-close,
         .close,
         .tag-delete {
@@ -3563,12 +3606,16 @@
                                     <span></span>
                                     添加账户
                                 </button>
+                                <button class="btn btn-secondary btn-sm" onclick="refreshAccountHealth()" id="accountHealthBtn">
+                                    <span></span>
+                                    检查账户健康
+                                </button>
                                 <button class="btn btn-secondary btn-sm" onclick="showPage('batchAdd')">
-                                    <span>馃摝</span>
+                                    <span></span>
                                     批量添加
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="loadAccounts()">
-                                    <span>馃攧</span>
+                                    <span></span>
                                     刷新列表
                                 </button>
                             </div>
@@ -3584,7 +3631,7 @@
                                     <input type="text" id="tagSearch" class="form-control" placeholder="按标签搜索..." onkeypress="handleSearchKeyPress(event)">
                                 </div>
                                 <button class="btn btn-primary" onclick="searchAccounts()">
-                                    <span>馃攳</span>
+                                    <span></span>
                                     搜索
                                 </button>
                                 <button class="btn btn-secondary" onclick="clearSearch()">
@@ -3663,7 +3710,7 @@
                                 <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
                                     <h4 style="margin: 0 0 8px 0; font-size: 0.875rem; font-weight: 600; color: #374151;">获取步骤</h4>
                                     <ol style="margin: 0; padding-left: 20px; font-size: 0.75rem; color: #6b7280; line-height: 1.5;">
-                                        <li>璁块棶 <a href="https://portal.azure.com" target="_blank" style="color: #3b82f6;">Azure Portal</a></li>
+                                        <li>访问 <a href="https://portal.azure.com" target="_blank" style="color: #3b82f6;">Azure Portal</a></li>
                                         <li>注册应用程序并配置权限</li>
                                         <li>获取 Client ID 和 Refresh Token</li>
                                         <li>确认应用具备邮件读取权限</li>
@@ -3686,7 +3733,7 @@
                                     清空表单
                                 </button>
                                 <button class="btn btn-secondary" onclick="testAccountConnection()" id="testBtn">
-                                    <span>馃攳</span>
+                                    <span></span>
                                     测试连接
                                 </button>
                             </div>
@@ -3734,14 +3781,14 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                                         <li>确保所有账户信息格式正确</li>
                                         <li>建议先测试少量账户再批量导入</li>
                                         <li>导入过程中请不要关闭页面</li>
-                                        <li>澶辫触鐨勮处鎴蜂細鍦ㄧ粨鏋滀腑鏄剧ず</li>
+                                        <li>失败的账户会在结果中显示</li>
                                     </ul>
                                 </div>
                             </div>
 
                             <div class="flex gap-3">
                                 <button class="btn btn-primary" onclick="batchAddAccounts()" id="batchAddBtn">
-                                    <span>馃摝</span>
+                                    <span></span>
                                     开始批量添加                                </button>
                                 <button class="btn btn-secondary" onclick="clearBatchForm()">
                                     <span></span>
@@ -3752,7 +3799,7 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                                     验证格式
                                 </button>
                                 <button class="btn btn-secondary" onclick="loadSampleData()">
-                                    <span>馃摑</span>
+                                    <span></span>
                                     加载示例
                                 </button>
                             </div>
@@ -3875,11 +3922,11 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                             </div>
                             <div class="flex gap-2">
                                 <button class="btn btn-secondary btn-sm" onclick="copyApiBaseUrl()">
-                                    <span>馃搵</span>
+                                    <span></span>
                                     复制 Base URL
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="downloadApiDocs()">
-                                    <span>馃摜</span>
+                                    <span></span>
                                     下载文档
                                 </button>
                             </div>
@@ -4139,15 +4186,19 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                                         <select id="currentAccountSelect" class="form-input email-account-select" onchange="switchCurrentAccount(this.value)">
                                             <option value="">请选择账户</option>
                                         </select>
-                                        <button type="button" class="copy-icon email-account-copy-btn" onclick="copyEmailAddress(document.getElementById('currentAccountSelect').value)" title="复制当前账户">馃搵</button>
+                                        <button type="button" class="copy-icon email-account-copy-btn" onclick="copyEmailAddress(document.getElementById('currentAccountSelect').value)" title="复制当前账户"><span></span></button>
                                     </div>
                                 </div>
                                 <span id="currentAccountEmail" class="hidden"></span>
                                 <p class="text-sm" style="color: #64748b;">最后更新：<span id="lastUpdateTime">-</span></p>
                             </div>
                             <div class="flex gap-2">
+                                <button class="btn btn-secondary btn-sm" onclick="toggleAutoRefresh()" id="autoRefreshBtn">
+                                    <span></span>
+                                    自动刷新: 关
+                                </button>
                                 <button class="btn btn-secondary btn-sm" onclick="refreshEmails()" id="refreshBtn">
-                                    <span>馃攧</span>
+                                    <span></span>
                                     刷新
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="clearCache()">
@@ -4155,7 +4206,7 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                                     清除缓存
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="exportEmails()">
-                                    <span>馃摛</span>
+                                    <span></span>
                                     导出
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="backToAccounts()">
@@ -4188,7 +4239,7 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                         <!-- 搜索和过滤 -->
                         <div class="search-container email-search-shell" id="emailSearchShell">
                             <button type="button" class="search-icon email-search-toggle" id="emailSearchToggle" onclick="toggleEmailSearch(true)" aria-label="展开搜索">
-                                馃攳
+                                
                             </button>
                             <div class="email-search-input-wrap">
                                 <input type="text" class="search-input" id="mailSearchInput" placeholder="搜索邮件主题、发件人或内容..." onfocus="toggleEmailSearch(true)" onblur="handleEmailSearchBlur()" onkeyup="searchEmails()">
@@ -4309,14 +4360,69 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
         </div>
     </div>
 
+    <div id="publicShareModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 640px;">
+            <div class="modal-header">
+                <h3>公开页面设置</h3>
+                <button class="modal-close" type="button" onclick="closePublicShareModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="public-share-grid">
+                    <div class="public-share-status" id="publicShareStatus">正在加载公开页面配置...</div>
+                    <div class="form-group">
+                        <label class="form-label">公开链接</label>
+                        <div class="public-share-url-row">
+                            <input type="text" id="publicShareUrl" class="form-input" readonly>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="copyPublicShareUrl()">复制链接</button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="window.open(document.getElementById('publicShareUrl').value, '_blank')">打开</button>
+                        </div>
+                        <div class="public-share-help">这个链接对应独立的公开页面，不带后台左侧栏。</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="public-share-inline">
+                            <input type="checkbox" id="publicShareEnabled">
+                            <span>启用公开页面</span>
+                        </label>
+                        <div class="public-share-help">关闭后，公开链接会立即失效。</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="publicShareExpiresMode">公开时长</label>
+                        <select id="publicShareExpiresMode" class="form-input" onchange="togglePublicShareExpiryMode()">
+                            <option value="never">一直公开</option>
+                            <option value="fixed">设置截止时间</option>
+                        </select>
+                    </div>
+                    <div class="form-group hidden" id="publicShareExpiresAtWrap">
+                        <label class="form-label" for="publicShareExpiresAt">截止时间</label>
+                        <input type="datetime-local" id="publicShareExpiresAt" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="publicSharePassword">访问密码</label>
+                        <input type="password" id="publicSharePassword" class="form-input" placeholder="留空表示不修改当前访问密码">
+                        <input type="password" id="publicSharePasswordConfirm" class="form-input" placeholder="再次输入新访问密码" style="margin-top: 10px;">
+                        <label class="public-share-inline" style="margin-top: 12px;">
+                            <input type="checkbox" id="publicShareClearPassword" onchange="togglePublicSharePasswordActions()">
+                            <span>清除现有访问密码</span>
+                        </label>
+                        <div class="public-share-help" id="publicSharePasswordHint">未设置密码时，任何拿到公开链接的人都可直接访问。</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" onclick="closePublicShareModal()">取消</button>
+                <button class="btn btn-primary" type="button" id="savePublicShareBtn" onclick="savePublicShareConfig()">保存设置</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 右键菜单 -->
     <div id="contextMenu" class="context-menu">
         <div class="context-menu-item" onclick="openInNewTab()">
-            <span>馃敆</span>
+            <span>↗</span>
             在新标签页中打开
         </div>
         <div class="context-menu-item" onclick="copyAccountLink()">
-            <span>馃搵</span>
+            <span>⧉</span>
             复制链接
         </div>
         <div class="context-menu-divider"></div>
@@ -4344,6 +4450,7 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
             clear: '<svg viewBox="0 0 24 24"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>',
             refresh: '<svg viewBox="0 0 24 24"><path d="M21 2v6h-6"></path><path d="M3 22v-6h6"></path><path d="M20 8a9 9 0 0 0-15.5-3.5L3 8"></path><path d="M4 16a9 9 0 0 0 15.5 3.5L21 16"></path></svg>',
             export: '<svg viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>',
+            health: '<svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 4 10 2-5h6"></path><path d="M2 12c0-4.5 3.2-8 7.5-8 2.1 0 3.6.9 4.5 2 0.9-1.1 2.4-2 4.5-2C21.8 4 25 7.5 25 12"></path></svg>',
             tags: '<svg viewBox="0 0 24 24"><path d="M20.59 13.41L11 3H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg>',
             docs: '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h5"></path></svg>',
             copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>',
@@ -4363,6 +4470,9 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
         let currentAccount = null;
         let currentEmailFolder = 'all';
         let currentEmailPage = 1;
+        let autoRefreshEnabled = false;
+        let autoRefreshInterval = null;
+        let isLoadingEmails = false;
         let accounts = [];
         
         // 账户管理分页相关变量
@@ -4381,6 +4491,7 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
         // 当前正在编辑的账户信息
         let currentEditAccount = null;
         let currentEditTags = [];
+        let currentPublicShareEmail = null;
 
         // 页面管理
         function icon(name, extraClass = '') {
@@ -4822,6 +4933,7 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
             toggleEmailSearch(window.innerWidth <= 768);
 
             setButtonIcon(document.querySelector('#accountsPage .btn-primary.btn-sm[onclick="showPage(\'addAccount\')"]'), 'plus');
+            setButtonIcon(document.getElementById('accountHealthBtn'), 'health');
             setButtonIcon(document.querySelector('#accountsPage .btn-secondary.btn-sm[onclick="showPage(\'batchAdd\')"]'), 'batch');
             setButtonIcon(document.querySelector('#accountsPage .btn-secondary.btn-sm[onclick="loadAccounts()"]'), 'refresh');
             setButtonIcon(document.querySelector('#accountsPage .btn-primary[onclick="searchAccounts()"]'), 'search');
@@ -4846,11 +4958,14 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
             setButtonIcon(document.querySelector('#apiDocsPage .btn-secondary.btn-sm[onclick="downloadApiDocs()"]'), 'docs');
             setButtonIcon(document.querySelector('#apiDocsPage .btn-secondary.btn-sm[onclick="copyApiBaseUrl()"]'), 'copy');
 
+            setButtonIcon(document.getElementById('autoRefreshBtn'), 'refresh');
             setButtonIcon(document.getElementById('refreshBtn'), 'refresh');
             setButtonIcon(document.querySelector('#emailsPage .btn-secondary.btn-sm[onclick="clearCache()"]'), 'clear');
             setButtonIcon(document.querySelector('#emailsPage .btn-secondary.btn-sm[onclick="exportEmails()"]'), 'export');
             setButtonIcon(document.querySelector('#emailsPage .btn-secondary.btn-sm[onclick="backToAccounts()"]'), 'arrow-left');
             setButtonIcon(document.querySelector('#emailsPage .btn-secondary.btn-sm[onclick="clearFilters()"]'), 'clear');
+            setButtonIcon(document.querySelector('.email-account-copy-btn'), 'copy');
+            updateAutoRefreshButton();
 
             const searchIcon = document.querySelector('#emailsPage .search-icon');
             if (searchIcon) {
@@ -4882,8 +4997,9 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
             root.querySelectorAll('.account-actions').forEach(actions => {
                 const buttons = actions.querySelectorAll('.btn');
                 setButtonIcon(buttons[0], 'mail');
-                setButtonIcon(buttons[1], 'tags');
-                setButtonIcon(buttons[2], 'clear');
+                setButtonIcon(buttons[1], 'open');
+                setButtonIcon(buttons[2], 'tags');
+                setButtonIcon(buttons[3], 'clear');
             });
         }
 
@@ -4900,6 +5016,45 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                     ${email.has_attachments ? icon('attachment', 'email-meta-icon attachment') : ''}
                 `;
             });
+        }
+
+        function isEmailsPageVisible() {
+            const emailsPage = document.getElementById('emailsPage');
+            return !!emailsPage && !emailsPage.classList.contains('hidden');
+        }
+
+        function updateAutoRefreshButton() {
+            const button = document.getElementById('autoRefreshBtn');
+            if (!button) return;
+            button.innerHTML = buttonLabel('refresh', `自动刷新: ${autoRefreshEnabled ? '开' : '关'}`);
+        }
+
+        function stopAutoRefreshTimer() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        function syncAutoRefreshTimer() {
+            stopAutoRefreshTimer();
+            if (!autoRefreshEnabled || !currentAccount || !isEmailsPageVisible()) {
+                return;
+            }
+
+            autoRefreshInterval = setInterval(() => {
+                if (document.hidden || !autoRefreshEnabled || !currentAccount || !isEmailsPageVisible() || isLoadingEmails) {
+                    return;
+                }
+                loadEmails();
+            }, 5000);
+        }
+
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            updateAutoRefreshButton();
+            syncAutoRefreshTimer();
+            showNotification(`自动刷新已${autoRefreshEnabled ? '开启' : '关闭'}，${autoRefreshEnabled ? '每 5 秒刷新一次邮件' : '停止自动刷新邮件'}`, 'info');
         }
 
         function showPage(pageName, targetElement = null) {
@@ -4932,6 +5087,7 @@ example3@outlook.com----password3----refresh_token3----client_id3"></textarea>
                 populateAccountSwitcher(currentAccount);
                 loadEmails();
             }
+            syncAutoRefreshTimer();
         }
 
         function formatEmailDate(dateString) {
@@ -5167,6 +5323,45 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
             }
         }
 
+        function getAccountHealthDisplay(account) {
+            const statusMap = {
+                healthy: { label: '健康', color: '#15803d' },
+                imap_error: { label: '降级', color: '#b45309' },
+                auth_error: { label: '异常', color: '#b91c1c' },
+                config_error: { label: '配置异常', color: '#b91c1c' },
+                error: { label: '异常', color: '#b91c1c' },
+                unchecked: { label: '未检查', color: '#64748b' }
+            };
+            const display = statusMap[account.status] || statusMap.unchecked;
+            const checkedAt = account.health_checked_at ? new Date(account.health_checked_at).toLocaleString() : '未检查';
+            return {
+                label: display.label,
+                color: display.color,
+                summary: account.health_summary || '未检查',
+                checkedAt,
+                score: Number.isFinite(account.health_score) ? account.health_score : 0
+            };
+        }
+
+        async function refreshAccountHealth() {
+            const button = document.getElementById('accountHealthBtn');
+            if (!button) return;
+
+            button.disabled = true;
+            button.innerHTML = buttonLabel('loading', '检查中...', 'spinning');
+
+            try {
+                const result = await apiRequest('/accounts/health-check', { method: 'POST' });
+                await loadAccounts(accountsCurrentPage);
+                showNotification(`健康检查完成，已刷新 ${result.checked || 0} 个账户状态`, 'success');
+            } catch (error) {
+                showNotification('检查账户健康失败: ' + error.message, 'error');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = buttonLabel('health', '检查账户健康');
+            }
+        }
+
         async function loadAccounts(page = 1, resetSearch = false) {
             if (resetSearch) {
                 // 重置搜索条件
@@ -5217,7 +5412,7 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
                 }
 
                 accountsList.innerHTML = accounts.map(account => {
-                    // 鐢熸垚鏍囩HTML
+                    const health = getAccountHealthDisplay(account);
                     const tagsHtml = account.tags && account.tags.length > 0 
                         ? `<div class="account-tags">${account.tags.map(tag => 
                             `<span class="account-tag">${tag}</span>`).join('')}</div>` 
@@ -5229,14 +5424,19 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
                                 <div class="account-avatar">${account.email_id.charAt(0).toUpperCase()}</div>
                                 <div class="account-details">
                                     <h4>${account.email_id}</h4>
-                                    <p>状态: ${account.status === 'active' ? '正常' : '异常'}</p>
+                                    <p>健康状态: <strong style="color: ${health.color};">${health.label}</strong> · ${health.score} 分</p>
+                                    <p style="color: #64748b;">${escapeHtml(health.summary)} · 上次检查：${escapeHtml(health.checkedAt)}</p>
                                     ${tagsHtml}
                                 </div>
                             </div>
                             <div class="account-actions" onclick="event.stopPropagation()">
                                 <button class="btn btn-primary btn-sm" onclick="viewAccountEmails('${account.email_id}')">
-                                    <span>馃摟</span>
+                                    <span></span>
                                     查看邮件
+                                </button>
+                                <button class="btn btn-secondary btn-sm" onclick="openPublicShareModal('${account.email_id}')">
+                                    <span></span>
+                                    公开页面
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="editAccountTags('${account.email_id}', ${JSON.stringify(account.tags || [])})">
                                     <span></span>
@@ -5693,7 +5893,7 @@ example3@outlook.com----password3----refresh_token_here_3----client_id_here_3`;
                     }, 300);
                 }
             }).catch((error) => {
-                console.error('澶嶅埗澶辫触:', error);
+                console.error('复制失败:', error);
 
             try {
                     const textArea = document.createElement('textarea');
@@ -5971,6 +6171,7 @@ Authorization: Bearer om_your_api_key
             updateCurrentAccountHeader(emailId);
             clearFilters();
             window.location.hash = '#/emails/' + encodeURIComponent(emailId);
+            syncAutoRefreshTimer();
             loadEmails();
         }
 
@@ -5983,12 +6184,14 @@ Authorization: Bearer om_your_api_key
             populateAccountSwitcher(emailId);
             window.location.hash = '#/emails/' + encodeURIComponent(emailId);
             clearFilters();
+            syncAutoRefreshTimer();
             showPage('emails');
         }
 
         function backToAccounts() {
             currentAccount = null;
             window.location.hash = '#/accounts';
+            syncAutoRefreshTimer();
             showPage('accounts');
         }
 
@@ -6012,16 +6215,21 @@ Authorization: Bearer om_your_api_key
         }
 
         async function loadEmails(forceRefresh = false) {
-            if (!currentAccount) return;
+            if (!currentAccount || isLoadingEmails) return;
 
             const emailsList = document.getElementById('emailsList');
             const refreshBtn = document.getElementById('refreshBtn');
+            const autoRefreshBtn = document.getElementById('autoRefreshBtn');
             updateCurrentAccountHeader(currentAccount);
+            isLoadingEmails = true;
 
             // Show loading state
             emailsList.innerHTML = '<div class="loading"><div class="loading-spinner"></div>正在加载邮件...</div>';
             refreshBtn.disabled = true;
             refreshBtn.innerHTML = buttonLabel('loading', '加载中...', 'spinning');
+            if (autoRefreshBtn) {
+                autoRefreshBtn.disabled = true;
+            }
 
             try {
                 const refreshParam = forceRefresh ? '&refresh=true' : '';
@@ -6048,8 +6256,13 @@ Authorization: Bearer om_your_api_key
                 showNotification('加载邮件失败: ' + error.message, 'error');
             } finally {
                 // Restore refresh button state
+                isLoadingEmails = false;
                 refreshBtn.disabled = false;
                 refreshBtn.innerHTML = buttonLabel('refresh', '刷新');
+                if (autoRefreshBtn) {
+                    autoRefreshBtn.disabled = false;
+                }
+                updateAutoRefreshButton();
             }
         }
 
@@ -6479,6 +6692,181 @@ Authorization: Bearer om_your_api_key
             }
         }
 
+        function formatPublicShareDateTimeValue(value) {
+            if (!value) return '';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            return localDate.toISOString().slice(0, 16);
+        }
+
+        function setPublicShareStatus(config = {}) {
+            const statusElement = document.getElementById('publicShareStatus');
+            const statusMap = {
+                active: '公开中',
+                disabled: '未公开',
+                expired: '已过期'
+            };
+            const statusText = statusMap[config.status] || '未公开';
+            const passwordText = config.requires_password ? '已启用访问密码' : '无需访问密码';
+            const expiresText = config.expires_at ? `截止时间：${new Date(config.expires_at).toLocaleString()}` : '截止时间：一直公开';
+            statusElement.innerHTML = `
+                <strong>${escapeHtml(currentPublicShareEmail || '')}</strong><br>
+                当前状态：${escapeHtml(statusText)}<br>
+                ${escapeHtml(passwordText)}<br>
+                ${escapeHtml(expiresText)}
+            `;
+        }
+
+        function togglePublicShareExpiryMode() {
+            const wrap = document.getElementById('publicShareExpiresAtWrap');
+            const isFixed = document.getElementById('publicShareExpiresMode').value === 'fixed';
+            wrap.classList.toggle('hidden', !isFixed);
+        }
+
+        function togglePublicSharePasswordActions() {
+            const clearPassword = document.getElementById('publicShareClearPassword').checked;
+            const passwordInput = document.getElementById('publicSharePassword');
+            const confirmInput = document.getElementById('publicSharePasswordConfirm');
+            const hint = document.getElementById('publicSharePasswordHint');
+
+            passwordInput.disabled = clearPassword;
+            confirmInput.disabled = clearPassword;
+            if (clearPassword) {
+                passwordInput.value = '';
+                confirmInput.value = '';
+                hint.textContent = '保存后将移除访问密码，公开链接可直接访问。';
+            } else {
+                hint.textContent = '留空表示保留当前访问密码。新密码至少 8 位。';
+            }
+        }
+
+        async function openPublicShareModal(emailId) {
+            currentPublicShareEmail = emailId;
+            document.getElementById('publicShareModal').classList.remove('hidden');
+            document.getElementById('publicShareUrl').value = `${window.location.origin}/open/emails/${encodeURIComponent(emailId)}`;
+            document.getElementById('publicShareStatus').textContent = '正在加载公开页面配置...';
+            document.getElementById('publicShareEnabled').checked = false;
+            document.getElementById('publicShareExpiresMode').value = 'never';
+            document.getElementById('publicShareExpiresAt').value = '';
+            document.getElementById('publicSharePassword').value = '';
+            document.getElementById('publicSharePasswordConfirm').value = '';
+            document.getElementById('publicShareClearPassword').checked = false;
+            togglePublicShareExpiryMode();
+            togglePublicSharePasswordActions();
+
+            try {
+                const config = await apiRequest('/api/public-shares/' + encodeURIComponent(emailId));
+                document.getElementById('publicShareUrl').value = config.public_url || `${window.location.origin}/open/emails/${encodeURIComponent(emailId)}`;
+                document.getElementById('publicShareEnabled').checked = !!config.enabled;
+                document.getElementById('publicShareExpiresMode').value = config.expires_mode || 'never';
+                document.getElementById('publicShareExpiresAt').value = formatPublicShareDateTimeValue(config.expires_at);
+                setPublicShareStatus(config);
+                togglePublicShareExpiryMode();
+                togglePublicSharePasswordActions();
+            } catch (error) {
+                document.getElementById('publicShareStatus').textContent = '公开配置加载失败：' + error.message;
+                showNotification('公开配置加载失败: ' + error.message, 'error');
+            }
+        }
+
+        function closePublicShareModal() {
+            document.getElementById('publicShareModal').classList.add('hidden');
+            currentPublicShareEmail = null;
+        }
+
+        async function copyPublicShareUrl() {
+            const input = document.getElementById('publicShareUrl');
+            if (!input.value) {
+                showNotification('公开链接为空', 'warning');
+                return;
+            }
+
+            if (navigator.clipboard) {
+                try {
+                    await navigator.clipboard.writeText(input.value);
+                    showNotification('公开链接已复制到剪贴板', 'success');
+                    return;
+                } catch (error) {
+                    console.warn('Clipboard copy failed', error);
+                }
+            }
+
+            input.select();
+            document.execCommand('copy');
+            showNotification('公开链接已复制到剪贴板', 'success');
+        }
+
+        async function savePublicShareConfig() {
+            if (!currentPublicShareEmail) {
+                closePublicShareModal();
+                return;
+            }
+
+            const enabled = document.getElementById('publicShareEnabled').checked;
+            const expiresMode = document.getElementById('publicShareExpiresMode').value;
+            const expiresAt = document.getElementById('publicShareExpiresAt').value;
+            const password = document.getElementById('publicSharePassword').value;
+            const passwordConfirm = document.getElementById('publicSharePasswordConfirm').value;
+            const clearPassword = document.getElementById('publicShareClearPassword').checked;
+            const saveBtn = document.getElementById('savePublicShareBtn');
+
+            if (clearPassword && password) {
+                showNotification('清除密码时不能再填写新密码', 'warning');
+                return;
+            }
+
+            if (password || passwordConfirm) {
+                if (password !== passwordConfirm) {
+                    showNotification('两次输入的访问密码不一致', 'warning');
+                    return;
+                }
+                if (password.length < 8) {
+                    showNotification('访问密码至少 8 位', 'warning');
+                    return;
+                }
+            }
+
+            if (enabled && expiresMode === 'fixed' && !expiresAt) {
+                showNotification('请设置公开截止时间', 'warning');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = buttonLabel('loading', '保存中...', 'spinning');
+
+            try {
+                const payload = {
+                    enabled,
+                    expires_mode: expiresMode,
+                    expires_at: enabled && expiresMode === 'fixed' ? new Date(expiresAt).toISOString() : null,
+                    access_password: clearPassword ? null : (password || null),
+                    clear_password: clearPassword
+                };
+                const config = await apiRequest('/api/public-shares/' + encodeURIComponent(currentPublicShareEmail), {
+                    method: 'PUT',
+                    body: JSON.stringify(payload)
+                });
+
+                document.getElementById('publicSharePassword').value = '';
+                document.getElementById('publicSharePasswordConfirm').value = '';
+                document.getElementById('publicShareClearPassword').checked = false;
+                document.getElementById('publicShareUrl').value = config.public_url || document.getElementById('publicShareUrl').value;
+                document.getElementById('publicShareEnabled').checked = !!config.enabled;
+                document.getElementById('publicShareExpiresMode').value = config.expires_mode || 'never';
+                document.getElementById('publicShareExpiresAt').value = formatPublicShareDateTimeValue(config.expires_at);
+                togglePublicShareExpiryMode();
+                togglePublicSharePasswordActions();
+                setPublicShareStatus(config);
+                showNotification('公开页面设置已保存', 'success');
+            } catch (error) {
+                showNotification('保存公开页面设置失败: ' + error.message, 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '保存设置';
+            }
+        }
+
         function updateAccountsStats() {
             const accountsStats = document.getElementById('accountsStats');
             document.getElementById('totalAccounts').textContent = accountsTotalCount;
@@ -6700,6 +7088,12 @@ Authorization: Bearer om_your_api_key
             }
         });
 
+        document.getElementById('publicShareModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePublicShareModal();
+            }
+        });
+
         document.addEventListener('click', function(e) {
             const searchShell = document.getElementById('emailSearchShell');
             const searchInput = document.getElementById('mailSearchInput');
@@ -6742,6 +7136,7 @@ Authorization: Bearer om_your_api_key
                     }
                 }
             }
+            syncAutoRefreshTimer();
         });
 
         window.addEventListener('load', function() {
@@ -6757,6 +7152,10 @@ Authorization: Bearer om_your_api_key
         window.addEventListener('resize', function() {
             const searchInput = document.getElementById('mailSearchInput');
             toggleEmailSearch(window.innerWidth <= 768 || (searchInput && !!searchInput.value.trim()));
+        });
+
+        window.addEventListener('beforeunload', function() {
+            stopAutoRefreshTimer();
         });
         
         // URL璺敱澶勭悊

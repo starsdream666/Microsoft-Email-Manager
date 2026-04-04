@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公开邮件页面</title>
+    <style>
+        :root {
+            --bg: #eef4ff;
+            --bg-accent: #dbeafe;
+            --card: rgba(255, 255, 255, 0.88);
+            --line: rgba(148, 163, 184, 0.28);
+            --text: #0f172a;
+            --muted: #64748b;
+            --primary: #0f766e;
+            --primary-strong: #115e59;
+            --danger: #b91c1c;
+            --shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+            --radius: 22px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(14, 165, 233, 0.16), transparent 34%),
+                radial-gradient(circle at top right, rgba(16, 185, 129, 0.14), transparent 28%),
+                linear-gradient(180deg, var(--bg), #f8fafc 52%, #ffffff 100%);
+            min-height: 100vh;
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        .page-shell {
+            max-width: 1380px;
+            margin: 0 auto;
+            padding: 28px 20px 56px;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.8fr);
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        .hero-card,
+        .card,
+        .gate-card,
+        .empty-card,
+        .modal-panel {
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, 0.78);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(12px);
+            border-radius: var(--radius);
+        }
+
+        .hero-card {
+            padding: 26px;
+        }
+
+        .hero-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .hero-mark {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #0f766e, #0ea5e9);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-size: 30px;
+            line-height: 1.1;
+        }
+
+        .hero p {
+            margin: 6px 0 0;
+            color: var(--muted);
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 36px;
+            padding: 0 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid var(--line);
+            color: #0f172a;
+            font-size: 13px;
+        }
+
+        .chip strong {
+            font-weight: 600;
+        }
+
+        .hero-side {
+            padding: 22px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 14px;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.68;
+            transform: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #0891b2);
+            color: #fff;
+            box-shadow: 0 16px 28px rgba(15, 118, 110, 0.22);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.84);
+            color: var(--text);
+            border: 1px solid var(--line);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .stat-card {
+            padding: 18px 18px 16px;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        .card {
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) repeat(4, minmax(120px, 0.4fr));
+            gap: 12px;
+            align-items: end;
+        }
+
+        .control-grid-extended {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field label {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .input,
+        .select {
+            width: 100%;
+            min-height: 46px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.92);
+            padding: 0 14px;
+            color: var(--text);
+        }
+
+        .email-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .email-item {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 14px;
+            padding: 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            background: rgba(255, 255, 255, 0.78);
+            cursor: pointer;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+        }
+
+        .email-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+            border-color: rgba(14, 165, 233, 0.26);
+        }
+
+        .email-item.unread {
+            border-left: 4px solid #0ea5e9;
+            padding-left: 12px;
+        }
+
+        .avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 18px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0f766e, #0284c7);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-size: 18px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .email-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .email-subject {
+            font-size: 16px;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .email-date {
+            color: var(--muted);
+            white-space: nowrap;
+            font-size: 13px;
+        }
+
+        .email-meta,
+        .email-preview {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.6;
+            word-break: break-word;
+        }
+
+        .loading,
+        .empty-card,
+        .gate-card {
+            padding: 32px 24px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .gate-card,
+        .empty-card {
+            max-width: 520px;
+            margin: 72px auto 0;
+        }
+
+        .gate-card h2,
+        .empty-card h2 {
+            margin: 0 0 10px;
+            color: var(--text);
+        }
+
+        .gate-form {
+            display: grid;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .gate-note {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .error-text {
+            color: var(--danger);
+            min-height: 20px;
+            font-size: 13px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.48);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .modal-panel {
+            width: min(980px, 100%);
+            max-height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .modal-close {
+            width: 38px;
+            height: 38px;
+            border-radius: 999px;
+            border: none;
+            background: rgba(148, 163, 184, 0.16);
+            cursor: pointer;
+            color: var(--text);
+            font-size: 20px;
+        }
+
+        .modal-body {
+            padding: 22px;
+            overflow: auto;
+        }
+
+        .detail-hero {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .detail-copy h4 {
+            margin: 0 0 6px;
+            font-size: 20px;
+        }
+
+        .detail-copy p {
+            margin: 0;
+            color: var(--muted);
+            word-break: break-word;
+        }
+
+        .detail-meta {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .detail-meta-item {
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            background: rgba(248, 250, 252, 0.88);
+            padding: 14px;
+        }
+
+        .detail-meta-item span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .detail-meta-item strong {
+            display: block;
+            word-break: break-word;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .tab {
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.82);
+            border-radius: 999px;
+            padding: 8px 14px;
+            cursor: pointer;
+        }
+
+        .tab.active {
+            background: rgba(15, 118, 110, 0.12);
+            border-color: rgba(15, 118, 110, 0.24);
+            color: var(--primary-strong);
+        }
+
+        .content-panel {
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .content-panel iframe {
+            width: 100%;
+            min-height: 420px;
+            border: none;
+            background: #fff;
+        }
+
+        .content-panel pre {
+            margin: 0;
+            padding: 18px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: Consolas, "SFMono-Regular", monospace;
+            font-size: 13px;
+            line-height: 1.7;
+            background: #fff;
+        }
+
+        .raw-panel pre {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .notice {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 980px) {
+            .hero,
+            .stats-grid,
+            .detail-meta,
+            .control-grid,
+            .control-grid-extended {
+                grid-template-columns: 1fr;
+            }
+
+            .page-shell {
+                padding: 18px 14px 40px;
+            }
+
+            .hero-card,
+            .hero-side,
+            .card {
+                padding: 18px;
+            }
+
+            .email-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-shell">
+        <div id="passwordGate" class="gate-card hidden">
+            <div class="hero-mark" style="margin: 0 auto 16px;">OM</div>
+            <h2>公开页面已启用访问密码</h2>
+            <p class="gate-note">输入访问密码后才可以查看这个邮箱的公开邮件页面。</p>
+            <form id="unlockForm" class="gate-form">
+                <input id="accessPasswordInput" class="input" type="password" placeholder="输入访问密码" autocomplete="current-password">
+                <div id="accessPasswordError" class="error-text"></div>
+                <button id="unlockSubmitBtn" class="btn btn-primary" type="submit">进入公开页面</button>
+            </form>
+        </div>
+
+        <div id="unavailableView" class="empty-card hidden">
+            <div class="hero-mark" style="margin: 0 auto 16px;">OM</div>
+            <h2>公开页面不可用</h2>
+            <p id="unavailableMessage" class="gate-note">这个公开链接当前未开放、已过期，或已被管理员关闭。</p>
+        </div>
+
+        <div id="appView" class="hidden">
+            <section class="hero">
+                <div class="hero-card">
+                    <div class="hero-title">
+                        <div class="hero-mark">OM</div>
+                        <div>
+                            <h1>公开邮件页面</h1>
+                            <p>只展示当前共享邮箱的邮件内容，不包含后台左侧栏与管理入口。</p>
+                        </div>
+                    </div>
+                    <div class="hero-meta">
+                        <div class="chip"><strong>邮箱</strong><span id="currentEmailLabel">-</span></div>
+                        <div class="chip"><strong>状态</strong><span id="currentShareStatus">公开中</span></div>
+                        <div class="chip"><strong>访问方式</strong><span id="currentAccessMode">公开</span></div>
+                    </div>
+                </div>
+                <div class="hero-side hero-card">
+                    <div class="notice">最后更新时间：<span id="lastUpdateTime">-</span></div>
+                    <div class="notice">公开有效期：<span id="shareExpiresAt">一直公开</span></div>
+                    <div class="btn-row">
+                        <button id="refreshBtn" class="btn btn-primary" type="button" onclick="loadEmails(true)">刷新邮件</button>
+                        <button class="btn btn-secondary" type="button" onclick="exportEmails()">导出当前结果</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="stats-grid">
+                <div class="card stat-card">
+                    <div class="stat-label">邮件总数</div>
+                    <div id="totalEmailCount" class="stat-value">0</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-label">未读邮件</div>
+                    <div id="unreadEmailCount" class="stat-value">0</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-label">今日邮件</div>
+                    <div id="todayEmailCount" class="stat-value">0</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-label">带附件</div>
+                    <div id="attachmentEmailCount" class="stat-value">0</div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="control-grid">
+                    <div class="field">
+                        <label for="mailSearchInput">搜索</label>
+                        <input id="mailSearchInput" class="input" type="text" placeholder="搜索邮件主题、发件人" oninput="applyFilters()">
+                    </div>
+                    <div class="field">
+                        <label for="folderFilter">文件夹</label>
+                        <select id="folderFilter" class="select" onchange="applyFilters()">
+                            <option value="all">全部邮件</option>
+                            <option value="inbox">收件箱</option>
+                            <option value="junk">垃圾邮件</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="statusFilter">状态</label>
+                        <select id="statusFilter" class="select" onchange="applyFilters()">
+                            <option value="all">全部状态</option>
+                            <option value="unread">未读</option>
+                            <option value="read">已读</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="timeFilter">时间</label>
+                        <select id="timeFilter" class="select" onchange="toggleCustomDateRange(); applyFilters()">
+                            <option value="all">全部时间</option>
+                            <option value="today">今天</option>
+                            <option value="3days">近 3 天</option>
+                            <option value="7days">近 7 天</option>
+                            <option value="30days">近 30 天</option>
+                            <option value="90days">近 90 天</option>
+                            <option value="month">本月</option>
+                            <option value="custom">自定义</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="attachmentFilter">附件</label>
+                        <select id="attachmentFilter" class="select" onchange="applyFilters()">
+                            <option value="all">全部附件</option>
+                            <option value="with">仅有附件</option>
+                            <option value="without">无附件</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="customDateRange" class="control-grid-extended hidden">
+                    <div class="field">
+                        <label for="dateFromFilter">开始日期</label>
+                        <input id="dateFromFilter" class="input" type="date" onchange="applyFilters()">
+                    </div>
+                    <div class="field">
+                        <label for="dateToFilter">结束日期</label>
+                        <input id="dateToFilter" class="input" type="date" onchange="applyFilters()">
+                    </div>
+                </div>
+                <div class="btn-row" style="margin-top: 14px;">
+                    <button class="btn btn-secondary" type="button" onclick="clearFilters()">清除筛选</button>
+                </div>
+            </section>
+
+            <section class="card">
+                <div id="emailsList" class="email-list">
+                    <div class="loading">正在加载邮件...</div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div id="emailModal" class="modal hidden">
+        <div class="modal-panel">
+            <div class="modal-header">
+                <h3 id="emailModalTitle">邮件详情</h3>
+                <button class="modal-close" type="button" onclick="closeEmailModal()">&times;</button>
+            </div>
+            <div id="emailModalContent" class="modal-body">
+                <div class="loading">正在加载邮件详情...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let currentEmailId = '';
+        let allEmails = [];
+        let filteredEmails = [];
+        let shareStatus = null;
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function getCurrentEmailIdFromPath() {
+            const prefix = '/open/emails/';
+            if (!window.location.pathname.startsWith(prefix)) {
+                return '';
+            }
+            return decodeURIComponent(window.location.pathname.slice(prefix.length));
+        }
+
+        async function apiRequest(url, options = {}, allowPasswordPrompt = true) {
+            const response = await fetch(API_BASE + url, {
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(options.headers || {})
+                },
+                ...options
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                if (response.status === 401 && allowPasswordPrompt) {
+                    showPasswordGate();
+                }
+                throw new Error(errorData.detail || `HTTP ${response.status}`);
+            }
+
+            return response.json();
+        }
+
+        function formatEmailDate(dateString) {
+            const date = new Date(dateString);
+            if (Number.isNaN(date.getTime())) return '未知时间';
+            const now = new Date();
+            const diffDays = Math.floor((now - date) / 86400000);
+            if (diffDays === 0) {
+                return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            }
+            if (diffDays === 1) {
+                return '昨天 ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            }
+            if (diffDays < 7) {
+                return `${diffDays}天前`;
+            }
+            return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function getSenderProfile(fromValue) {
+            const raw = fromValue || '';
+            const emailMatch = raw.match(/<([^>]+)>/);
+            const email = (emailMatch ? emailMatch[1] : raw).trim();
+            const name = raw.replace(/<[^>]+>/g, '').replace(/"/g, '').trim();
+            const displayName = name || email || '未知发件人';
+            const initialSource = (displayName || email || '?').trim();
+            const initial = initialSource ? initialSource.charAt(0).toUpperCase() : '?';
+            return { email: email || raw || '未知发件人', displayName, initial };
+        }
+
+        function renderAvatar(email, sender) {
+            if (email.sender_avatar_url) {
+                return `<div class="avatar"><img src="${escapeHtml(email.sender_avatar_url)}" alt="${escapeHtml(sender.displayName)}"></div>`;
+            }
+            return `<div class="avatar">${escapeHtml(email.sender_initial || sender.initial || '?')}</div>`;
+        }
+
+        async function loadShareStatus() {
+            return apiRequest('/api/open/emails/' + encodeURIComponent(currentEmailId) + '/status', {}, false);
+        }
+
+        function showPasswordGate() {
+            document.getElementById('passwordGate').classList.remove('hidden');
+            document.getElementById('appView').classList.add('hidden');
+            document.getElementById('unavailableView').classList.add('hidden');
+        }
+
+        function showUnavailable(message) {
+            document.getElementById('unavailableMessage').textContent = message || '这个公开链接当前未开放、已过期，或已被管理员关闭。';
+            document.getElementById('unavailableView').classList.remove('hidden');
+            document.getElementById('passwordGate').classList.add('hidden');
+            document.getElementById('appView').classList.add('hidden');
+        }
+
+        function showAppView() {
+            document.getElementById('appView').classList.remove('hidden');
+            document.getElementById('passwordGate').classList.add('hidden');
+            document.getElementById('unavailableView').classList.add('hidden');
+        }
+
+        function updateShareHeader(status) {
+            shareStatus = status;
+            document.getElementById('currentEmailLabel').textContent = currentEmailId;
+            document.getElementById('currentShareStatus').textContent = status.status === 'active' ? '公开中' : status.status;
+            document.getElementById('currentAccessMode').textContent = status.requires_password ? '密码访问' : '公开访问';
+            document.getElementById('shareExpiresAt').textContent = status.expires_at
+                ? new Date(status.expires_at).toLocaleString()
+                : '一直公开';
+            document.title = `${currentEmailId} - 公开邮件页面`;
+        }
+
+        async function initializePage() {
+            currentEmailId = getCurrentEmailIdFromPath();
+            if (!currentEmailId) {
+                showUnavailable('公开页面地址不正确。');
+                return;
+            }
+
+            try {
+                const status = await loadShareStatus();
+                updateShareHeader(status);
+                if (status.requires_password && !status.access_granted) {
+                    showPasswordGate();
+                    return;
+                }
+                showAppView();
+                await loadEmails();
+            } catch (error) {
+                showUnavailable(error.message);
+            }
+        }
+
+        async function submitAccessPassword(event) {
+            event.preventDefault();
+            const input = document.getElementById('accessPasswordInput');
+            const errorElement = document.getElementById('accessPasswordError');
+            const submitBtn = document.getElementById('unlockSubmitBtn');
+            const password = input.value;
+
+            errorElement.textContent = '';
+            if (!password) {
+                errorElement.textContent = '请输入访问密码';
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = '验证中...';
+
+            try {
+                await apiRequest('/api/open/emails/' + encodeURIComponent(currentEmailId) + '/access', {
+                    method: 'POST',
+                    body: JSON.stringify({ password })
+                }, false);
+                input.value = '';
+                await initializePage();
+            } catch (error) {
+                errorElement.textContent = error.message || '访问密码错误';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '进入公开页面';
+            }
+        }
+
+        async function loadEmails(forceRefresh = false) {
+            const list = document.getElementById('emailsList');
+            const refreshBtn = document.getElementById('refreshBtn');
+            list.innerHTML = '<div class="loading">正在加载邮件...</div>';
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '加载中...';
+
+            try {
+                const refreshQuery = forceRefresh ? '&refresh=true' : '';
+                const data = await apiRequest('/api/open/emails/' + encodeURIComponent(currentEmailId) + '?folder=all&page=1&page_size=100' + refreshQuery);
+                allEmails = data.emails || [];
+                updateEmailStats(allEmails);
+                document.getElementById('lastUpdateTime').textContent = new Date().toLocaleString();
+                applyFilters();
+            } catch (error) {
+                if (String(error.message || '').toLowerCase().includes('password')) {
+                    showPasswordGate();
+                    return;
+                }
+                list.innerHTML = `<div class="loading">${escapeHtml(error.message)}</div>`;
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = '刷新邮件';
+            }
+        }
+
+        function updateEmailStats(emails) {
+            const total = emails.length;
+            const unread = emails.filter(item => !item.is_read).length;
+            const today = emails.filter(item => {
+                const emailDate = new Date(item.date);
+                const todayDate = new Date();
+                return emailDate.toDateString() === todayDate.toDateString();
+            }).length;
+            const attachments = emails.filter(item => item.has_attachments).length;
+
+            document.getElementById('totalEmailCount').textContent = total;
+            document.getElementById('unreadEmailCount').textContent = unread;
+            document.getElementById('todayEmailCount').textContent = today;
+            document.getElementById('attachmentEmailCount').textContent = attachments;
+        }
+
+        function toggleCustomDateRange() {
+            const timeFilter = document.getElementById('timeFilter').value;
+            document.getElementById('customDateRange').classList.toggle('hidden', timeFilter !== 'custom');
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('mailSearchInput').value.trim().toLowerCase();
+            const folderFilter = document.getElementById('folderFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const timeFilter = document.getElementById('timeFilter').value;
+            const attachmentFilter = document.getElementById('attachmentFilter').value;
+            const dateFrom = document.getElementById('dateFromFilter').value;
+            const dateTo = document.getElementById('dateToFilter').value;
+
+            filteredEmails = allEmails.filter(email => {
+                if (searchTerm) {
+                    const searchable = `${email.subject || ''} ${email.from_email || ''}`.toLowerCase();
+                    if (!searchable.includes(searchTerm)) {
+                        return false;
+                    }
+                }
+
+                if (folderFilter !== 'all' && String(email.folder || '').toLowerCase() !== folderFilter) {
+                    return false;
+                }
+
+                if (statusFilter === 'read' && !email.is_read) return false;
+                if (statusFilter === 'unread' && email.is_read) return false;
+                if (attachmentFilter === 'with' && !email.has_attachments) return false;
+                if (attachmentFilter === 'without' && email.has_attachments) return false;
+
+                if (timeFilter !== 'all') {
+                    const emailDate = new Date(email.date);
+                    const now = new Date();
+                    switch (timeFilter) {
+                        case 'today':
+                            if (emailDate.toDateString() !== now.toDateString()) return false;
+                            break;
+                        case '3days':
+                        case '7days':
+                        case '30days':
+                        case '90days': {
+                            const days = parseInt(timeFilter, 10);
+                            const startDate = new Date(now.getTime() - days * 86400000);
+                            if (emailDate < startDate) return false;
+                            break;
+                        }
+                        case 'month':
+                            if (emailDate.getFullYear() !== now.getFullYear() || emailDate.getMonth() !== now.getMonth()) {
+                                return false;
+                            }
+                            break;
+                        case 'custom': {
+                            if (dateFrom) {
+                                const fromDate = new Date(dateFrom + 'T00:00:00');
+                                if (emailDate < fromDate) return false;
+                            }
+                            if (dateTo) {
+                                const toDate = new Date(dateTo + 'T23:59:59.999');
+                                if (emailDate > toDate) return false;
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                return true;
+            });
+
+            renderFilteredEmails();
+        }
+
+        function clearFilters() {
+            document.getElementById('mailSearchInput').value = '';
+            document.getElementById('folderFilter').value = 'all';
+            document.getElementById('statusFilter').value = 'all';
+            document.getElementById('timeFilter').value = 'all';
+            document.getElementById('attachmentFilter').value = 'all';
+            document.getElementById('dateFromFilter').value = '';
+            document.getElementById('dateToFilter').value = '';
+            toggleCustomDateRange();
+            filteredEmails = [...allEmails];
+            renderFilteredEmails();
+        }
+
+        function renderFilteredEmails() {
+            const list = document.getElementById('emailsList');
+            if (!filteredEmails.length) {
+                list.innerHTML = '<div class="loading">没有找到匹配的邮件</div>';
+                return;
+            }
+
+            list.innerHTML = filteredEmails.map(email => {
+                const sender = getSenderProfile(email.from_email);
+                const messageId = encodeURIComponent(email.message_id || '');
+                const attachmentLabel = email.has_attachments ? ' | 含附件' : '';
+                const readLabel = email.is_read ? '已读' : '未读';
+                return `
+                    <article class="email-item ${email.is_read ? '' : 'unread'}" onclick="showEmailDetailByEncoded('${messageId}')">
+                        ${renderAvatar(email, sender)}
+                        <div>
+                            <div class="email-row">
+                                <div class="email-subject">${escapeHtml(email.subject || '(无主题)')}</div>
+                                <div class="email-date">${escapeHtml(formatEmailDate(email.date))}</div>
+                            </div>
+                            <div class="email-meta">${escapeHtml(sender.email)}</div>
+                            <div class="email-preview">文件夹：${escapeHtml(email.folder || '')} | ${escapeHtml(readLabel)}${escapeHtml(attachmentLabel)}</div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        function closeEmailModal() {
+            document.getElementById('emailModal').classList.add('hidden');
+        }
+
+        function showEmailDetailByEncoded(encodedMessageId) {
+            showEmailDetail(decodeURIComponent(encodedMessageId));
+        }
+
+        async function showEmailDetail(messageId) {
+            const modal = document.getElementById('emailModal');
+            const modalTitle = document.getElementById('emailModalTitle');
+            const modalContent = document.getElementById('emailModalContent');
+            modal.classList.remove('hidden');
+            modalTitle.textContent = '邮件详情';
+            modalContent.innerHTML = '<div class="loading">正在加载邮件详情...</div>';
+
+            try {
+                const data = await apiRequest('/api/open/emails/' + encodeURIComponent(currentEmailId) + '/' + encodeURIComponent(messageId));
+                const sender = getSenderProfile(data.from_email);
+                modalTitle.textContent = data.subject || '(无主题)';
+                modalContent.innerHTML = `
+                    <div class="detail-hero">
+                        ${renderAvatar(data, sender)}
+                        <div class="detail-copy">
+                            <h4>${escapeHtml(sender.displayName)}</h4>
+                            <p>${escapeHtml(sender.email)}</p>
+                        </div>
+                    </div>
+                    <div class="detail-meta">
+                        <div class="detail-meta-item">
+                            <span>收件人</span>
+                            <strong>${escapeHtml(data.to_email || '')}</strong>
+                        </div>
+                        <div class="detail-meta-item">
+                            <span>发送时间</span>
+                            <strong>${escapeHtml(new Date(data.date).toLocaleString())}</strong>
+                        </div>
+                        <div class="detail-meta-item">
+                            <span>邮件主题</span>
+                            <strong>${escapeHtml(data.subject || '(无主题)')}</strong>
+                        </div>
+                        <div class="detail-meta-item">
+                            <span>邮件 ID</span>
+                            <strong>${escapeHtml(data.message_id || '')}</strong>
+                        </div>
+                    </div>
+                    ${renderEmailContent(data)}
+                `;
+
+                const frame = document.getElementById('htmlContentFrame');
+                if (frame && data.body_html) {
+                    frame.srcdoc = data.body_html;
+                }
+            } catch (error) {
+                modalContent.innerHTML = `<div class="loading">${escapeHtml(error.message)}</div>`;
+            }
+        }
+
+        function renderEmailContent(email) {
+            const hasHtml = email.body_html && email.body_html.trim();
+            const hasPlain = email.body_plain && email.body_plain.trim();
+
+            if (!hasHtml && !hasPlain) {
+                return '<div class="notice">此邮件无内容</div>';
+            }
+
+            if (hasHtml) {
+                return `
+                    <div class="tabs">
+                        <button class="tab active" type="button" onclick="showEmailContentTab('html', this)">HTML 视图</button>
+                        ${hasPlain ? '<button class="tab" type="button" onclick="showEmailContentTab(\'plain\', this)">纯文本</button>' : ''}
+                        <button class="tab" type="button" onclick="showEmailContentTab('raw', this)">源码</button>
+                    </div>
+                    <div class="content-panel" id="htmlContent">
+                        <iframe id="htmlContentFrame" sandbox="allow-same-origin"></iframe>
+                    </div>
+                    ${hasPlain ? `<div class="content-panel hidden" id="plainContent"><pre>${escapeHtml(email.body_plain)}</pre></div>` : ''}
+                    <div class="content-panel raw-panel hidden" id="rawContent"><pre>${escapeHtml(email.body_html)}</pre></div>
+                `;
+            }
+
+            return `<div class="content-panel"><pre>${escapeHtml(email.body_plain)}</pre></div>`;
+        }
+
+        function showEmailContentTab(type, target) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            target.classList.add('active');
+            ['html', 'plain', 'raw'].forEach(key => {
+                const node = document.getElementById(key + 'Content');
+                if (node) {
+                    node.classList.toggle('hidden', key !== type);
+                }
+            });
+        }
+
+        function exportEmails() {
+            if (!filteredEmails.length) {
+                return;
+            }
+
+            const headers = ['主题', '发件人', '日期', '文件夹', '是否已读', '是否有附件'];
+            const rows = filteredEmails.map(email => [
+                email.subject || '',
+                email.from_email || '',
+                email.date || '',
+                email.folder || '',
+                email.is_read ? '是' : '否',
+                email.has_attachments ? '是' : '否'
+            ]);
+
+            const csv = [headers, ...rows]
+                .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+                .join('\n');
+
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `open_emails_${currentEmailId}_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        document.getElementById('unlockForm').addEventListener('submit', submitAccessPassword);
+        document.getElementById('emailModal').addEventListener('click', event => {
+            if (event.target === event.currentTarget) {
+                closeEmailModal();
+            }
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                closeEmailModal();
+            }
+        });
+
+        initializePage();
+    </script>
+</body>
+</html>
