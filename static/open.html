@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>公开邮件页面</title>
+    <title>Microsoft-Email-Manager 公开邮件页面</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260405">
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=20260405">
     <style>
@@ -617,6 +617,43 @@
             margin-top: 18px;
         }
 
+        .turnstile-slot {
+            display: grid;
+            gap: 8px;
+            min-height: 110px;
+        }
+
+        .turnstile-slot-shell {
+            min-height: 78px;
+            border-radius: 16px;
+            border: 1px dashed rgba(15, 118, 110, 0.28);
+            background: rgba(248, 250, 252, 0.92);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .turnstile-widget {
+            width: 100%;
+            min-height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .turnstile-hint {
+            min-height: 20px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .turnstile-hint.is-error {
+            color: var(--danger);
+        }
+
         .gate-note {
             font-size: 13px;
             color: var(--muted);
@@ -858,13 +895,19 @@
     <div class="page-shell">
         <div id="passwordGate" class="gate-card hidden">
             <div class="brand-logo brand-logo-sm is-placeholder" style="margin: 0 auto 16px;" aria-hidden="true">
-                <img class="brand-logo-image" src="/static/assets/logo.png" alt="OutlookManager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
-                <span class="brand-logo-mark">OM</span>
+                <img class="brand-logo-image" src="/static/assets/logo.png" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
+                <span class="brand-logo-mark">MEM</span>
             </div>
             <h2>公开页面已启用访问密码</h2>
             <p class="gate-note">输入访问密码后才可以查看这个邮箱的公开邮件页面。</p>
             <form id="unlockForm" class="gate-form">
                 <input id="accessPasswordInput" class="input" type="password" placeholder="输入访问密码" autocomplete="current-password">
+                <div id="accessTurnstileWrap" class="turnstile-slot hidden">
+                    <div class="turnstile-slot-shell">
+                        <div id="accessTurnstileWidget" class="turnstile-widget"></div>
+                    </div>
+                    <div id="accessTurnstileHint" class="turnstile-hint"></div>
+                </div>
                 <div id="accessPasswordError" class="error-text"></div>
                 <button id="unlockSubmitBtn" class="btn btn-primary" type="submit">进入公开页面</button>
             </form>
@@ -872,8 +915,8 @@
 
         <div id="unavailableView" class="empty-card unavailable-card hidden">
             <div class="brand-logo is-placeholder" aria-hidden="true">
-                <img class="brand-logo-image" src="/static/assets/logo.png" alt="OutlookManager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
-                <span class="brand-logo-mark">OM</span>
+                <img class="brand-logo-image" src="/static/assets/logo.png" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
+                <span class="brand-logo-mark">MEM</span>
             </div>
             <h2>公开页面不可用</h2>
             <p id="unavailableMessage" class="gate-note">这个公开链接当前未开放、已过期，或已被管理员关闭。</p>
@@ -884,8 +927,8 @@
                 <div class="hero-card">
                     <div class="hero-title">
                         <div class="brand-logo brand-logo-sm is-placeholder" aria-hidden="true">
-                            <img class="brand-logo-image" src="/static/assets/logo.png" alt="OutlookManager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
-                            <span class="brand-logo-mark">OM</span>
+                            <img class="brand-logo-image" src="/static/assets/logo.png" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
+                            <span class="brand-logo-mark">MEM</span>
                         </div>
                         <div>
                             <h1>公开邮件页面</h1>
@@ -1017,6 +1060,10 @@
         let allEmails = [];
         let filteredEmails = [];
         let shareStatus = null;
+        let accessTurnstileToken = '';
+        let accessTurnstileWidgetId = null;
+        let accessTurnstileSiteKey = '';
+        let accessTurnstileScriptPromise = null;
         const DOMAIN_LOGO_RULES = [
             { keywords: ['microsoft.com', 'office.com', 'outlook.com', 'live.com', 'hotmail.com'], domain: 'microsoft.com' },
             { keywords: ['google.com', 'gmail.com', 'googlemail.com'], domain: 'google.com' },
@@ -1053,6 +1100,140 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
+        }
+
+        function getTurnstileConfig(source = {}) {
+            const config = source && typeof source === 'object' ? source : {};
+            return {
+                enabled: !!config.enabled,
+                siteKey: String(config.site_key || '').trim(),
+                adminLoginEnabled: !!config.admin_login_enabled,
+                publicAccessEnabled: !!config.public_access_enabled
+            };
+        }
+
+        function requiresAccessTurnstile(status = shareStatus) {
+            const config = getTurnstileConfig(status && status.turnstile);
+            return !!status && !!status.requires_password && config.enabled && config.publicAccessEnabled && !!config.siteKey;
+        }
+
+        function setAccessTurnstileHint(message = '', isError = false) {
+            const hint = document.getElementById('accessTurnstileHint');
+            if (!hint) return;
+            hint.textContent = message;
+            hint.classList.toggle('is-error', !!isError);
+        }
+
+        function toggleAccessTurnstileVisibility(status = shareStatus) {
+            const wrap = document.getElementById('accessTurnstileWrap');
+            if (!wrap) return;
+            wrap.classList.toggle('hidden', !requiresAccessTurnstile(status));
+            if (!requiresAccessTurnstile(status)) {
+                setAccessTurnstileHint('');
+            }
+        }
+
+        function resetAccessTurnstileWidget() {
+            accessTurnstileToken = '';
+            if (window.turnstile && accessTurnstileWidgetId !== null) {
+                try {
+                    window.turnstile.reset(accessTurnstileWidgetId);
+                } catch (error) {
+                    console.warn('Unable to reset public turnstile widget', error);
+                }
+            }
+            if (requiresAccessTurnstile()) {
+                setAccessTurnstileHint('请完成下方安全验证');
+            }
+        }
+
+        function ensureTurnstileScript() {
+            if (window.turnstile && typeof window.turnstile.render === 'function') {
+                return Promise.resolve(window.turnstile);
+            }
+            if (accessTurnstileScriptPromise) {
+                return accessTurnstileScriptPromise;
+            }
+            accessTurnstileScriptPromise = new Promise((resolve, reject) => {
+                const existing = document.querySelector('script[data-turnstile-script="true"]');
+                if (existing) {
+                    existing.addEventListener('load', () => resolve(window.turnstile), { once: true });
+                    existing.addEventListener('error', () => reject(new Error('Cloudflare Turnstile 脚本加载失败')), { once: true });
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                script.async = true;
+                script.defer = true;
+                script.dataset.turnstileScript = 'true';
+                script.onload = () => resolve(window.turnstile);
+                script.onerror = () => reject(new Error('Cloudflare Turnstile 脚本加载失败'));
+                document.head.appendChild(script);
+            });
+            return accessTurnstileScriptPromise;
+        }
+
+        async function ensureAccessTurnstileReady(status = shareStatus) {
+            toggleAccessTurnstileVisibility(status);
+            if (!requiresAccessTurnstile(status)) {
+                accessTurnstileToken = '';
+                return true;
+            }
+
+            const container = document.getElementById('accessTurnstileWidget');
+            if (!container) {
+                return false;
+            }
+
+            const config = getTurnstileConfig(status && status.turnstile);
+            setAccessTurnstileHint('安全验证加载中...');
+
+            try {
+                await ensureTurnstileScript();
+                if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+                    throw new Error('Cloudflare Turnstile 未正确加载');
+                }
+
+                if (accessTurnstileWidgetId !== null && accessTurnstileSiteKey === config.siteKey) {
+                    setAccessTurnstileHint(accessTurnstileToken ? '验证已完成' : '请完成下方安全验证');
+                    return true;
+                }
+
+                if (accessTurnstileWidgetId !== null && typeof window.turnstile.remove === 'function') {
+                    try {
+                        window.turnstile.remove(accessTurnstileWidgetId);
+                    } catch (error) {
+                        console.warn('Unable to remove public turnstile widget', error);
+                    }
+                }
+
+                container.innerHTML = '';
+                accessTurnstileToken = '';
+                accessTurnstileSiteKey = config.siteKey;
+                accessTurnstileWidgetId = window.turnstile.render(container, {
+                    sitekey: config.siteKey,
+                    theme: 'light',
+                    callback: token => {
+                        accessTurnstileToken = token;
+                        setAccessTurnstileHint('验证已完成');
+                    },
+                    'expired-callback': () => {
+                        accessTurnstileToken = '';
+                        setAccessTurnstileHint('验证已过期，请重新完成', true);
+                    },
+                    'error-callback': () => {
+                        accessTurnstileToken = '';
+                        setAccessTurnstileHint('安全验证加载失败，请刷新后重试', true);
+                    }
+                });
+                setAccessTurnstileHint('请完成下方安全验证');
+                return true;
+            } catch (error) {
+                console.error('Failed to initialize public turnstile', error);
+                setAccessTurnstileHint(error.message || 'Cloudflare Turnstile 初始化失败', true);
+                return false;
+            }
         }
 
         function getCurrentEmailIdFromPath() {
@@ -1149,6 +1330,7 @@
             document.getElementById('passwordGate').classList.remove('hidden');
             document.getElementById('appView').classList.add('hidden');
             document.getElementById('unavailableView').classList.add('hidden');
+            ensureAccessTurnstileReady();
         }
 
         function showUnavailable(message) {
@@ -1213,19 +1395,39 @@
                 return;
             }
 
+            const requiresTurnstile = requiresAccessTurnstile();
+            if (requiresTurnstile) {
+                const turnstileReady = await ensureAccessTurnstileReady();
+                if (!turnstileReady) {
+                    errorElement.textContent = 'Cloudflare Turnstile 加载失败，请刷新后重试';
+                    return;
+                }
+                if (!accessTurnstileToken) {
+                    errorElement.textContent = '请先完成 Cloudflare Turnstile 验证';
+                    return;
+                }
+            }
+
             submitBtn.disabled = true;
             submitBtn.textContent = '验证中...';
+            const submittedWithTurnstile = requiresTurnstile && !!accessTurnstileToken;
 
             try {
                 await apiRequest('/api/open/emails/' + encodeURIComponent(currentEmailId) + '/access', {
                     method: 'POST',
-                    body: JSON.stringify({ password })
+                    body: JSON.stringify({
+                        password,
+                        turnstile_token: submittedWithTurnstile ? accessTurnstileToken : ''
+                    })
                 }, false);
                 input.value = '';
                 await initializePage();
             } catch (error) {
                 errorElement.textContent = error.message || '访问密码错误';
             } finally {
+                if (submittedWithTurnstile) {
+                    resetAccessTurnstileWidget();
+                }
                 submitBtn.disabled = false;
                 submitBtn.textContent = '进入公开页面';
             }

@@ -1,8 +1,8 @@
-# OutlookManager
+# Microsoft-Email-Manager
 
-OutlookManager 是由 Maishan Inc. 维护的 Outlook 账户与邮件管理面板，提供 Web UI、批量导入、邮件检索、标签管理、API Key 管理和接口文档。
+Microsoft-Email-Manager 是由 Maishan Inc. 维护的 Microsoft 邮箱账户与邮件管理面板，提供 Web UI、批量导入、邮件检索、标签管理、API Key 管理和接口文档。
 
-仓库地址：
+当前仓库地址（仓库坐标暂未改名）：
 <https://github.com/Maishan-Inc/OutlookManager>
 
 镜像地址：
@@ -11,6 +11,7 @@ OutlookManager 是由 Maishan Inc. 维护的 Outlook 账户与邮件管理面板
 <a id="quick-links"></a>
 ## 快速跳转
 
+- [新版本更新](#whats-new)
 - [项目预览](#project-preview)
 - [docker-compose 一键部署](#deploy-docker-compose)
 - [线上部署前必看](#deployment-notes)
@@ -32,14 +33,37 @@ OutlookManager 是由 Maishan Inc. 维护的 Outlook 账户与邮件管理面板
 - [Zeabur 官方文档](https://zeabur.com/docs/deploy-from-git)
 - [ClawCloud Run 官方文档](https://docs.run.claw.cloud/)
 
+<a id="whats-new"></a>
+## 新版本更新
+
+当前版本已支持 2 种邮箱接入方式，可按账户情况自由选择：
+
+1. `IMAP`
+   适合继续使用传统 Outlook / Hotmail 邮件读取流程，基于 OAuth2 + IMAP 获取邮件内容。
+2. `Microsoft Graph API`
+   适合使用 Graph 权限体系的场景，通过 Microsoft Graph API 读取邮件与详情。
+
+这 2 种方式目前都已经支持：
+
+- 单个账户添加
+- 批量账户导入
+- 连接测试
+- 邮件列表读取
+- 邮件详情查看
+
+批量导入时的格式说明：
+
+- `Graph API`：`邮箱----密码----client_id----令牌`
+- `IMAP`：兼容旧格式 `邮箱----占位密码----刷新令牌----客户端ID`
+
 <a id="deploy-docker-compose"></a>
 ## docker-compose 一键部署
 
 如果你已经拉取了仓库，直接执行下面命令就可以部署：
 
 ```bash
-git clone https://github.com/Maishan-Inc/OutlookManager.git
-cd OutlookManager
+git clone https://github.com/Maishan-Inc/OutlookManager.git Microsoft-Email-Manager
+cd Microsoft-Email-Manager
 docker-compose up -d
 ```
 
@@ -56,7 +80,8 @@ docker-compose up -d
 
 ## 核心特性
 
-- Outlook 账户管理、批量导入、快速检索
+- 支持 2 种接入方式：`IMAP` / `Microsoft Graph API`
+- Microsoft 邮箱账户管理、批量导入、快速检索
 - 收件箱 / 垃圾箱邮件查看与详情展示
 - 邮件主题、发件人、内容搜索
 - API Key 创建、停用、调用记录查看
@@ -130,7 +155,7 @@ Railway 适合直接从 GitHub 仓库快速上线，也适合直接使用 Docker
 
 1. 登录 Railway。
 2. 创建新项目并选择 `Deploy from GitHub repo`。
-3. 选择仓库 `Maishan-Inc/OutlookManager`。
+3. 选择当前项目仓库 `Maishan-Inc/OutlookManager`。
 4. Railway 会检测到仓库内的 `Dockerfile` 并自动构建部署。
 5. 为服务添加持久化卷，并挂载到 `/app/data`。
 6. 设置环境变量：
@@ -175,7 +200,7 @@ Zeabur 适合可视化部署和 GitHub 仓库直连部署。
 
 1. 登录 Zeabur。
 2. 新建 Project。
-3. 选择从 GitHub 导入仓库：
+3. 选择从 GitHub 导入当前项目仓库：
    `https://github.com/Maishan-Inc/OutlookManager`
 4. Zeabur 检测到 `Dockerfile` 后会按容器方式构建。
 5. 为服务添加持久化存储，挂载目录设为 `/app/data`。
@@ -259,8 +284,8 @@ Zeabur 适合可视化部署和 GitHub 仓库直连部署。
 如果你不走云平台，也可以直接在自己的服务器或本地机器使用 Docker Compose。
 
 ```bash
-git clone https://github.com/Maishan-Inc/OutlookManager.git
-cd OutlookManager
+git clone https://github.com/Maishan-Inc/OutlookManager.git Microsoft-Email-Manager
+cd Microsoft-Email-Manager
 docker compose up -d
 ```
 
@@ -277,15 +302,16 @@ docker compose up -d
 2. 阅读并同意使用协议。
 3. 设置管理员密码。
 4. 登录后台。
-5. 添加单个 Outlook 账户，或使用批量导入。
-6. 进入邮件页面查看收件箱 / 垃圾箱邮件。
-7. 如需程序化调用，可进入 API 密钥页面创建 Key。
+5. 添加单个 Microsoft 邮箱账户，或使用批量导入。
+6. 根据账户情况选择 `IMAP` 或 `Microsoft Graph API` 接入方案。
+7. 进入邮件页面查看收件箱 / 垃圾箱邮件。
+8. 如需程序化调用，可进入 API 密钥页面创建 Key。
 
 <a id="structure"></a>
 ## 目录结构
 
 ```text
-OutlookManager/
+Microsoft-Email-Manager/
 ├─ main.py
 ├─ static/
 │  ├─ index.html

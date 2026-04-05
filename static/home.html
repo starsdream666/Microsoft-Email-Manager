@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Outlook Manager | 批量管理 Outlook 邮箱账户 · 邮件自动化后台</title>
+    <title>Microsoft-Email-Manager | 批量管理 Microsoft 邮箱账户 · 邮件自动化后台</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260405">
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=20260405">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
@@ -151,7 +151,7 @@
         <div class="container-custom mx-auto flex flex-wrap justify-between items-center py-3 md:py-4">
             <div class="flex items-center space-x-2">
                 <i class="fas fa-envelope-open-text text-2xl text-sky-700"></i>
-                <span class="font-bold text-xl tracking-tight text-gray-800">Outlook<span class="text-sky-700">Manager</span></span>
+                <span class="font-bold text-xl tracking-tight text-gray-800">Microsoft<span class="text-sky-700">-Email-Manager</span></span>
                 <span class="hidden md:inline-block ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">v2.0 · 批量管理</span>
             </div>
             <div class="flex items-center gap-4 md:gap-6 text-sm font-medium">
@@ -301,8 +301,8 @@
                     <p class="text-gray-600 mb-4 text-sm">适合自托管服务器，数据持久化，开箱即用</p>
                     <div class="relative">
                         <div class="code-block text-sm" id="dockerCommandBlock">
-                            git clone https://github.com/Maishan-Inc/OutlookManager.git<br>
-                            cd OutlookManager<br>
+                            git clone https://github.com/Maishan-Inc/OutlookManager.git Microsoft-Email-Manager<br>
+                            cd Microsoft-Email-Manager<br>
                             docker-compose up -d
                         </div>
                         <button onclick="copyCommand()" class="copy-btn absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-white text-xs px-2 py-1 rounded-md"><i class="far fa-copy mr-1"></i>复制</button>
@@ -447,7 +447,7 @@
 
     <script>
         window.copyCommand = function() {
-            const text = `git clone https://github.com/Maishan-Inc/OutlookManager.git\ncd OutlookManager\ndocker-compose up -d`;
+            const text = `git clone https://github.com/Maishan-Inc/OutlookManager.git Microsoft-Email-Manager\ncd Microsoft-Email-Manager\ndocker-compose up -d`;
             navigator.clipboard.writeText(text).then(() => {
                 const btn = document.querySelector('.copy-btn');
                 const originalHtml = btn.innerHTML;

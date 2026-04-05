@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Outlook邮件客户端 - 一键部署脚本
+# Microsoft-Email-Manager - 一键部署脚本
 # 作者: AI Assistant
 # 描述: 自动化Docker部署流程
 
 set -e
 
-echo "🚀 Outlook邮件客户端 - 一键部署脚本"
+echo "🚀 Microsoft-Email-Manager - 一键部署脚本"
 echo "======================================="
 
 # 检查Docker和docker-compose是否安装
@@ -95,4 +95,4 @@ trap 'echo "❌ 部署中断"; exit 1' INT
 # 执行主流程
 main
 
-echo "✨ 感谢使用Outlook邮件客户端!" 
+echo "✨ 感谢使用 Microsoft-Email-Manager!"

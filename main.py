@@ -1,10 +1,10 @@
 """
-Outlook邮件管理系统 - 主应用模块
+Microsoft-Email-Manager 邮件管理系统 - 主应用模块
 
 基于FastAPI和IMAP协议的高性能邮件管理系统
 支持多账户管理、邮件查看、搜索过滤等功能
 
-Author: Outlook Manager Team
+Author: Microsoft-Email-Manager Team
 Version: 1.0.0
 """
 
@@ -34,7 +34,6 @@ import httpx
 from email.header import decode_header
 from email.utils import parseaddr, parsedate_to_datetime
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr, Field
@@ -68,9 +67,10 @@ OPEN_ACCESS_SESSION_TTL_HOURS = max(1, int(os.getenv("OPEN_ACCESS_SESSION_TTL_HO
 OPEN_ACCESS_FAILURE_LIMIT = max(1, int(os.getenv("OPEN_ACCESS_FAILURE_LIMIT", "5")))
 OPEN_ACCESS_FAILURE_WINDOW_MINUTES = max(1, int(os.getenv("OPEN_ACCESS_FAILURE_WINDOW_MINUTES", "15")))
 OPEN_ACCESS_LOCKOUT_MINUTES = max(1, int(os.getenv("OPEN_ACCESS_LOCKOUT_MINUTES", "15")))
+TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 DEFAULT_ADMIN_LOGIN_PATH = "/admin"
-DEFAULT_HOME_TITLE = "OutlookManager"
-DEFAULT_HOME_INTRO = "用于集中管理 Outlook 邮箱账户、邮件公开分享、API 接入与日常运营排查。"
+DEFAULT_HOME_TITLE = "Microsoft-Email-Manager"
+DEFAULT_HOME_INTRO = "用于集中管理 Microsoft 邮箱账户、邮件公开分享、API 接入与日常运营排查。"
 
 # OAuth2配置
 TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
@@ -95,6 +95,7 @@ CACHE_EXPIRE_TIME = 60  # 缓存过期时间（秒）
 CLASSIFICATION_KEY_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 ADMIN_LOGIN_PATH_PATTERN = re.compile(r"^/[a-zA-Z0-9/_-]{2,120}$")
 HOSTNAME_PATTERN = re.compile(r"^[a-z0-9.-]+(?::\d{1,5})?$")
+SAFE_BROWSER_METHODS = {"GET", "HEAD", "OPTIONS"}
 
 # 日志配置
 logging.basicConfig(
@@ -284,6 +285,7 @@ class ActionResponse(BaseModel):
 
 class PasswordPayload(BaseModel):
     password: str = Field(min_length=8, max_length=256)
+    turnstile_token: Optional[str] = Field(default=None, max_length=2048)
 
 
 class SetupPayload(PasswordPayload):
@@ -309,6 +311,7 @@ class PublicShareConfigPayload(BaseModel):
 
 class PublicShareAccessPayload(BaseModel):
     password: str = Field(min_length=1, max_length=256)
+    turnstile_token: Optional[str] = Field(default=None, max_length=2048)
 
 
 class SiteSettingsPayload(BaseModel):
@@ -317,6 +320,10 @@ class SiteSettingsPayload(BaseModel):
     admin_login_path: str = Field(default=DEFAULT_ADMIN_LOGIN_PATH, min_length=2, max_length=120)
     share_domain_enabled: bool = Field(default=False)
     share_domain: Optional[str] = Field(default=None, max_length=255)
+    turnstile_site_key: Optional[str] = Field(default=None, max_length=512)
+    turnstile_secret_key: Optional[str] = Field(default=None, max_length=512)
+    turnstile_enabled_for_admin_login: bool = Field(default=False)
+    turnstile_enabled_for_public_access: bool = Field(default=False)
 
 # ============================================================================
 # IMAP连接池管理
@@ -1359,6 +1366,10 @@ def get_default_site_settings() -> dict[str, Any]:
         "admin_login_path": DEFAULT_ADMIN_LOGIN_PATH,
         "share_domain_enabled": False,
         "share_domain": "",
+        "turnstile_site_key": "",
+        "turnstile_secret_key": "",
+        "turnstile_enabled_for_admin_login": False,
+        "turnstile_enabled_for_public_access": False,
         "updated_at": None,
     }
 
@@ -1408,6 +1419,23 @@ def normalize_hostname(value: str | None) -> str:
     return host
 
 
+def normalize_turnstile_value(value: str | None) -> str:
+    return str(value or "").strip()[:512]
+
+
+def build_turnstile_client_config(settings: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    source = settings or load_site_settings()
+    site_key = normalize_turnstile_value(source.get("turnstile_site_key"))
+    secret_key = normalize_turnstile_value(source.get("turnstile_secret_key"))
+    configured = bool(site_key) and bool(secret_key)
+    return {
+        "enabled": configured,
+        "site_key": site_key if configured else "",
+        "admin_login_enabled": configured and bool(source.get("turnstile_enabled_for_admin_login", False)),
+        "public_access_enabled": configured and bool(source.get("turnstile_enabled_for_public_access", False)),
+    }
+
+
 def load_site_settings() -> dict[str, Any]:
     with auth_lock:
         data = _read_json_file(SITE_SETTINGS_FILE, get_default_site_settings())
@@ -1417,6 +1445,10 @@ def load_site_settings() -> dict[str, Any]:
             "home_intro": str(data.get("home_intro") or defaults["home_intro"]).strip()[:1200] or defaults["home_intro"],
             "share_domain_enabled": bool(data.get("share_domain_enabled", False)),
             "share_domain": "",
+            "turnstile_site_key": normalize_turnstile_value(data.get("turnstile_site_key")),
+            "turnstile_secret_key": normalize_turnstile_value(data.get("turnstile_secret_key")),
+            "turnstile_enabled_for_admin_login": bool(data.get("turnstile_enabled_for_admin_login", False)),
+            "turnstile_enabled_for_public_access": bool(data.get("turnstile_enabled_for_public_access", False)),
             "updated_at": data.get("updated_at"),
         }
 
@@ -1432,6 +1464,9 @@ def load_site_settings() -> dict[str, Any]:
 
         if not normalized["share_domain"]:
             normalized["share_domain_enabled"] = False
+        if not normalized["turnstile_site_key"] or not normalized["turnstile_secret_key"]:
+            normalized["turnstile_enabled_for_admin_login"] = False
+            normalized["turnstile_enabled_for_public_access"] = False
 
         return normalized
 
@@ -1443,10 +1478,17 @@ def save_site_settings(settings: dict[str, Any]) -> dict[str, Any]:
         "admin_login_path": normalize_admin_login_path(settings.get("admin_login_path")),
         "share_domain_enabled": bool(settings.get("share_domain_enabled", False)),
         "share_domain": normalize_hostname(settings.get("share_domain")),
+        "turnstile_site_key": normalize_turnstile_value(settings.get("turnstile_site_key")),
+        "turnstile_secret_key": normalize_turnstile_value(settings.get("turnstile_secret_key")),
+        "turnstile_enabled_for_admin_login": bool(settings.get("turnstile_enabled_for_admin_login", False)),
+        "turnstile_enabled_for_public_access": bool(settings.get("turnstile_enabled_for_public_access", False)),
         "updated_at": datetime.utcnow().isoformat(),
     }
     if not payload["share_domain"]:
         payload["share_domain_enabled"] = False
+    if not payload["turnstile_site_key"] or not payload["turnstile_secret_key"]:
+        payload["turnstile_enabled_for_admin_login"] = False
+        payload["turnstile_enabled_for_public_access"] = False
 
     with auth_lock:
         _write_json_file(SITE_SETTINGS_FILE, payload)
@@ -1534,6 +1576,84 @@ def get_request_origin(request: Request) -> str:
     if forwarded_proto:
         scheme = forwarded_proto.split(",")[0].strip().lower() or scheme
     return f"{scheme}://{get_request_host(request)}"
+
+
+def normalize_origin_value(value: str | None) -> str:
+    if not value:
+        return ""
+    try:
+        parsed = urlparse(value.strip())
+    except ValueError:
+        return ""
+    scheme = (parsed.scheme or "").strip().lower()
+    netloc = (parsed.netloc or "").strip().lower()
+    if scheme not in {"http", "https"} or not netloc:
+        return ""
+    return f"{scheme}://{netloc}"
+
+
+def get_browser_supplied_origin(request: Request) -> tuple[bool, str]:
+    raw_origin = (request.headers.get("Origin") or "").strip()
+    if raw_origin:
+        if raw_origin.lower() == "null":
+            return True, "null"
+        return True, normalize_origin_value(raw_origin)
+
+    raw_referer = (request.headers.get("Referer") or "").strip()
+    if raw_referer:
+        return True, normalize_origin_value(raw_referer)
+
+    return False, ""
+
+
+def validate_browser_origin(request: Request) -> JSONResponse | None:
+    has_browser_origin, supplied_origin = get_browser_supplied_origin(request)
+    if not has_browser_origin:
+        return None
+    if supplied_origin == get_request_origin(request).lower():
+        return None
+    return JSONResponse({"detail": "Cross-site browser requests are not allowed."}, status_code=403)
+
+
+async def enforce_turnstile(request: Request, token: str | None, audience: str) -> None:
+    site_settings = load_site_settings()
+    turnstile_config = build_turnstile_client_config(site_settings)
+    audience_enabled = (
+        turnstile_config.get("admin_login_enabled")
+        if audience == "admin_login"
+        else turnstile_config.get("public_access_enabled")
+    )
+    if not audience_enabled:
+        return
+
+    token_value = str(token or "").strip()
+    if not token_value:
+        raise HTTPException(status_code=400, detail="请先完成 Cloudflare Turnstile 验证")
+
+    payload = {
+        "secret": site_settings.get("turnstile_secret_key", ""),
+        "response": token_value,
+    }
+    remote_ip = get_request_ip(request)
+    if remote_ip:
+        payload["remoteip"] = remote_ip
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(TURNSTILE_VERIFY_URL, data=payload)
+            response.raise_for_status()
+            verification = response.json()
+    except httpx.HTTPError as exc:
+        logger.warning("Turnstile verification request failed for %s: %s", audience, exc)
+        raise HTTPException(status_code=502, detail="Cloudflare Turnstile 验证服务暂时不可用，请稍后重试")
+
+    if not verification.get("success"):
+        logger.info(
+            "Turnstile verification rejected for %s: %s",
+            audience,
+            verification.get("error-codes") or [],
+        )
+        raise HTTPException(status_code=400, detail="Cloudflare Turnstile 验证失败，请刷新后重试")
 
 
 def request_uses_https(request: Request | None) -> bool:
@@ -2766,7 +2886,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     处理应用启动和关闭时的资源管理
     """
     # 应用启动
-    logger.info("Starting Outlook Email Management System...")
+    logger.info("Starting Microsoft-Email-Manager...")
     logger.info(f"IMAP connection pool initialized with max_connections={MAX_CONNECTIONS}")
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     if ACCOUNTS_FILE.exists() and ACCOUNTS_FILE.is_dir():
@@ -2825,30 +2945,21 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
     # 应用关闭
-    logger.info("Shutting down Outlook Email Management System...")
+    logger.info("Shutting down Microsoft-Email-Manager...")
     logger.info("Closing IMAP connection pool...")
     imap_pool.close_all_connections()
     logger.info("Application shutdown complete.")
 
 
 app = FastAPI(
-    title="Outlook邮件API服务",
+    title="Microsoft-Email-Manager API 服务",
     description="基于FastAPI和IMAP协议的高性能邮件管理系统",
     version="1.0.0",
     lifespan=lifespan
 )
 
-app.title = "OutlookManager API"
-app.description = "OutlookManager 邮件管理后台服务"
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
+app.title = "Microsoft-Email-Manager API"
+app.description = "Microsoft-Email-Manager 邮件管理后台服务"
 
 @app.middleware("http")
 async def site_access_middleware(request: Request, call_next):
@@ -2869,6 +2980,11 @@ async def site_access_middleware(request: Request, call_next):
             if path.startswith("/api/"):
                 return JSONResponse({"detail": "Public share pages are restricted to the configured share domain."}, status_code=404)
             return PlainTextResponse("Not Found", status_code=404)
+
+    if request.method not in SAFE_BROWSER_METHODS:
+        csrf_violation = validate_browser_origin(request)
+        if csrf_violation is not None:
+            return csrf_violation
 
     if request.method in {"GET", "HEAD"} and (path == admin_path or path.startswith(admin_path + "/")):
         return FileResponse(STATIC_DIR / "index.html")
@@ -2891,6 +3007,7 @@ async def auth_state(request: Request):
         "agreement_required": True,
         "agreement_accepted": bool(settings.get("agreement_accepted", False)),
         "auth_mode": "setup" if not configured else "login",
+        "turnstile": build_turnstile_client_config(site_settings),
     }
 
 
@@ -2933,6 +3050,7 @@ async def auth_login(payload: PasswordPayload, request: Request):
     settings = load_auth_settings()
     if not auth_is_configured():
         raise HTTPException(status_code=403, detail="Admin password is not configured yet")
+    await enforce_turnstile(request, payload.turnstile_token, "admin_login")
     if not verify_password(payload.password, settings.get("admin_password_hash")):
         raise HTTPException(status_code=401, detail="Password is incorrect")
     raw_token, expires_at = create_session_token()
@@ -3150,6 +3268,7 @@ async def get_open_email_status(email_id: str, request: Request):
     if not is_public_share_active(meta):
         raise HTTPException(status_code=404, detail="Public page unavailable")
     await get_account_credentials(email_id)
+    site_settings = load_site_settings()
 
     return {
         "email_id": email_id,
@@ -3158,6 +3277,7 @@ async def get_open_email_status(email_id: str, request: Request):
         "requires_password": bool(meta.get("password_hash")),
         "access_granted": not bool(meta.get("password_hash")) or bool(get_open_access_session(request, email_id)),
         "public_url": build_public_share_url(request, email_id),
+        "turnstile": build_turnstile_client_config(site_settings),
     }
 
 
@@ -3175,6 +3295,7 @@ async def create_open_email_access(email_id: str, payload: PublicShareAccessPayl
     if blocked_state:
         raise HTTPException(status_code=429, detail="Too many password attempts. Try again later.")
 
+    await enforce_turnstile(request, payload.turnstile_token, "public_access")
     if not verify_password(payload.password, meta.get("password_hash")):
         failure_state = record_open_access_failure(email_id, request)
         if parse_stored_datetime(failure_state.get("blocked_until")):
@@ -3536,7 +3657,7 @@ async def fetch_remote_domain_icon(domain: str, size: int) -> tuple[bytes | None
         f"https://{domain}/favicon.ico",
     ]
     headers = {
-        "User-Agent": "OutlookManager/1.0",
+        "User-Agent": "Microsoft-Email-Manager/1.0",
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
     }
     async with httpx.AsyncClient(timeout=8.0, follow_redirects=True, headers=headers) as client:
@@ -3579,7 +3700,7 @@ async def api_status(request: Request):
     auth_context = require_authenticated(request, allow_api_key=True)
     """API状态检查"""
     return {
-        "message": "Outlook邮件API服务正在运行",
+        "message": "Microsoft-Email-Manager API 服务正在运行",
         "version": "1.0.0",
         "authentication": {
             "type": auth_context.get("auth_type"),
@@ -3623,7 +3744,7 @@ if __name__ == "__main__":
     HOST = "0.0.0.0"
     PORT = 8000
 
-    logger.info(f"Starting Outlook Email Management System on {HOST}:{PORT}")
+    logger.info(f"Starting Microsoft-Email-Manager on {HOST}:{PORT}")
     logger.info("Access the web interface at: http://localhost:8000")
     logger.info("Access the API documentation at: http://localhost:8000/docs")
 

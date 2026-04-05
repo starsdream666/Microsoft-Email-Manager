@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Outlook 邮件管理系统</title>
+    <title>Microsoft-Email-Manager</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260405">
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=20260405">
     <style>
@@ -3476,6 +3476,59 @@
             font-size: 0.9rem;
         }
 
+        .turnstile-slot {
+            display: grid;
+            gap: 8px;
+            min-height: 110px;
+        }
+
+        .turnstile-slot-shell {
+            min-height: 78px;
+            border-radius: 16px;
+            border: 1px dashed rgba(15, 118, 110, 0.28);
+            background: rgba(248, 250, 252, 0.92);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .turnstile-widget {
+            width: 100%;
+            min-height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .turnstile-hint {
+            min-height: 20px;
+            color: #64748b;
+            font-size: 0.86rem;
+            line-height: 1.5;
+        }
+
+        .turnstile-hint.is-error {
+            color: #dc2626;
+        }
+
+        .turnstile-scope-list {
+            display: grid;
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .turnstile-setting-note {
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: rgba(248, 250, 252, 0.92);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            color: #475569;
+            font-size: 0.92rem;
+            line-height: 1.7;
+        }
+
         .auth-actions {
             display: flex;
             gap: 12px;
@@ -3776,7 +3829,7 @@
     <div id="bootSplash" class="boot-splash" aria-live="polite">
         <div class="boot-splash-card">
             <div class="boot-splash-spinner"></div>
-            <h2>OutlookManager</h2>
+            <h2>Microsoft-Email-Manager</h2>
             <p>正在验证后台状态，请稍候...</p>
         </div>
     </div>
@@ -3786,12 +3839,12 @@
             <div class="auth-screen-brand">
                 <div class="auth-brand">
                     <div class="auth-brand-logo is-placeholder" id="authBrandLogoWrap">
-                        <img id="authBrandLogo" class="auth-brand-logo-image" src="/static/assets/logo.png" alt="OutlookManager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
-                        <span class="auth-brand-mark">OM</span>
+                        <img id="authBrandLogo" class="auth-brand-logo-image" src="/static/assets/logo.png" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
+                        <span class="auth-brand-mark">MEM</span>
                     </div>
                     <div class="auth-brand-copy">
-                        <h1>OutlookManager</h1>
-                        <p>Outlook 账户、邮件与接口后台</p>
+                        <h1>Microsoft-Email-Manager</h1>
+                        <p>Microsoft 邮箱账户、邮件与接口后台</p>
                     </div>
                 </div>
             </div>
@@ -3839,10 +3892,16 @@
                 </div>
 
                 <div id="authLoginView" class="hidden">
-                    <h3>登录 OutlookManager</h3>
+                    <h3>登录 Microsoft-Email-Manager</h3>
                     <p>当前站点已经启用密码保护。输入管理员密码后才可进入后台。</p>
                     <form id="authLoginForm" class="auth-form">
                         <input type="password" id="authLoginPassword" class="form-input" placeholder="输入管理员密码" autocomplete="current-password">
+                        <div id="authLoginTurnstileWrap" class="turnstile-slot hidden">
+                            <div class="turnstile-slot-shell">
+                                <div id="authLoginTurnstileWidget" class="turnstile-widget"></div>
+                            </div>
+                            <div id="authLoginTurnstileHint" class="turnstile-hint"></div>
+                        </div>
                         <div id="authLoginError" class="auth-error"></div>
                         <div class="auth-actions">
                             <button type="submit" id="authLoginSubmit" class="btn btn-primary">登录</button>
@@ -3860,11 +3919,11 @@
                 <div class="sidebar-brand">
                     <div class="sidebar-brand-main">
                         <div class="sidebar-logo is-placeholder" id="sidebarLogoWrap">
-                            <img id="sidebarLogo" class="sidebar-logo-image" src="/static/assets/logo.png" alt="OutlookManager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
-                            <span class="brand-mark">OM</span>
+                            <img id="sidebarLogo" class="sidebar-logo-image" src="/static/assets/logo.png" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
+                            <span class="brand-mark">MEM</span>
                         </div>
                         <div class="sidebar-title-stack">
-                            <h1>OutlookManager</h1>
+                            <h1>Microsoft-Email-Manager</h1>
                         </div>
                     </div>
                 </div>
@@ -4802,7 +4861,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                         <div class="flex items-center justify-between mb-6">
                             <div>
                                 <h3 class="font-semibold">站点设置</h3>
-                                <p class="text-sm" style="color: #64748b;">配置网站主页介绍、管理员入口地址和公开分享的独立域名。</p>
+                                <p class="text-sm" style="color: #64748b;">配置网站主页介绍、管理员入口地址、公开分享独立域名，以及 Cloudflare Turnstile 验证。</p>
                             </div>
                             <div class="flex gap-2">
                                 <button class="btn btn-secondary btn-sm" type="button" onclick="copySiteSettingValue('siteSettingsAdminUrl', '管理员入口')">
@@ -4821,7 +4880,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                                 <h4 style="margin: 0 0 16px; color: #0f172a;">主页与后台</h4>
                                 <div class="form-group">
                                     <label class="form-label" for="siteSettingsHomeTitle">网站主页标题</label>
-                                    <input type="text" id="siteSettingsHomeTitle" class="form-input" placeholder="例如：OutlookManager 邮件中心">
+                                    <input type="text" id="siteSettingsHomeTitle" class="form-input" placeholder="例如：Microsoft-Email-Manager 邮件中心">
                                     <div class="public-share-help">显示在根路径 <code>/</code> 的网站主页上。</div>
                                 </div>
                                 <div class="form-group">
@@ -4865,6 +4924,37 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                                         2. 指定分享域名上只允许公开分享页面和它依赖的静态资源访问。<br>
                                         3. 这样可以把后台入口和公开页面拆开，减少主站暴露面。
                                     </p>
+                                </div>
+                            </div>
+
+                            <div class="api-key-panel">
+                                <h4 style="margin: 0 0 16px; color: #0f172a;">Cloudflare Turnstile</h4>
+                                <div class="form-group">
+                                    <label class="form-label" for="siteSettingsTurnstileSiteKey">Site Key</label>
+                                    <input type="text" id="siteSettingsTurnstileSiteKey" class="form-input" placeholder="0x4AAAA...">
+                                    <div class="public-share-help">管理员登录页和公开页面密码验证共用这一组 Site Key 与 Secret Key。</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="siteSettingsTurnstileSecretKey">Secret Key</label>
+                                    <input type="password" id="siteSettingsTurnstileSecretKey" class="form-input" placeholder="输入 Cloudflare Turnstile Secret Key" autocomplete="off">
+                                    <div class="public-share-help">如果留空保存，Turnstile 会被视为未配置，两个页面开关都会自动关闭。</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">启用范围</label>
+                                    <div class="turnstile-scope-list">
+                                        <label class="public-share-inline">
+                                            <input type="checkbox" id="siteSettingsTurnstileAdminEnabled">
+                                            <span>管理员登录页启用验证</span>
+                                        </label>
+                                        <label class="public-share-inline">
+                                            <input type="checkbox" id="siteSettingsTurnstilePublicEnabled">
+                                            <span>公开页面密码验证启用</span>
+                                        </label>
+                                    </div>
+                                    <div class="public-share-help">公开页面只有在该邮箱已设置访问密码时，才会出现 Turnstile 验证框。</div>
+                                </div>
+                                <div class="turnstile-setting-note">
+                                    为了减少页面跳动，登录页和公开密码页都预留了固定高度的验证区域。请确保你的 Turnstile 小组件已允许管理员域名和分享域名访问。
                                 </div>
                             </div>
                         </div>
@@ -5125,7 +5215,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                             <input type="checkbox" id="publicShareClearPassword" onchange="togglePublicSharePasswordActions()">
                             <span>清除现有访问密码</span>
                         </label>
-                        <div class="public-share-help" id="publicSharePasswordHint">未设置密码时，任何拿到公开链接的人都可直接访问。</div>
+                        <div class="public-share-help" id="publicSharePasswordHint">未设置密码时，任何拿到公开链接的人都可直接访问。若在站点设置中启用了 Turnstile，公开密码页会自动追加安全验证。</div>
                     </div>
                 </div>
             </div>
@@ -5226,6 +5316,10 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
         let accountBindMenuOpen = false;
         let currentEmailTagKeys = [];
         let currentEmailMessageId = null;
+        let authTurnstileToken = '';
+        let authTurnstileWidgetId = null;
+        let authTurnstileSiteKey = '';
+        let authTurnstileScriptPromise = null;
 
         // 页面管理
         function icon(name, extraClass = '') {
@@ -5252,6 +5346,140 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
+        }
+
+        function getTurnstileConfig(source = {}) {
+            const config = source && typeof source === 'object' ? source : {};
+            return {
+                enabled: !!config.enabled,
+                siteKey: String(config.site_key || '').trim(),
+                adminLoginEnabled: !!config.admin_login_enabled,
+                publicAccessEnabled: !!config.public_access_enabled
+            };
+        }
+
+        function requiresAdminTurnstile() {
+            const config = getTurnstileConfig(authState && authState.turnstile);
+            return config.enabled && config.adminLoginEnabled && !!config.siteKey;
+        }
+
+        function setAuthTurnstileHint(message = '', isError = false) {
+            const hint = document.getElementById('authLoginTurnstileHint');
+            if (!hint) return;
+            hint.textContent = message;
+            hint.classList.toggle('is-error', !!isError);
+        }
+
+        function toggleAuthTurnstileVisibility() {
+            const wrap = document.getElementById('authLoginTurnstileWrap');
+            if (!wrap) return;
+            wrap.classList.toggle('hidden', !requiresAdminTurnstile());
+            if (!requiresAdminTurnstile()) {
+                setAuthTurnstileHint('');
+            }
+        }
+
+        function resetAuthTurnstileWidget() {
+            authTurnstileToken = '';
+            if (window.turnstile && authTurnstileWidgetId !== null) {
+                try {
+                    window.turnstile.reset(authTurnstileWidgetId);
+                } catch (error) {
+                    console.warn('Unable to reset auth turnstile widget', error);
+                }
+            }
+            if (requiresAdminTurnstile()) {
+                setAuthTurnstileHint('请完成下方安全验证');
+            }
+        }
+
+        function ensureTurnstileScript() {
+            if (window.turnstile && typeof window.turnstile.render === 'function') {
+                return Promise.resolve(window.turnstile);
+            }
+            if (authTurnstileScriptPromise) {
+                return authTurnstileScriptPromise;
+            }
+            authTurnstileScriptPromise = new Promise((resolve, reject) => {
+                const existing = document.querySelector('script[data-turnstile-script="true"]');
+                if (existing) {
+                    existing.addEventListener('load', () => resolve(window.turnstile), { once: true });
+                    existing.addEventListener('error', () => reject(new Error('Cloudflare Turnstile 脚本加载失败')), { once: true });
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                script.async = true;
+                script.defer = true;
+                script.dataset.turnstileScript = 'true';
+                script.onload = () => resolve(window.turnstile);
+                script.onerror = () => reject(new Error('Cloudflare Turnstile 脚本加载失败'));
+                document.head.appendChild(script);
+            });
+            return authTurnstileScriptPromise;
+        }
+
+        async function ensureAuthTurnstileReady() {
+            toggleAuthTurnstileVisibility();
+            if (!requiresAdminTurnstile()) {
+                authTurnstileToken = '';
+                return true;
+            }
+
+            const container = document.getElementById('authLoginTurnstileWidget');
+            if (!container) {
+                return false;
+            }
+
+            const config = getTurnstileConfig(authState && authState.turnstile);
+            setAuthTurnstileHint('安全验证加载中...');
+
+            try {
+                await ensureTurnstileScript();
+                if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+                    throw new Error('Cloudflare Turnstile 未正确加载');
+                }
+
+                if (authTurnstileWidgetId !== null && authTurnstileSiteKey === config.siteKey) {
+                    setAuthTurnstileHint(authTurnstileToken ? '验证已完成' : '请完成下方安全验证');
+                    return true;
+                }
+
+                if (authTurnstileWidgetId !== null && typeof window.turnstile.remove === 'function') {
+                    try {
+                        window.turnstile.remove(authTurnstileWidgetId);
+                    } catch (error) {
+                        console.warn('Unable to remove auth turnstile widget', error);
+                    }
+                }
+
+                container.innerHTML = '';
+                authTurnstileToken = '';
+                authTurnstileSiteKey = config.siteKey;
+                authTurnstileWidgetId = window.turnstile.render(container, {
+                    sitekey: config.siteKey,
+                    theme: 'light',
+                    callback: token => {
+                        authTurnstileToken = token;
+                        setAuthTurnstileHint('验证已完成');
+                    },
+                    'expired-callback': () => {
+                        authTurnstileToken = '';
+                        setAuthTurnstileHint('验证已过期，请重新完成', true);
+                    },
+                    'error-callback': () => {
+                        authTurnstileToken = '';
+                        setAuthTurnstileHint('安全验证加载失败，请刷新后重试', true);
+                    }
+                });
+                setAuthTurnstileHint('请完成下方安全验证');
+                return true;
+            } catch (error) {
+                console.error('Failed to initialize auth turnstile', error);
+                setAuthTurnstileHint(error.message || 'Cloudflare Turnstile 初始化失败', true);
+                return false;
+            }
         }
 
         function normalizeKey(value = '') {
@@ -5553,19 +5781,21 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
             document.getElementById('authLoginView').classList.toggle('hidden', mode !== 'login');
             if (mode === 'setup') {
                 resetSetupFlow();
+            } else {
+                ensureAuthTurnstileReady();
             }
             document.getElementById('appShell').classList.add('hidden');
             document.getElementById('authShell').classList.remove('hidden');
             document.body.classList.remove('app-booting');
             showAuthError(mode, message);
-            document.title = (authState && authState.site_title) || 'OutlookManager';
+            document.title = (authState && authState.site_title) || 'Microsoft-Email-Manager';
         }
 
         function enterApplication() {
             document.getElementById('authShell').classList.add('hidden');
             document.getElementById('appShell').classList.remove('hidden');
             document.body.classList.remove('app-booting');
-            document.title = (authState && authState.site_title) || 'OutlookManager';
+            document.title = (authState && authState.site_title) || 'Microsoft-Email-Manager';
 
             if (!appBootstrapped) {
                 decorateStaticUi();
@@ -5577,7 +5807,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                 }
 
                 setTimeout(() => {
-                    showNotification('欢迎使用 OutlookManager', 'info', '欢迎', 3000);
+                    showNotification('欢迎使用 Microsoft-Email-Manager', 'info', '欢迎', 3000);
                 }, 500);
 
                 appBootstrapped = true;
@@ -5660,15 +5890,32 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                 return;
             }
 
+            const requiresTurnstile = requiresAdminTurnstile();
+            if (requiresTurnstile) {
+                const turnstileReady = await ensureAuthTurnstileReady();
+                if (!turnstileReady) {
+                    showAuthError('login', 'Cloudflare Turnstile 加载失败，请刷新后重试');
+                    return;
+                }
+                if (!authTurnstileToken) {
+                    showAuthError('login', '请先完成 Cloudflare Turnstile 验证');
+                    return;
+                }
+            }
+
             showAuthError('login', '');
             setAuthPending('authLoginSubmit', true, '登录中...', '登录');
+            const submittedWithTurnstile = requiresTurnstile && !!authTurnstileToken;
 
             try {
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password })
+                    body: JSON.stringify({
+                        password,
+                        turnstile_token: submittedWithTurnstile ? authTurnstileToken : ''
+                    })
                 });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) {
@@ -5678,6 +5925,9 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
             } catch (error) {
                 showAuthError('login', error.message || '登录失败');
             } finally {
+                if (submittedWithTurnstile) {
+                    resetAuthTurnstileWidget();
+                }
                 setAuthPending('authLoginSubmit', false, '登录中...', '登录');
             }
         }
@@ -7105,7 +7355,7 @@ example3@live.com----refresh_token3----client_id3`;
 
         function generateApiDocsMarkdown() {
             const baseUrl = window.location.origin;
-            return `# Outlook 邮件管理系统 API 文档
+            return `# Microsoft-Email-Manager API 文档
 
 ## 基础信息
 
@@ -7334,10 +7584,19 @@ Authorization: Bearer om_your_api_key
             const adminPath = config.admin_login_path || currentAdminLoginPath || '/admin';
             const shareEnabled = !!config.share_domain_enabled && !!config.share_domain;
             const shareText = shareEnabled ? `已启用独立分享域名：${config.share_domain}` : '未启用独立分享域名';
-            const summary = message || `网站主页会显示“${config.home_title || 'OutlookManager'}”及其介绍文案。`;
+            const turnstileConfigured = !!(config.turnstile_site_key && config.turnstile_secret_key);
+            const turnstileScopes = [
+                config.turnstile_enabled_for_admin_login ? '管理员登录页' : '',
+                config.turnstile_enabled_for_public_access ? '公开页面密码验证' : ''
+            ].filter(Boolean);
+            const turnstileText = !turnstileConfigured
+                ? '未配置 Cloudflare Turnstile'
+                : (turnstileScopes.length ? `已启用：${turnstileScopes.join('、')}` : '已配置 Cloudflare Turnstile，但暂未绑定页面');
+            const summary = message || `网站主页会显示“${config.home_title || 'Microsoft-Email-Manager'}”及其介绍文案。`;
             statusElement.innerHTML = `
                 <strong>当前后台入口：</strong>${escapeHtml(adminPath)}<br>
                 <strong>分享域名：</strong>${escapeHtml(shareText)}<br>
+                <strong>Turnstile：</strong>${escapeHtml(turnstileText)}<br>
                 <strong>说明：</strong>${escapeHtml(summary)}
             `;
         }
@@ -7374,12 +7633,16 @@ Authorization: Bearer om_your_api_key
                 const config = await apiRequest('/api/site-settings');
                 siteSettingsCache = config;
                 currentAdminLoginPath = normalizeAdminPathInput(config.admin_login_path || currentAdminLoginPath);
-                document.getElementById('siteSettingsHomeTitle').value = config.home_title || 'OutlookManager';
+                document.getElementById('siteSettingsHomeTitle').value = config.home_title || 'Microsoft-Email-Manager';
                 document.getElementById('siteSettingsHomeIntro').value = config.home_intro || '';
                 document.getElementById('siteSettingsAdminPath').value = currentAdminLoginPath;
                 document.getElementById('siteSettingsAdminUrl').value = config.admin_login_url || `${window.location.origin}${currentAdminLoginPath}`;
                 document.getElementById('siteSettingsShareDomainEnabled').checked = !!config.share_domain_enabled;
                 document.getElementById('siteSettingsShareDomain').value = config.share_domain || '';
+                document.getElementById('siteSettingsTurnstileSiteKey').value = config.turnstile_site_key || '';
+                document.getElementById('siteSettingsTurnstileSecretKey').value = config.turnstile_secret_key || '';
+                document.getElementById('siteSettingsTurnstileAdminEnabled').checked = !!config.turnstile_enabled_for_admin_login;
+                document.getElementById('siteSettingsTurnstilePublicEnabled').checked = !!config.turnstile_enabled_for_public_access;
                 toggleShareDomainSettings();
                 renderSiteSettingsStatus(config);
                 if (showReloadMessage) {
@@ -7400,6 +7663,10 @@ Authorization: Bearer om_your_api_key
             const adminPath = normalizeAdminPathInput(document.getElementById('siteSettingsAdminPath').value);
             const shareDomainEnabled = document.getElementById('siteSettingsShareDomainEnabled').checked;
             const shareDomain = document.getElementById('siteSettingsShareDomain').value.trim();
+            const turnstileSiteKey = document.getElementById('siteSettingsTurnstileSiteKey').value.trim();
+            const turnstileSecretKey = document.getElementById('siteSettingsTurnstileSecretKey').value.trim();
+            const turnstileAdminEnabled = document.getElementById('siteSettingsTurnstileAdminEnabled').checked;
+            const turnstilePublicEnabled = document.getElementById('siteSettingsTurnstilePublicEnabled').checked;
             const previousAdminPath = getAdminBasePath();
 
             if (!homeTitle) {
@@ -7418,6 +7685,10 @@ Authorization: Bearer om_your_api_key
                 showNotification('启用独立分享域名后必须填写域名', 'warning');
                 return;
             }
+            if ((turnstileAdminEnabled || turnstilePublicEnabled) && (!turnstileSiteKey || !turnstileSecretKey)) {
+                showNotification('启用 Turnstile 前请先完整填写 Site Key 和 Secret Key', 'warning');
+                return;
+            }
 
             saveBtn.disabled = true;
             saveBtn.innerHTML = buttonLabel('loading', '保存中...', 'spinning');
@@ -7430,7 +7701,11 @@ Authorization: Bearer om_your_api_key
                         home_intro: homeIntro,
                         admin_login_path: adminPath,
                         share_domain_enabled: shareDomainEnabled,
-                        share_domain: shareDomainEnabled ? shareDomain : ''
+                        share_domain: shareDomainEnabled ? shareDomain : '',
+                        turnstile_site_key: turnstileSiteKey,
+                        turnstile_secret_key: turnstileSecretKey,
+                        turnstile_enabled_for_admin_login: turnstileAdminEnabled,
+                        turnstile_enabled_for_public_access: turnstilePublicEnabled
                     })
                 });
 
@@ -7439,8 +7714,12 @@ Authorization: Bearer om_your_api_key
                 document.getElementById('siteSettingsAdminPath').value = currentAdminLoginPath;
                 document.getElementById('siteSettingsAdminUrl').value = config.admin_login_url || `${window.location.origin}${currentAdminLoginPath}`;
                 document.getElementById('siteSettingsShareDomain').value = config.share_domain || '';
+                document.getElementById('siteSettingsTurnstileSiteKey').value = config.turnstile_site_key || '';
+                document.getElementById('siteSettingsTurnstileSecretKey').value = config.turnstile_secret_key || '';
+                document.getElementById('siteSettingsTurnstileAdminEnabled').checked = !!config.turnstile_enabled_for_admin_login;
+                document.getElementById('siteSettingsTurnstilePublicEnabled').checked = !!config.turnstile_enabled_for_public_access;
                 toggleShareDomainSettings();
-                renderSiteSettingsStatus(config, '设置已保存，主页介绍、后台入口和公开分享域名都已更新。');
+                renderSiteSettingsStatus(config, '设置已保存，主页介绍、后台入口、公开分享域名和 Turnstile 配置都已更新。');
                 showNotification('站点设置已保存', 'success');
 
                 if (currentAdminLoginPath !== previousAdminPath) {
