@@ -522,8 +522,10 @@
             height: 52px;
             border-radius: 18px;
             overflow: hidden;
-            background: linear-gradient(135deg, #0f766e, #0284c7);
-            color: #fff;
+            background: #ffffff;
+            color: #111111;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
             display: grid;
             place-items: center;
             font-size: 18px;
@@ -533,6 +535,8 @@
 
         .avatar.has-avatar {
             background: transparent;
+            border-color: transparent;
+            box-shadow: none;
         }
 
         .avatar img {

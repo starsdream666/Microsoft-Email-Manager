@@ -1654,7 +1654,7 @@
 
         .sidebar-brand {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
             gap: 14px;
         }
@@ -1668,17 +1668,17 @@
         }
 
         .sidebar-logo {
-            width: 74px;
-            height: 74px;
-            border-radius: 22px;
+            width: 32px;
+            height: 32px;
+            border-radius: 0;
             position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 18px 32px rgba(15, 23, 42, 0.22);
+            background: transparent;
+            border: none;
+            box-shadow: none;
             overflow: hidden;
         }
 
@@ -1686,7 +1686,7 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            padding: 12px;
+            padding: 0;
             display: block;
         }
 
@@ -1703,33 +1703,37 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: 8px;
-            max-width: 180px;
+            gap: 0;
+            flex: 1;
+            max-width: none;
             overflow: hidden;
             transition: max-width 0.24s ease, opacity 0.18s ease, transform 0.18s ease;
         }
 
         .sidebar-title-stack h1 {
             display: block;
-            font-size: 1.28rem;
-            line-height: 1.15;
+            font-size: clamp(0.92rem, 1.4vw, 1.14rem);
+            line-height: 1.1;
             letter-spacing: -0.03em;
             color: #f8fafc;
             margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .brand-mark {
-            width: 54px;
-            height: 54px;
+            width: auto;
+            height: auto;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 16px;
-            background: linear-gradient(135deg, #60a5fa 0%, #38bdf8 42%, #f8fafc 100%);
-            color: #0f172a;
+            border-radius: 0;
+            background: transparent;
+            color: #f8fafc;
             font-weight: 700;
-            font-size: 1rem;
-            box-shadow: 0 18px 30px rgba(37, 99, 235, 0.3);
+            font-size: 0.9rem;
+            box-shadow: none;
         }
 
         .sidebar-title-stack p,
@@ -1909,7 +1913,7 @@
 
         .sidebar.is-collapsed .sidebar-brand {
             flex-direction: row;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
             gap: 14px;
         }
@@ -1923,9 +1927,9 @@
         }
 
         .sidebar.is-collapsed .sidebar-logo {
-            width: 54px;
-            height: 54px;
-            border-radius: 18px;
+            width: 32px;
+            height: 32px;
+            border-radius: 0;
         }
 
         .sidebar.is-collapsed .sidebar-title-stack,
@@ -2451,8 +2455,10 @@
         .account-avatar,
         .email-avatar {
             border-radius: 0;
-            background: linear-gradient(135deg, #1d4ed8 0%, #0ea5e9 100%);
-            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
+            background: #ffffff;
+            color: #111111;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
             overflow: hidden;
         }
 
@@ -2460,6 +2466,8 @@
         .email-avatar.has-avatar,
         .email-detail-avatar.has-avatar {
             background: transparent;
+            border-color: transparent;
+            box-shadow: none;
         }
 
         .account-details h4,
@@ -2522,14 +2530,15 @@
             width: 58px;
             height: 58px;
             border-radius: 0;
-            background: linear-gradient(135deg, #1d4ed8 0%, #0ea5e9 100%);
-            color: #ffffff;
+            background: #ffffff;
+            color: #111111;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-size: 1.15rem;
             font-weight: 700;
-            box-shadow: 0 14px 26px rgba(37, 99, 235, 0.24);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
             flex-shrink: 0;
             overflow: hidden;
         }
@@ -5283,8 +5292,11 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
         let currentAccount = null;
         let currentEmailFolder = 'all';
         let currentEmailPage = 1;
-        let autoRefreshEnabled = false;
+        const AUTO_REFRESH_INTERVAL_MS = 5000;
+        const AUTO_REFRESH_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+        let autoRefreshEnabled = true;
         let autoRefreshInterval = null;
+        let lastMouseActivityAt = Date.now();
         let isLoadingEmails = false;
         let accounts = [];
         
@@ -5551,8 +5563,6 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
             { keywords: ['kuwo.cn'], domain: 'kuwo.cn' }
         ];
 
-        const LOBEHUB_MICROSOFT_ICON_URL = '/static/assets/icons/microsoft.svg';
-
         function getSenderProfile(fromValue = '') {
             const rawValue = String(fromValue || '').trim();
             const match = rawValue.match(/^(.*?)(?:<([^>]+)>)?$/);
@@ -5584,19 +5594,16 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
             const safeInitial = escapeHtml(initial || '?');
             const safeUrl = avatarUrl ? escapeHtml(avatarUrl) : '';
             const safeFallbackUrl = fallbackUrl ? escapeHtml(fallbackUrl) : '';
-            const safeBrandIconUrl = escapeHtml(LOBEHUB_MICROSOFT_ICON_URL);
             const hasAvatar = Boolean(avatarUrl);
-            const fallbackClass = 'avatar-fallback hidden';
-            const brandIconClass = hasAvatar ? 'avatar-brand-icon hidden' : 'avatar-brand-icon';
+            const fallbackClass = hasAvatar ? 'avatar-fallback hidden' : 'avatar-fallback';
             const avatarClassName = hasAvatar ? `${className} has-avatar` : className;
             const imageMarkup = hasAvatar
-                ? `<img src="${safeUrl}" alt="" loading="lazy" referrerpolicy="no-referrer" data-fallback-src="${safeFallbackUrl}" onerror="const fallbackUrl = this.getAttribute('data-fallback-src'); if (fallbackUrl && this.src !== fallbackUrl) { this.src = fallbackUrl; this.removeAttribute('data-fallback-src'); return; } this.remove(); const brandIcon = this.parentElement.querySelector('.avatar-brand-icon'); if (brandIcon) { brandIcon.classList.remove('hidden'); return; } const fallback = this.parentElement.querySelector('.avatar-fallback'); if (fallback) fallback.classList.remove('hidden');">`
+                ? `<img src="${safeUrl}" alt="" loading="lazy" referrerpolicy="no-referrer" data-fallback-src="${safeFallbackUrl}" onerror="const fallbackUrl = this.getAttribute('data-fallback-src'); if (fallbackUrl && this.src !== fallbackUrl) { this.src = fallbackUrl; this.removeAttribute('data-fallback-src'); return; } this.remove(); const fallback = this.parentElement.querySelector('.avatar-fallback'); if (fallback) fallback.classList.remove('hidden');">`
                 : '';
 
             return `
                 <div class="${avatarClassName}">
                     ${imageMarkup}
-                    <img src="${safeBrandIconUrl}" alt="" class="${brandIconClass}" loading="lazy" onerror="this.remove(); const fallback = this.parentElement.querySelector('.avatar-fallback'); if (fallback) fallback.classList.remove('hidden');">
                     <span class="${fallbackClass}">${safeInitial}</span>
                 </div>
             `;
@@ -6122,22 +6129,49 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
             }
         }
 
+        function recordMouseActivity() {
+            lastMouseActivityAt = Date.now();
+        }
+
+        function disableAutoRefreshForInactivity() {
+            if (!autoRefreshEnabled) {
+                return false;
+            }
+            autoRefreshEnabled = false;
+            updateAutoRefreshButton();
+            stopAutoRefreshTimer();
+            showNotification('自动刷新已关闭：超过 5 分钟未检测到鼠标在页面内活动', 'info');
+            return true;
+        }
+
         function syncAutoRefreshTimer() {
             stopAutoRefreshTimer();
             if (!autoRefreshEnabled || !currentAccount || !isEmailsPageVisible()) {
                 return;
             }
 
+            if (Date.now() - lastMouseActivityAt >= AUTO_REFRESH_IDLE_TIMEOUT_MS) {
+                disableAutoRefreshForInactivity();
+                return;
+            }
+
             autoRefreshInterval = setInterval(() => {
+                if (Date.now() - lastMouseActivityAt >= AUTO_REFRESH_IDLE_TIMEOUT_MS) {
+                    disableAutoRefreshForInactivity();
+                    return;
+                }
                 if (document.hidden || !autoRefreshEnabled || !currentAccount || !isEmailsPageVisible() || isLoadingEmails) {
                     return;
                 }
                 loadEmails();
-            }, 5000);
+            }, AUTO_REFRESH_INTERVAL_MS);
         }
 
         function toggleAutoRefresh() {
             autoRefreshEnabled = !autoRefreshEnabled;
+            if (autoRefreshEnabled) {
+                recordMouseActivity();
+            }
             updateAutoRefreshButton();
             syncAutoRefreshTimer();
             showNotification(`自动刷新已${autoRefreshEnabled ? '开启' : '关闭'}，${autoRefreshEnabled ? '每 5 秒刷新一次邮件' : '停止自动刷新邮件'}`, 'info');
@@ -8896,6 +8930,9 @@ Authorization: Bearer om_your_api_key
             }
             syncAutoRefreshTimer();
         });
+
+        document.addEventListener('mousemove', recordMouseActivity, { passive: true });
+        document.addEventListener('mouseenter', recordMouseActivity, { passive: true });
 
         window.addEventListener('load', function() {
             document.getElementById('authSetupForm').addEventListener('submit', submitAuthSetup);

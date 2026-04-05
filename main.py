@@ -3646,14 +3646,9 @@ def build_domain_icon_svg(domain: str) -> bytes:
     label = (label_source[:1] or "?").upper()
     safe_label = html_lib.escape(label)
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-<defs>
-<linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-<stop offset="0%" stop-color="#0f766e"/>
-<stop offset="100%" stop-color="#0ea5e9"/>
-</linearGradient>
-</defs>
-<rect width="128" height="128" rx="28" fill="url(#g)"/>
-<text x="64" y="78" text-anchor="middle" font-size="58" font-family="Arial, sans-serif" font-weight="700" fill="#ffffff">{safe_label}</text>
+<rect width="128" height="128" rx="28" fill="#ffffff"/>
+<rect x="1.5" y="1.5" width="125" height="125" rx="26.5" fill="none" stroke="#dbe1ea" stroke-width="3"/>
+<text x="64" y="78" text-anchor="middle" font-size="58" font-family="Arial, sans-serif" font-weight="700" fill="#111111">{safe_label}</text>
 </svg>"""
     return svg.encode("utf-8")
 
