@@ -28,14 +28,14 @@ from itertools import groupby
 from pathlib import Path
 from queue import Empty, Queue
 from typing import Any, AsyncGenerator, List, Optional
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 import httpx
 from email.header import decode_header
 from email.utils import parseaddr, parsedate_to_datetime
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr, Field
 
@@ -57,7 +57,9 @@ OPEN_ACCESS_SESSIONS_FILE = Path(os.getenv("OPEN_ACCESS_SESSIONS_FILE", str(DATA
 ACCOUNT_HEALTH_FILE = Path(os.getenv("ACCOUNT_HEALTH_FILE", str(DATA_DIR / "account_health.json")))
 ACCOUNT_CLASSIFICATIONS_FILE = Path(os.getenv("ACCOUNT_CLASSIFICATIONS_FILE", str(DATA_DIR / "account_classifications.json")))
 EMAIL_TAGS_FILE = Path(os.getenv("EMAIL_TAGS_FILE", str(DATA_DIR / "email_tags.json")))
+SITE_SETTINGS_FILE = Path(os.getenv("SITE_SETTINGS_FILE", str(DATA_DIR / "site_settings.json")))
 STATIC_DIR = BASE_DIR / "static"
+ICON_CACHE_DIR = DATA_DIR / "icon_cache"
 SESSION_COOKIE = "outlookmanager_session"
 SESSION_TTL_HOURS = max(1, int(os.getenv("SESSION_TTL_HOURS", "24")))
 API_KEY_PREFIX = "om_"
@@ -66,6 +68,9 @@ OPEN_ACCESS_SESSION_TTL_HOURS = max(1, int(os.getenv("OPEN_ACCESS_SESSION_TTL_HO
 OPEN_ACCESS_FAILURE_LIMIT = max(1, int(os.getenv("OPEN_ACCESS_FAILURE_LIMIT", "5")))
 OPEN_ACCESS_FAILURE_WINDOW_MINUTES = max(1, int(os.getenv("OPEN_ACCESS_FAILURE_WINDOW_MINUTES", "15")))
 OPEN_ACCESS_LOCKOUT_MINUTES = max(1, int(os.getenv("OPEN_ACCESS_LOCKOUT_MINUTES", "15")))
+DEFAULT_ADMIN_LOGIN_PATH = "/admin"
+DEFAULT_HOME_TITLE = "OutlookManager"
+DEFAULT_HOME_INTRO = "用于集中管理 Outlook 邮箱账户、邮件公开分享、API 接入与日常运营排查。"
 
 # OAuth2配置
 TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
@@ -87,6 +92,8 @@ SOCKET_TIMEOUT = 15
 # 缓存配置
 CACHE_EXPIRE_TIME = 60  # 缓存过期时间（秒）
 CLASSIFICATION_KEY_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+ADMIN_LOGIN_PATH_PATTERN = re.compile(r"^/[a-zA-Z0-9/_-]{2,120}$")
+HOSTNAME_PATTERN = re.compile(r"^[a-z0-9.-]+(?::\d{1,5})?$")
 
 # 日志配置
 logging.basicConfig(
@@ -280,6 +287,7 @@ class PasswordPayload(BaseModel):
 
 class SetupPayload(PasswordPayload):
     agreed_terms: bool = Field(default=False)
+    admin_login_path: str = Field(default=DEFAULT_ADMIN_LOGIN_PATH, min_length=2, max_length=120)
 
 
 class ApiKeyCreatePayload(BaseModel):
@@ -300,6 +308,14 @@ class PublicShareConfigPayload(BaseModel):
 
 class PublicShareAccessPayload(BaseModel):
     password: str = Field(min_length=1, max_length=256)
+
+
+class SiteSettingsPayload(BaseModel):
+    home_title: str = Field(default=DEFAULT_HOME_TITLE, min_length=1, max_length=80)
+    home_intro: str = Field(default=DEFAULT_HOME_INTRO, min_length=1, max_length=1200)
+    admin_login_path: str = Field(default=DEFAULT_ADMIN_LOGIN_PATH, min_length=2, max_length=120)
+    share_domain_enabled: bool = Field(default=False)
+    share_domain: Optional[str] = Field(default=None, max_length=255)
 
 # ============================================================================
 # IMAP连接池管理
@@ -1335,6 +1351,112 @@ def save_open_access_data(data: dict[str, Any]) -> None:
         )
 
 
+def get_default_site_settings() -> dict[str, Any]:
+    return {
+        "home_title": DEFAULT_HOME_TITLE,
+        "home_intro": DEFAULT_HOME_INTRO,
+        "admin_login_path": DEFAULT_ADMIN_LOGIN_PATH,
+        "share_domain_enabled": False,
+        "share_domain": "",
+        "updated_at": None,
+    }
+
+
+def normalize_admin_login_path(value: str | None) -> str:
+    raw_value = str(value or DEFAULT_ADMIN_LOGIN_PATH).strip()
+    if "://" in raw_value:
+        raise HTTPException(status_code=400, detail="管理员登录地址只支持站内路径")
+
+    stripped = raw_value.strip("/")
+    path = f"/{stripped}" if stripped else "/"
+    path = re.sub(r"/{2,}", "/", path)
+
+    if path == "/":
+        raise HTTPException(status_code=400, detail="管理员登录地址不能设置为根路径 /")
+    if not ADMIN_LOGIN_PATH_PATTERN.fullmatch(path):
+        raise HTTPException(status_code=400, detail="管理员登录地址仅支持字母、数字、-、_ 和 /")
+
+    reserved_prefixes = [
+        "/api",
+        "/open",
+        "/static",
+        "/docs",
+        "/redoc",
+        "/favicon.ico",
+        "/icons",
+    ]
+    if any(path == prefix or path.startswith(prefix + "/") for prefix in reserved_prefixes):
+        raise HTTPException(status_code=400, detail="管理员登录地址与系统保留路径冲突，请更换")
+
+    return path
+
+
+def normalize_hostname(value: str | None) -> str:
+    raw_value = str(value or "").strip().lower()
+    if not raw_value:
+        return ""
+
+    parsed = urlparse(raw_value if "://" in raw_value else f"https://{raw_value}")
+    host = (parsed.netloc or parsed.path or "").strip().strip("/")
+    if "/" in host:
+        host = host.split("/", 1)[0].strip()
+
+    if not host or not HOSTNAME_PATTERN.fullmatch(host) or ".." in host:
+        raise HTTPException(status_code=400, detail="分享页面域名格式不正确")
+
+    return host
+
+
+def load_site_settings() -> dict[str, Any]:
+    with auth_lock:
+        data = _read_json_file(SITE_SETTINGS_FILE, get_default_site_settings())
+        defaults = get_default_site_settings()
+        normalized = {
+            "home_title": str(data.get("home_title") or defaults["home_title"]).strip()[:80] or defaults["home_title"],
+            "home_intro": str(data.get("home_intro") or defaults["home_intro"]).strip()[:1200] or defaults["home_intro"],
+            "share_domain_enabled": bool(data.get("share_domain_enabled", False)),
+            "share_domain": "",
+            "updated_at": data.get("updated_at"),
+        }
+
+        try:
+            normalized["admin_login_path"] = normalize_admin_login_path(data.get("admin_login_path"))
+        except HTTPException:
+            normalized["admin_login_path"] = defaults["admin_login_path"]
+
+        try:
+            normalized["share_domain"] = normalize_hostname(data.get("share_domain"))
+        except HTTPException:
+            normalized["share_domain"] = ""
+
+        if not normalized["share_domain"]:
+            normalized["share_domain_enabled"] = False
+
+        return normalized
+
+
+def save_site_settings(settings: dict[str, Any]) -> dict[str, Any]:
+    payload = {
+        "home_title": str(settings.get("home_title") or DEFAULT_HOME_TITLE).strip()[:80] or DEFAULT_HOME_TITLE,
+        "home_intro": str(settings.get("home_intro") or DEFAULT_HOME_INTRO).strip()[:1200] or DEFAULT_HOME_INTRO,
+        "admin_login_path": normalize_admin_login_path(settings.get("admin_login_path")),
+        "share_domain_enabled": bool(settings.get("share_domain_enabled", False)),
+        "share_domain": normalize_hostname(settings.get("share_domain")),
+        "updated_at": datetime.utcnow().isoformat(),
+    }
+    if not payload["share_domain"]:
+        payload["share_domain_enabled"] = False
+
+    with auth_lock:
+        _write_json_file(SITE_SETTINGS_FILE, payload)
+    return payload
+
+
+def get_admin_login_path(settings: Optional[dict[str, Any]] = None) -> str:
+    source = settings or load_site_settings()
+    return normalize_admin_login_path(source.get("admin_login_path"))
+
+
 def hash_password(password: str, salt_hex: str | None = None) -> str:
     salt = bytes.fromhex(salt_hex) if salt_hex else secrets.token_bytes(16)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 200_000)
@@ -1378,6 +1500,41 @@ def get_request_ip(request: Request) -> str:
     return ""
 
 
+def get_request_host(request: Request) -> str:
+    forwarded_host = request.headers.get("X-Forwarded-Host", "")
+    if forwarded_host:
+        return forwarded_host.split(",")[0].strip().lower()
+    host = request.headers.get("host", "")
+    if host:
+        return host.strip().lower()
+    return request.url.netloc.strip().lower()
+
+
+def hosts_match(request_host: str, configured_host: str) -> bool:
+    request_host = (request_host or "").strip().lower()
+    configured_host = (configured_host or "").strip().lower()
+    if not request_host or not configured_host:
+        return False
+    if ":" in configured_host:
+        return request_host == configured_host
+    return request_host.split(":", 1)[0] == configured_host
+
+
+def is_share_domain_allowed_path(path: str) -> bool:
+    return any(
+        path == prefix or path.startswith(prefix + "/")
+        for prefix in ("/open", "/api/open", "/static", "/icons")
+    ) or path == "/favicon.ico"
+
+
+def get_request_origin(request: Request) -> str:
+    forwarded_proto = request.headers.get("X-Forwarded-Proto", "")
+    scheme = request.url.scheme
+    if forwarded_proto:
+        scheme = forwarded_proto.split(",")[0].strip().lower() or scheme
+    return f"{scheme}://{get_request_host(request)}"
+
+
 def request_uses_https(request: Request | None) -> bool:
     if request is None:
         return False
@@ -1388,6 +1545,15 @@ def request_uses_https(request: Request | None) -> bool:
 
 
 def get_request_public_base_url(request: Request) -> str:
+    site_settings = load_site_settings()
+    share_domain = site_settings.get("share_domain", "")
+    if site_settings.get("share_domain_enabled") and share_domain:
+        forwarded_proto = request.headers.get("X-Forwarded-Proto", "")
+        scheme = request.url.scheme
+        if forwarded_proto:
+            scheme = forwarded_proto.split(",")[0].strip().lower() or scheme
+        return f"{scheme}://{share_domain}"
+
     forwarded_proto = request.headers.get("X-Forwarded-Proto", "")
     forwarded_host = request.headers.get("X-Forwarded-Host", "")
     forwarded_prefix = request.headers.get("X-Forwarded-Prefix", "")
@@ -2609,6 +2775,11 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         raise RuntimeError(f"Email tags path is a directory, expected a file: {EMAIL_TAGS_FILE}")
     if not EMAIL_TAGS_FILE.exists():
         _write_json_file(EMAIL_TAGS_FILE, {"emails": {}})
+    if SITE_SETTINGS_FILE.exists() and SITE_SETTINGS_FILE.is_dir():
+        raise RuntimeError(f"Site settings path is a directory, expected a file: {SITE_SETTINGS_FILE}")
+    if not SITE_SETTINGS_FILE.exists():
+        _write_json_file(SITE_SETTINGS_FILE, get_default_site_settings())
+    ICON_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cleanup_expired_sessions()
     cleanup_expired_open_access()
 
@@ -2639,15 +2810,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def site_access_middleware(request: Request, call_next):
+    site_settings = load_site_settings()
+    share_domain = site_settings.get("share_domain", "")
+    share_domain_enabled = bool(site_settings.get("share_domain_enabled")) and bool(share_domain)
+    request_host = get_request_host(request)
+    path = request.url.path or "/"
+
+    if share_domain_enabled:
+        on_share_domain = hosts_match(request_host, share_domain)
+        if on_share_domain and not is_share_domain_allowed_path(path):
+            if path.startswith("/api/"):
+                return JSONResponse({"detail": "This host only serves public share pages."}, status_code=404)
+            return PlainTextResponse("Not Found", status_code=404)
+        if not on_share_domain and (path == "/open" or path.startswith("/open/") or path == "/api/open" or path.startswith("/api/open/")):
+            if path.startswith("/api/"):
+                return JSONResponse({"detail": "Public share pages are restricted to the configured share domain."}, status_code=404)
+            return PlainTextResponse("Not Found", status_code=404)
+
+    if request.method in {"GET", "HEAD"} and path == get_admin_login_path(site_settings):
+        return FileResponse(STATIC_DIR / "index.html")
+
+    return await call_next(request)
+
 # 挂载静态文件服务
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 @app.get("/api/auth/state")
 async def auth_state(request: Request):
     settings = load_auth_settings()
+    site_settings = load_site_settings()
     configured = auth_is_configured()
     return {
-        "site_title": "OutlookManager",
+        "site_title": site_settings.get("home_title") or DEFAULT_HOME_TITLE,
         "configured": configured,
         "authenticated": is_authenticated_request(request) if configured else False,
         "agreement_required": True,
@@ -2662,6 +2859,7 @@ async def auth_setup(payload: SetupPayload, request: Request):
         raise HTTPException(status_code=409, detail="Admin password is already configured")
     if not payload.agreed_terms:
         raise HTTPException(status_code=400, detail="You must agree to the terms before continuing")
+    admin_login_path = normalize_admin_login_path(payload.admin_login_path)
     save_auth_settings(
         {
             "admin_password_hash": hash_password(payload.password),
@@ -2669,8 +2867,24 @@ async def auth_setup(payload: SetupPayload, request: Request):
             "agreement_accepted_at": datetime.utcnow().isoformat(),
         }
     )
+    site_settings = load_site_settings()
+    save_site_settings(
+        {
+            **site_settings,
+            "admin_login_path": admin_login_path,
+        }
+    )
     raw_token, expires_at = create_session_token()
-    return make_session_response({"ok": True, "configured": True}, raw_token, expires_at, request)
+    return make_session_response(
+        {
+            "ok": True,
+            "configured": True,
+            "admin_login_path": admin_login_path,
+        },
+        raw_token,
+        expires_at,
+        request,
+    )
 
 
 @app.post("/api/auth/login")
@@ -2690,6 +2904,38 @@ async def auth_logout(request: Request):
     response = JSONResponse({"ok": True})
     response.delete_cookie(SESSION_COOKIE, path="/")
     return response
+
+
+@app.get("/api/public/site-info")
+async def get_public_site_info():
+    site_settings = load_site_settings()
+    return {
+        "home_title": site_settings.get("home_title") or DEFAULT_HOME_TITLE,
+        "home_intro": site_settings.get("home_intro") or DEFAULT_HOME_INTRO,
+        "share_domain_enabled": bool(site_settings.get("share_domain_enabled", False)),
+        "share_domain": site_settings.get("share_domain") or "",
+    }
+
+
+@app.get("/api/site-settings")
+async def get_site_settings(request: Request):
+    require_authenticated(request)
+    site_settings = load_site_settings()
+    admin_path = site_settings.get("admin_login_path") or DEFAULT_ADMIN_LOGIN_PATH
+    return {
+        **site_settings,
+        "admin_login_url": f"{get_request_origin(request)}{admin_path}",
+    }
+
+
+@app.put("/api/site-settings")
+async def update_site_settings(payload: SiteSettingsPayload, request: Request):
+    require_authenticated(request)
+    saved = save_site_settings(payload.dict())
+    return {
+        **saved,
+        "admin_login_url": f"{get_request_origin(request)}{saved['admin_login_path']}",
+    }
 
 
 @app.get("/api/api-keys")
@@ -3193,8 +3439,8 @@ async def open_email_page(email_id: str):
 
 @app.get("/")
 async def root():
-    """根路径 - 返回前端页面"""
-    return FileResponse(STATIC_DIR / "index.html")
+    """根路径 - 返回站点主页"""
+    return FileResponse(STATIC_DIR / "home.html")
 
 @app.delete("/cache/{email_id}")
 async def clear_cache(email_id: str, request: Request):
@@ -3213,6 +3459,77 @@ async def clear_all_cache(request: Request):
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     return FileResponse(STATIC_DIR / "favicon.ico")
+
+
+def build_domain_icon_svg(domain: str) -> bytes:
+    label_source = (domain.split(".", 1)[0] or "?").strip()
+    label = (label_source[:1] or "?").upper()
+    safe_label = html_lib.escape(label)
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs>
+<linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="#0f766e"/>
+<stop offset="100%" stop-color="#0ea5e9"/>
+</linearGradient>
+</defs>
+<rect width="128" height="128" rx="28" fill="url(#g)"/>
+<text x="64" y="78" text-anchor="middle" font-size="58" font-family="Arial, sans-serif" font-weight="700" fill="#ffffff">{safe_label}</text>
+</svg>"""
+    return svg.encode("utf-8")
+
+
+def get_domain_icon_cache_paths(domain: str, size: int) -> tuple[Path, Path]:
+    cache_key = hashlib.sha256(f"{domain}:{size}".encode("utf-8")).hexdigest()[:24]
+    return (
+        ICON_CACHE_DIR / f"{cache_key}.bin",
+        ICON_CACHE_DIR / f"{cache_key}.json",
+    )
+
+
+async def fetch_remote_domain_icon(domain: str, size: int) -> tuple[bytes | None, str | None]:
+    sources = [
+        f"https://www.google.com/s2/favicons?sz={size}&domain_url={quote(f'https://{domain}', safe='')}",
+        f"https://icons.duckduckgo.com/ip3/{quote(domain, safe='')}.ico",
+        f"https://{domain}/favicon.ico",
+    ]
+    headers = {
+        "User-Agent": "OutlookManager/1.0",
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+    }
+    async with httpx.AsyncClient(timeout=8.0, follow_redirects=True, headers=headers) as client:
+        for url in sources:
+            try:
+                response = await client.get(url)
+            except httpx.HTTPError:
+                continue
+
+            content_type = (response.headers.get("content-type") or "").split(";", 1)[0].strip().lower()
+            if response.status_code == 200 and response.content and (content_type.startswith("image/") or url.endswith(".ico")):
+                return response.content, content_type or "image/x-icon"
+    return None, None
+
+
+@app.get("/icons/domain/{domain}", include_in_schema=False)
+async def get_cached_domain_icon(domain: str, size: int = Query(128, ge=16, le=256)):
+    normalized_domain = normalize_hostname(domain)
+    if not normalized_domain:
+        return Response(content=build_domain_icon_svg(domain), media_type="image/svg+xml")
+
+    cache_file, meta_file = get_domain_icon_cache_paths(normalized_domain, size)
+    if cache_file.exists() and meta_file.exists():
+        try:
+            metadata = _read_json_file(meta_file, {"content_type": "image/png"})
+            return FileResponse(cache_file, media_type=metadata.get("content_type") or "image/png")
+        except Exception:
+            logger.warning("Failed to read cached icon metadata for %s", normalized_domain)
+
+    content, content_type = await fetch_remote_domain_icon(normalized_domain, size)
+    if content and content_type:
+        cache_file.write_bytes(content)
+        _write_json_file(meta_file, {"content_type": content_type, "updated_at": datetime.utcnow().isoformat()})
+        return FileResponse(cache_file, media_type=content_type)
+
+    return Response(content=build_domain_icon_svg(normalized_domain), media_type="image/svg+xml")
 
 @app.get("/api")
 async def api_status(request: Request):

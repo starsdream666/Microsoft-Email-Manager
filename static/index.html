@@ -3746,6 +3746,8 @@
                         <form id="authSetupForm" class="auth-form">
                             <input type="password" id="authSetupPassword" class="form-input" placeholder="设置管理员密码，至少 8 位" autocomplete="new-password">
                             <input type="password" id="authSetupPasswordConfirm" class="form-input" placeholder="再次输入管理员密码" autocomplete="new-password">
+                            <input type="text" id="authSetupAdminPath" class="form-input" placeholder="设置管理员后台登录地址，例如 /admin-enter" autocomplete="off">
+                            <div class="auth-step-note" style="margin-top: -4px;">后续管理员后台只在这个地址打开。根路径 <code>/</code> 会作为网站主页使用，地址可在“设置”页面修改。</div>
                             <div id="authSetupError" class="auth-error"></div>
                             <div class="auth-actions auth-setup-password-actions">
                                 <button type="button" class="btn btn-secondary" onclick="backToAgreementStep()">返回协议</button>
@@ -3810,6 +3812,10 @@
                 <button class="nav-item" type="button" data-page="apiDocs" onclick="showPage('apiDocs', this)">
                     <span class="icon"></span>
                     <span class="nav-item-text">API 文档</span>
+                </button>
+                <button class="nav-item" type="button" data-page="settings" onclick="showPage('settings', this)">
+                    <span class="icon"></span>
+                    <span class="nav-item-text">设置</span>
                 </button>
                 <button id="mobileLogoutBtn" class="nav-item mobile-nav-item" type="button" onclick="logout()" data-tooltip="退出登录" aria-label="退出登录">
                     <span class="icon"></span>
@@ -4345,6 +4351,10 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                                         <p class="api-description">所有接口均返回 JSON 数据，并通过 HTTP 状态码表示请求结果。</p>
                                     </div>
                                     <div class="api-section">
+                                        <h4>站点设置</h4>
+                                        <p class="api-description">主页介绍、管理员后台登录地址、分享页面独立域名不在 API 文档里维护，请到左侧新增的“设置”页面配置。主页介绍会显示在网站根路径，独立分享域名启用后，公开链接会自动替换成指定域名。</p>
+                                    </div>
+                                    <div class="api-section">
                                         <h4>调试用 API Key</h4>
                                         <input type="text" id="apiDocsAuthKey" class="form-input" placeholder="粘贴 API Key 后，试用接口会自动带上 Authorization 请求头">
                                     </div>
@@ -4706,6 +4716,88 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                     </div>
                 </div>
 
+                <div id="settingsPage" class="page hidden">
+                    <div class="card">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 class="font-semibold">站点设置</h3>
+                                <p class="text-sm" style="color: #64748b;">配置网站主页介绍、管理员入口地址和公开分享的独立域名。</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="btn btn-secondary btn-sm" type="button" onclick="copySiteSettingValue('siteSettingsAdminUrl', '管理员入口')">
+                                    <span></span>
+                                    复制管理员入口
+                                </button>
+                                <button class="btn btn-secondary btn-sm" type="button" onclick="loadSiteSettings(true)">
+                                    <span></span>
+                                    重新加载
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="api-key-grid">
+                            <div class="api-key-panel">
+                                <h4 style="margin: 0 0 16px; color: #0f172a;">主页与后台</h4>
+                                <div class="form-group">
+                                    <label class="form-label" for="siteSettingsHomeTitle">网站主页标题</label>
+                                    <input type="text" id="siteSettingsHomeTitle" class="form-input" placeholder="例如：OutlookManager 邮件中心">
+                                    <div class="public-share-help">显示在根路径 <code>/</code> 的网站主页上。</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="siteSettingsHomeIntro">网站主页介绍</label>
+                                    <textarea id="siteSettingsHomeIntro" class="form-input form-textarea" rows="5" placeholder="介绍这个站点是干什么用的、给谁使用、主要提供哪些能力。"></textarea>
+                                    <div class="public-share-help">访客打开主页时会先看到这段介绍，用来说明网站用途，不暴露后台入口。</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="siteSettingsAdminPath">管理员后台登录地址</label>
+                                    <input type="text" id="siteSettingsAdminPath" class="form-input" placeholder="/admin-enter">
+                                    <div class="public-share-help">必须是站内路径，例如 <code>/admin</code> 或 <code>/safe-panel</code>。修改后后台会立即切换到新地址。</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">当前管理员入口</label>
+                                    <div class="public-share-url-row">
+                                        <input type="text" id="siteSettingsAdminUrl" class="form-input" readonly>
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="copySiteSettingValue('siteSettingsAdminUrl', '管理员入口')">复制</button>
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.open(document.getElementById('siteSettingsAdminUrl').value, '_blank')">打开</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="api-key-panel">
+                                <h4 style="margin: 0 0 16px; color: #0f172a;">公开分享域名</h4>
+                                <div class="form-group">
+                                    <label class="public-share-inline">
+                                        <input type="checkbox" id="siteSettingsShareDomainEnabled" onchange="toggleShareDomainSettings()">
+                                        <span>启用独立分享页面域名</span>
+                                    </label>
+                                    <div class="public-share-help">启用后，公开分享链接必须通过指定域名访问；主站域名上的公开页会被关闭。</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="siteSettingsShareDomain">分享页面域名</label>
+                                    <input type="text" id="siteSettingsShareDomain" class="form-input" placeholder="例如：share.example.com">
+                                    <div class="public-share-help">只填写域名，支持端口，例如 <code>share.example.com</code> 或 <code>127.0.0.1:9000</code>。</div>
+                                </div>
+                                <div class="api-docs-auth-box">
+                                    <p class="api-description" style="margin-bottom: 10px;">效果说明</p>
+                                    <p class="text-sm" style="color: #475569; line-height: 1.7;">
+                                        1. 邮件公开设置里的链接会自动替换成这个域名。<br>
+                                        2. 指定分享域名上只允许公开分享页面和它依赖的静态资源访问。<br>
+                                        3. 这样可以把后台入口和公开页面拆开，减少主站暴露面。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="siteSettingsStatus" class="public-share-status" style="margin-top: 20px;">正在读取当前站点设置...</div>
+                        <div class="auth-actions" style="margin-top: 18px;">
+                            <button class="btn btn-primary" type="button" id="siteSettingsSaveBtn" onclick="saveSiteSettings()">
+                                <span></span>
+                                保存设置
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 邮件列表页面 -->
                 <div id="emailsPage" class="page hidden">
                     <div class="card">
@@ -4993,6 +5085,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
             health: '<svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 4 10 2-5h6"></path><path d="M2 12c0-4.5 3.2-8 7.5-8 2.1 0 3.6.9 4.5 2 0.9-1.1 2.4-2 4.5-2C21.8 4 25 7.5 25 12"></path></svg>',
             tags: '<svg viewBox="0 0 24 24"><path d="M20.59 13.41L11 3H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg>',
             docs: '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h5"></path></svg>',
+            settings: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.32.2.67.2 1s-.06.68-.2 1a1.65 1.65 0 0 0 .6 1 1.65 1.65 0 0 0 1 .33H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1 .33 1.65 1.65 0 0 0-.51 1.34z"></path></svg>',
             copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>',
             open: '<svg viewBox="0 0 24 24"><path d="M14 3h7v7"></path><path d="M10 14L21 3"></path><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path></svg>',
             logout: '<svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>',
@@ -5031,6 +5124,8 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
         let classifications = { categories: [], tags: [] };
         let addAccountTagKeys = [];
         let batchTagKeys = [];
+        let siteSettingsCache = null;
+        let currentAdminLoginPath = window.location.pathname || '/admin';
 
         // 当前正在编辑的账户信息
         let currentEditAccount = null;
@@ -5161,7 +5256,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
 
             const matchedRule = DOMAIN_LOGO_RULES.find(rule => rule.keywords.some(keyword => domain.includes(keyword)));
             const logoDomain = matchedRule ? matchedRule.domain : domain;
-            return `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(`https://${logoDomain}`)}`;
+            return `/icons/domain/${encodeURIComponent(logoDomain)}?size=128`;
         }
 
         function renderSenderAvatar(initial, avatarUrl, className = 'email-avatar', fallbackUrl = '') {
@@ -5257,6 +5352,13 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
             if (loginError) loginError.textContent = view === 'login' ? message : '';
         }
 
+        function normalizeAdminPathInput(value = '') {
+            const raw = String(value || '').trim();
+            if (!raw) return '/admin';
+            const stripped = raw.replace(/^\/+|\/+$/g, '');
+            return stripped ? `/${stripped}` : '/';
+        }
+
         function setAuthPending(buttonId, pending, busyText, idleText) {
             const button = document.getElementById(buttonId);
             if (!button) return;
@@ -5268,10 +5370,12 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
             setupAgreementComplete = false;
             const setupPassword = document.getElementById('authSetupPassword');
             const setupPasswordConfirm = document.getElementById('authSetupPasswordConfirm');
+            const setupAdminPath = document.getElementById('authSetupAdminPath');
             const agreementStep = document.getElementById('authSetupAgreementStep');
             const passwordStep = document.getElementById('authSetupPasswordStep');
             if (setupPassword) setupPassword.value = '';
             if (setupPasswordConfirm) setupPasswordConfirm.value = '';
+            if (setupAdminPath) setupAdminPath.value = currentAdminLoginPath || normalizeAdminPathInput(window.location.pathname);
             if (agreementStep) agreementStep.classList.remove('hidden');
             if (passwordStep) passwordStep.classList.add('hidden');
 
@@ -5336,14 +5440,14 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
             document.getElementById('authShell').classList.remove('hidden');
             document.body.classList.remove('app-booting');
             showAuthError(mode, message);
-            document.title = 'OutlookManager';
+            document.title = (authState && authState.site_title) || 'OutlookManager';
         }
 
         function enterApplication() {
             document.getElementById('authShell').classList.add('hidden');
             document.getElementById('appShell').classList.remove('hidden');
             document.body.classList.remove('app-booting');
-            document.title = 'OutlookManager';
+            document.title = (authState && authState.site_title) || 'OutlookManager';
 
             if (!appBootstrapped) {
                 decorateStaticUi();
@@ -5365,6 +5469,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
         async function initializeAuthFlow(message = '') {
             try {
                 authState = await fetchAuthState();
+                currentAdminLoginPath = normalizeAdminPathInput(window.location.pathname);
                 if (authState.authenticated) {
                     enterApplication();
                     return;
@@ -5379,6 +5484,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
             event.preventDefault();
             const password = document.getElementById('authSetupPassword').value;
             const confirmPassword = document.getElementById('authSetupPasswordConfirm').value;
+            const adminPath = normalizeAdminPathInput(document.getElementById('authSetupAdminPath').value);
 
             if (!setupAgreementComplete) {
                 showAuthError('setup', '请先阅读协议并点击同意');
@@ -5392,6 +5498,10 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                 showAuthError('setup', '两次输入的密码不一致');
                 return;
             }
+            if (adminPath === '/') {
+                showAuthError('setup', '管理员后台登录地址不能设置为根路径 /');
+                return;
+            }
 
             showAuthError('setup', '');
             setAuthPending('authSetupSubmit', true, '保存中...', '完成初始化');
@@ -5403,12 +5513,18 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         password,
-                        agreed_terms: true
+                        agreed_terms: true,
+                        admin_login_path: adminPath
                     })
                 });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) {
                     throw new Error(data.detail || '初始化失败');
+                }
+                currentAdminLoginPath = normalizeAdminPathInput(data.admin_login_path || adminPath);
+                if (currentAdminLoginPath !== normalizeAdminPathInput(window.location.pathname)) {
+                    window.location.replace(currentAdminLoginPath + '#/accounts');
+                    return;
                 }
                 await initializeAuthFlow();
             } catch (error) {
@@ -5501,11 +5617,11 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
 
         function decorateStaticUi() {
             const navButtons = document.querySelectorAll('.sidebar .nav-item[data-page]');
-            ['accounts', 'plus', 'batch', 'classification', 'key', 'api', 'mail'].forEach((name, index) => {
+            ['accounts', 'plus', 'batch', 'classification', 'key', 'api', 'settings', 'mail'].forEach((name, index) => {
                 setButtonIcon(navButtons[index], name, true);
             });
 
-            const navLabels = ['邮箱账户管理', '添加账户', '批量添加', '分类编辑', 'API 密钥', 'API 文档', '邮件列表'];
+            const navLabels = ['邮箱账户管理', '添加账户', '批量添加', '分类编辑', 'API 密钥', 'API 文档', '设置', '邮件列表'];
             navButtons.forEach((button, index) => {
                 const label = navLabels[index];
                 if (!label) return;
@@ -5555,6 +5671,9 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
 
             setButtonIcon(document.querySelector('#apiDocsPage .btn-secondary.btn-sm[onclick="downloadApiDocs()"]'), 'docs');
             setButtonIcon(document.querySelector('#apiDocsPage .btn-secondary.btn-sm[onclick="copyApiBaseUrl()"]'), 'copy');
+            setButtonIcon(document.querySelector('#settingsPage .btn-secondary.btn-sm[onclick="loadSiteSettings(true)"]'), 'refresh');
+            setButtonIcon(document.querySelector('#settingsPage .btn-secondary.btn-sm[onclick="copySiteSettingValue(\'siteSettingsAdminUrl\', \'管理员入口\')"]'), 'copy');
+            setButtonIcon(document.getElementById('siteSettingsSaveBtn'), 'settings');
 
             setButtonIcon(document.getElementById('autoRefreshBtn'), 'refresh');
             setButtonIcon(document.getElementById('refreshBtn'), 'refresh');
@@ -5667,6 +5786,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                 classifications: '分类编辑',
                 apiKeys: 'API 密钥',
                 apiDocs: 'API 接口文档',
+                settings: '站点设置',
                 emails: '邮箱账户管理'
             };
             document.getElementById('pageTitle').textContent = titles[pageName] || '';
@@ -5686,6 +5806,8 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                 loadApiKeys();
             } else if (pageName === 'apiDocs') {
                 initApiDocs();
+            } else if (pageName === 'settings') {
+                loadSiteSettings();
             } else if (pageName === 'emails') {
                 populateAccountSwitcher(currentAccount);
                 loadEmails();
@@ -7044,6 +7166,145 @@ Authorization: Bearer om_your_api_key
 `;
         }
 
+        function toggleShareDomainSettings() {
+            const enabled = document.getElementById('siteSettingsShareDomainEnabled')?.checked;
+            const input = document.getElementById('siteSettingsShareDomain');
+            if (!input) return;
+            input.disabled = !enabled;
+            if (!enabled) {
+                input.value = '';
+            }
+        }
+
+        function renderSiteSettingsStatus(config = {}, message = '') {
+            const statusElement = document.getElementById('siteSettingsStatus');
+            if (!statusElement) return;
+            const adminPath = config.admin_login_path || currentAdminLoginPath || '/admin';
+            const shareEnabled = !!config.share_domain_enabled && !!config.share_domain;
+            const shareText = shareEnabled ? `已启用独立分享域名：${config.share_domain}` : '未启用独立分享域名';
+            const summary = message || `网站主页会显示“${config.home_title || 'OutlookManager'}”及其介绍文案。`;
+            statusElement.innerHTML = `
+                <strong>当前后台入口：</strong>${escapeHtml(adminPath)}<br>
+                <strong>分享域名：</strong>${escapeHtml(shareText)}<br>
+                <strong>说明：</strong>${escapeHtml(summary)}
+            `;
+        }
+
+        async function copySiteSettingValue(inputId, label) {
+            const input = document.getElementById(inputId);
+            if (!input || !input.value) {
+                showNotification(`${label}为空`, 'warning');
+                return;
+            }
+
+            if (navigator.clipboard) {
+                try {
+                    await navigator.clipboard.writeText(input.value);
+                    showNotification(`${label}已复制到剪贴板`, 'success');
+                    return;
+                } catch (error) {
+                    console.warn('Clipboard copy failed', error);
+                }
+            }
+
+            input.select();
+            document.execCommand('copy');
+            showNotification(`${label}已复制到剪贴板`, 'success');
+        }
+
+        async function loadSiteSettings(showReloadMessage = false) {
+            const statusElement = document.getElementById('siteSettingsStatus');
+            if (statusElement) {
+                statusElement.textContent = '正在读取当前站点设置...';
+            }
+
+            try {
+                const config = await apiRequest('/api/site-settings');
+                siteSettingsCache = config;
+                currentAdminLoginPath = normalizeAdminPathInput(config.admin_login_path || currentAdminLoginPath);
+                document.getElementById('siteSettingsHomeTitle').value = config.home_title || 'OutlookManager';
+                document.getElementById('siteSettingsHomeIntro').value = config.home_intro || '';
+                document.getElementById('siteSettingsAdminPath').value = currentAdminLoginPath;
+                document.getElementById('siteSettingsAdminUrl').value = config.admin_login_url || `${window.location.origin}${currentAdminLoginPath}`;
+                document.getElementById('siteSettingsShareDomainEnabled').checked = !!config.share_domain_enabled;
+                document.getElementById('siteSettingsShareDomain').value = config.share_domain || '';
+                toggleShareDomainSettings();
+                renderSiteSettingsStatus(config);
+                if (showReloadMessage) {
+                    showNotification('站点设置已重新加载', 'success');
+                }
+            } catch (error) {
+                if (statusElement) {
+                    statusElement.textContent = '站点设置读取失败：' + error.message;
+                }
+                showNotification('读取站点设置失败: ' + error.message, 'error');
+            }
+        }
+
+        async function saveSiteSettings() {
+            const saveBtn = document.getElementById('siteSettingsSaveBtn');
+            const homeTitle = document.getElementById('siteSettingsHomeTitle').value.trim();
+            const homeIntro = document.getElementById('siteSettingsHomeIntro').value.trim();
+            const adminPath = normalizeAdminPathInput(document.getElementById('siteSettingsAdminPath').value);
+            const shareDomainEnabled = document.getElementById('siteSettingsShareDomainEnabled').checked;
+            const shareDomain = document.getElementById('siteSettingsShareDomain').value.trim();
+
+            if (!homeTitle) {
+                showNotification('请填写网站主页标题', 'warning');
+                return;
+            }
+            if (!homeIntro) {
+                showNotification('请填写网站主页介绍', 'warning');
+                return;
+            }
+            if (adminPath === '/') {
+                showNotification('管理员后台登录地址不能设置为根路径 /', 'warning');
+                return;
+            }
+            if (shareDomainEnabled && !shareDomain) {
+                showNotification('启用独立分享域名后必须填写域名', 'warning');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = buttonLabel('loading', '保存中...', 'spinning');
+
+            try {
+                const config = await apiRequest('/api/site-settings', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        home_title: homeTitle,
+                        home_intro: homeIntro,
+                        admin_login_path: adminPath,
+                        share_domain_enabled: shareDomainEnabled,
+                        share_domain: shareDomainEnabled ? shareDomain : ''
+                    })
+                });
+
+                siteSettingsCache = config;
+                currentAdminLoginPath = normalizeAdminPathInput(config.admin_login_path || adminPath);
+                document.getElementById('siteSettingsAdminPath').value = currentAdminLoginPath;
+                document.getElementById('siteSettingsAdminUrl').value = config.admin_login_url || `${window.location.origin}${currentAdminLoginPath}`;
+                document.getElementById('siteSettingsShareDomain').value = config.share_domain || '';
+                toggleShareDomainSettings();
+                renderSiteSettingsStatus(config, '设置已保存，主页介绍、后台入口和公开分享域名都已更新。');
+                showNotification('站点设置已保存', 'success');
+
+                const currentPath = normalizeAdminPathInput(window.location.pathname);
+                if (currentAdminLoginPath !== currentPath) {
+                    showNotification('管理员入口地址已修改，正在跳转到新地址', 'info');
+                    setTimeout(() => {
+                        window.location.replace(currentAdminLoginPath + '#/settings');
+                    }, 600);
+                }
+            } catch (error) {
+                showNotification('保存站点设置失败: ' + error.message, 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = buttonLabel('settings', '保存设置');
+            }
+        }
+
         async function tryApi(apiType) {
             const baseUrl = window.location.origin;
             let url, responseElementId;
@@ -8214,6 +8475,15 @@ Authorization: Bearer om_your_api_key
         // URL璺敱澶勭悊
         function handleUrlRouting() {
             const hash = window.location.hash;
+            const pageRoutes = {
+                '#/accounts': 'accounts',
+                '#/addAccount': 'addAccount',
+                '#/batchAdd': 'batchAdd',
+                '#/classifications': 'classifications',
+                '#/apiKeys': 'apiKeys',
+                '#/apiDocs': 'apiDocs',
+                '#/settings': 'settings'
+            };
 
             if (hash.startsWith('#/emails/')) {
                 const emailId = decodeURIComponent(hash.replace('#/emails/', ''));
@@ -8229,11 +8499,16 @@ Authorization: Bearer om_your_api_key
                 }
             }
 
-            if (!hash || hash === '#/accounts' || hash === '#') {
+            if (!hash || hash === '#') {
                 showPage('accounts');
+                return;
+            }
+
+            if (pageRoutes[hash]) {
+                showPage(pageRoutes[hash]);
             }
         }
-        
+
         window.addEventListener('popstate', function() {
             handleUrlRouting();
         });

@@ -1121,7 +1121,7 @@
 
             const matchedRule = DOMAIN_LOGO_RULES.find(rule => rule.keywords.some(keyword => domain.includes(keyword)));
             const logoDomain = matchedRule ? matchedRule.domain : domain;
-            return `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(`https://${logoDomain}`)}`;
+            return `/icons/domain/${encodeURIComponent(logoDomain)}?size=128`;
         }
 
         function renderAvatar(email, sender) {

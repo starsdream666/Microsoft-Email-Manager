@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OutlookManager</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20260405">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=20260405">
+    <style>
+        :root {
+            --bg: #f3f7f6;
+            --panel: rgba(255, 255, 255, 0.86);
+            --line: rgba(15, 23, 42, 0.08);
+            --text: #102a43;
+            --muted: #5c6b7b;
+            --primary: #0f766e;
+            --accent: #0ea5e9;
+            --shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+            --radius: 24px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(14, 165, 233, 0.16), transparent 30%),
+                radial-gradient(circle at top right, rgba(15, 118, 110, 0.14), transparent 28%),
+                linear-gradient(180deg, #eff7f5 0%, #f8fafc 48%, #ffffff 100%);
+        }
+
+        .shell {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 28px 20px 60px;
+        }
+
+        .hero,
+        .panel {
+            background: var(--panel);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+        }
+
+        .hero {
+            padding: 28px;
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+            gap: 18px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .brand-logo {
+            width: 84px;
+            height: 84px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: grid;
+            place-items: center;
+            box-shadow: 0 18px 40px rgba(15, 118, 110, 0.22);
+            overflow: hidden;
+        }
+
+        .brand-logo img {
+            width: 54px;
+            height: 54px;
+            object-fit: contain;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(34px, 5vw, 54px);
+            line-height: 1.06;
+        }
+
+        .lead {
+            margin: 16px 0 0;
+            font-size: 18px;
+            line-height: 1.9;
+            color: var(--muted);
+            white-space: pre-wrap;
+        }
+
+        .hero-meta,
+        .feature-grid,
+        .note-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .hero-meta {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            margin-top: 24px;
+        }
+
+        .chip {
+            min-height: 110px;
+            padding: 18px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid var(--line);
+        }
+
+        .chip strong,
+        .card-title {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .chip span,
+        .card-copy {
+            color: var(--muted);
+            line-height: 1.8;
+        }
+
+        .hero-side {
+            display: grid;
+            gap: 14px;
+        }
+
+        .hero-side .panel {
+            padding: 20px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+            padding: 0 12px;
+            border-radius: 999px;
+            background: rgba(15, 118, 110, 0.1);
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .section {
+            margin-top: 20px;
+        }
+
+        .feature-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .panel {
+            padding: 22px;
+        }
+
+        .note-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin-top: 20px;
+        }
+
+        .footer-note {
+            margin-top: 20px;
+            padding: 18px 20px;
+            border-radius: 20px;
+            background: rgba(15, 23, 42, 0.04);
+            color: var(--muted);
+            line-height: 1.8;
+        }
+
+        @media (max-width: 960px) {
+            .hero,
+            .feature-grid,
+            .note-grid,
+            .hero-meta {
+                grid-template-columns: 1fr;
+            }
+
+            .shell {
+                padding: 18px 14px 40px;
+            }
+
+            .hero,
+            .panel {
+                border-radius: 20px;
+            }
+
+            .lead {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <section class="hero">
+            <div>
+                <div class="brand">
+                    <div class="brand-logo">
+                        <img src="/static/assets/logo.png" alt="OutlookManager logo" onerror="this.style.display='none'">
+                    </div>
+                    <div>
+                        <div class="badge">Website Home</div>
+                        <p style="margin: 10px 0 0; color: var(--muted);">根路径展示页</p>
+                    </div>
+                </div>
+                <h1 id="homeTitle">OutlookManager</h1>
+                <p id="homeIntro" class="lead">用于集中管理 Outlook 邮箱账户、邮件公开分享、API 接入与日常运营排查。</p>
+
+                <div class="hero-meta">
+                    <div class="chip">
+                        <strong>主页作用</strong>
+                        <span>用来说明这个站点是做什么的，适合给访客、客户或内部同事先看一眼。</span>
+                    </div>
+                    <div class="chip">
+                        <strong>后台入口</strong>
+                        <span>管理员后台登录地址由部署者自定义，不会直接暴露在主页上。</span>
+                    </div>
+                    <div class="chip">
+                        <strong>公开分享</strong>
+                        <span>邮件公开分享可按需绑定独立域名，把公开页和后台分开。</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-side">
+                <div class="panel">
+                    <span class="card-title">当前主页说明</span>
+                    <div class="card-copy">这里展示的是管理员在后台“设置”页填写的主页标题和主页介绍，用来告诉访问者这个网站的用途。</div>
+                </div>
+                <div class="panel">
+                    <span class="card-title">部署建议</span>
+                    <div class="card-copy">如果启用了独立分享域名，公开邮件页会自动切换到指定域名，后台仍然保留在管理员入口地址。</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section feature-grid">
+            <div class="panel">
+                <span class="card-title">集中管理 Outlook 账户</span>
+                <div class="card-copy">统一维护邮箱账户、分类、标签和健康状态，减少人工切换账号的成本。</div>
+            </div>
+            <div class="panel">
+                <span class="card-title">公开分享指定邮箱页面</span>
+                <div class="card-copy">支持按邮箱生成公开访问页，可设置开关、有效期和访问密码。</div>
+            </div>
+            <div class="panel">
+                <span class="card-title">提供 API 接口能力</span>
+                <div class="card-copy">可通过 API Key 接入外部流程，把邮箱管理、查询和标记接到自动化系统里。</div>
+            </div>
+        </section>
+
+        <section class="note-grid">
+            <div class="panel">
+                <span class="card-title">公开主页</span>
+                <div class="card-copy">适合展示网站用途、服务范围和使用说明。修改内容请登录管理员后台后进入“设置”。</div>
+            </div>
+            <div class="panel">
+                <span class="card-title">安全隔离</span>
+                <div id="shareDomainNote" class="card-copy">当前未启用独立分享域名，公开分享页默认使用当前站点域名。</div>
+            </div>
+        </section>
+
+        <div class="footer-note">
+            管理员后台入口路径可在初始化时设置，也可在后台“设置”页面修改。根路径主页只负责介绍站点用途，不承担后台登录入口展示职责。
+        </div>
+    </main>
+
+    <script>
+        async function initializeHomePage() {
+            try {
+                const response = await fetch('/api/public/site-info', { credentials: 'same-origin' });
+                if (!response.ok) {
+                    throw new Error('站点信息读取失败');
+                }
+
+                const data = await response.json();
+                const title = data.home_title || 'OutlookManager';
+                const intro = data.home_intro || '用于集中管理 Outlook 邮箱账户、邮件公开分享、API 接入与日常运营排查。';
+                document.title = title;
+                document.getElementById('homeTitle').textContent = title;
+                document.getElementById('homeIntro').textContent = intro;
+                document.getElementById('shareDomainNote').textContent = data.share_domain_enabled && data.share_domain
+                    ? `当前已启用独立分享域名：${data.share_domain}。公开分享链接会自动使用这个域名。`
+                    : '当前未启用独立分享域名，公开分享页默认使用当前站点域名。';
+            } catch (error) {
+                console.warn(error);
+            }
+        }
+
+        window.addEventListener('load', initializeHomePage);
+    </script>
+</body>
+</html>
