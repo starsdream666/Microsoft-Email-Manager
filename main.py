@@ -14,6 +14,7 @@ import html as html_lib
 import hashlib
 import hmac
 import imaplib
+import ipaddress
 import json
 import logging
 import os
@@ -34,6 +35,7 @@ import httpx
 from email.header import decode_header
 from email.utils import parseaddr, parsedate_to_datetime
 from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr, Field
@@ -53,6 +55,7 @@ SESSIONS_FILE = Path(os.getenv("SESSIONS_FILE", str(DATA_DIR / "sessions.json"))
 API_KEYS_FILE = Path(os.getenv("API_KEYS_FILE", str(DATA_DIR / "api_keys.json")))
 PUBLIC_SHARES_FILE = Path(os.getenv("PUBLIC_SHARES_FILE", str(DATA_DIR / "public_shares.json")))
 OPEN_ACCESS_SESSIONS_FILE = Path(os.getenv("OPEN_ACCESS_SESSIONS_FILE", str(DATA_DIR / "open_access_sessions.json")))
+ADMIN_LOGIN_ATTEMPTS_FILE = Path(os.getenv("ADMIN_LOGIN_ATTEMPTS_FILE", str(DATA_DIR / "admin_login_attempts.json")))
 ACCOUNT_HEALTH_FILE = Path(os.getenv("ACCOUNT_HEALTH_FILE", str(DATA_DIR / "account_health.json")))
 ACCOUNT_CLASSIFICATIONS_FILE = Path(os.getenv("ACCOUNT_CLASSIFICATIONS_FILE", str(DATA_DIR / "account_classifications.json")))
 EMAIL_TAGS_FILE = Path(os.getenv("EMAIL_TAGS_FILE", str(DATA_DIR / "email_tags.json")))
@@ -68,6 +71,10 @@ OPEN_ACCESS_SESSION_TTL_HOURS = max(1, int(os.getenv("OPEN_ACCESS_SESSION_TTL_HO
 OPEN_ACCESS_FAILURE_LIMIT = max(1, int(os.getenv("OPEN_ACCESS_FAILURE_LIMIT", "5")))
 OPEN_ACCESS_FAILURE_WINDOW_MINUTES = max(1, int(os.getenv("OPEN_ACCESS_FAILURE_WINDOW_MINUTES", "15")))
 OPEN_ACCESS_LOCKOUT_MINUTES = max(1, int(os.getenv("OPEN_ACCESS_LOCKOUT_MINUTES", "15")))
+ADMIN_LOGIN_FAILURE_LIMIT = max(1, int(os.getenv("ADMIN_LOGIN_FAILURE_LIMIT", "5")))
+ADMIN_LOGIN_FAILURE_WINDOW_MINUTES = max(1, int(os.getenv("ADMIN_LOGIN_FAILURE_WINDOW_MINUTES", "15")))
+ADMIN_LOGIN_LOCKOUT_MINUTES = max(1, int(os.getenv("ADMIN_LOGIN_LOCKOUT_MINUTES", "15")))
+TRUST_PROXY_HEADERS = str(os.getenv("TRUST_PROXY_HEADERS", "")).strip().lower() in {"1", "true", "yes", "on"}
 TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 DEFAULT_ADMIN_LOGIN_PATH = "/admin"
 DEFAULT_HOME_TITLE = "Microsoft-Email-Manager"
@@ -94,6 +101,23 @@ SOCKET_TIMEOUT = 15
 # 缓存配置
 CACHE_EXPIRE_TIME = 60  # 缓存过期时间（秒）
 CLASSIFICATION_KEY_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+BUILTIN_CLASSIFICATION_REMARK = "此分类此标签为适配MREGISTER开源项目"
+BUILTIN_ACCOUNT_CLASSIFICATIONS: dict[str, dict[str, dict[str, Any]]] = {
+    "categories": {
+        "mregister": {
+            "name_zh": "MREGISTER",
+            "name_en": "mregister",
+            "remark": BUILTIN_CLASSIFICATION_REMARK,
+        }
+    },
+    "tags": {
+        "chatgpt_registered": {
+            "name_zh": "已注册CHATGPT",
+            "name_en": "chatgpt_registered",
+            "remark": BUILTIN_CLASSIFICATION_REMARK,
+        }
+    },
+}
 ADMIN_LOGIN_PATH_PATTERN = re.compile(r"^/[a-zA-Z0-9/_-]{2,120}$")
 HOSTNAME_PATTERN = re.compile(r"^[a-z0-9.-]+(?::\d{1,5})?$")
 SAFE_BROWSER_METHODS = {"GET", "HEAD", "OPTIONS"}
@@ -154,6 +178,7 @@ class ClassificationOption(BaseModel):
     key: str
     name_zh: str
     name_en: str
+    remark: Optional[str] = None
     created_at: Optional[str] = None
 
 
@@ -167,6 +192,7 @@ class ClassificationCreateRequest(BaseModel):
     """创建分类或标签"""
     name_zh: str = Field(min_length=1, max_length=80)
     name_en: str = Field(min_length=1, max_length=80)
+    remark: Optional[str] = Field(default=None, max_length=200)
 
 
 class EmailItem(BaseModel):
@@ -658,8 +684,35 @@ def normalize_classification_record(key: str, payload: dict[str, Any]) -> dict[s
         "key": key,
         "name_zh": str(payload.get("name_zh") or "").strip(),
         "name_en": str(payload.get("name_en") or "").strip(),
+        "remark": str(payload.get("remark") or "").strip(),
         "created_at": payload.get("created_at"),
     }
+
+
+def ensure_builtin_classifications(data: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+    categories = data.get("categories")
+    tags = data.get("tags")
+    normalized_data = {
+        "categories": categories if isinstance(categories, dict) else {},
+        "tags": tags if isinstance(tags, dict) else {},
+    }
+    changed = not isinstance(categories, dict) or not isinstance(tags, dict)
+
+    for collection_name, builtin_collection in BUILTIN_ACCOUNT_CLASSIFICATIONS.items():
+        collection = normalized_data[collection_name]
+        for key, builtin_payload in builtin_collection.items():
+            existing_payload = collection.get(key) if isinstance(collection.get(key), dict) else {}
+            next_payload = {
+                "name_zh": builtin_payload["name_zh"],
+                "name_en": builtin_payload["name_en"],
+                "remark": builtin_payload.get("remark"),
+                "created_at": existing_payload.get("created_at"),
+            }
+            if normalize_classification_record(key, existing_payload) != normalize_classification_record(key, next_payload):
+                collection[key] = next_payload
+                changed = True
+
+    return normalized_data, changed
 
 
 def build_classification_option(key: str, payload: dict[str, Any] | None) -> ClassificationOption:
@@ -671,6 +724,7 @@ def build_classification_option(key: str, payload: dict[str, Any] | None) -> Cla
         key=key,
         name_zh=normalized["name_zh"] or key,
         name_en=normalized["name_en"] or key,
+        remark=normalized["remark"] or None,
         created_at=normalized["created_at"],
     )
 
@@ -755,6 +809,7 @@ def upsert_classification_item(collection_name: str, payload: ClassificationCrea
     collection[key] = {
         "name_zh": payload.name_zh.strip(),
         "name_en": payload.name_en.strip(),
+        "remark": str(payload.remark or "").strip(),
         "created_at": datetime.utcnow().isoformat(),
     }
     data[collection_name] = collection
@@ -763,6 +818,8 @@ def upsert_classification_item(collection_name: str, payload: ClassificationCrea
 
 
 def remove_classification_item(collection_name: str, key: str) -> None:
+    if key in BUILTIN_ACCOUNT_CLASSIFICATIONS.get(collection_name, {}):
+        raise HTTPException(status_code=400, detail=f"Built-in {collection_name[:-1]} cannot be deleted: {key}")
     data = load_account_classifications_data()
     collection = data.get(collection_name, {})
     if key not in collection:
@@ -803,44 +860,42 @@ def set_email_tag_keys(email_id: str, message_id: str, tag_keys: list[str]) -> N
 
 
 def remove_account_category_references(category_key: str) -> None:
-    if not ACCOUNTS_FILE.exists():
-        return
+    with auth_lock:
+        accounts = _read_json_file(ACCOUNTS_FILE, {})
+        accounts = accounts if isinstance(accounts, dict) else {}
+        if not accounts:
+            return
 
-    with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
-        accounts = json.load(f)
-
-    changed = False
-    for account_data in accounts.values():
-        if not isinstance(account_data, dict):
-            continue
-        if normalize_account_category_key(account_data.get("category_key")) == category_key:
-            account_data["category_key"] = None
-            changed = True
-
-    if changed:
-        with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
-            json.dump(accounts, f, indent=2, ensure_ascii=False)
-
-
-def remove_tag_references(tag_key: str) -> None:
-    if ACCOUNTS_FILE.exists():
-        with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
-            accounts = json.load(f)
-
-        accounts_changed = False
+        changed = False
         for account_data in accounts.values():
             if not isinstance(account_data, dict):
                 continue
-            normalized_tag_keys = normalize_account_tag_keys(account_data.get("tag_keys"), account_data.get("tags", []))
-            updated_tag_keys = [item for item in normalized_tag_keys if item != tag_key]
-            if updated_tag_keys != normalized_tag_keys:
-                account_data["tag_keys"] = updated_tag_keys
-                account_data.pop("tags", None)
-                accounts_changed = True
+            if normalize_account_category_key(account_data.get("category_key")) == category_key:
+                account_data["category_key"] = None
+                changed = True
 
-        if accounts_changed:
-            with open(ACCOUNTS_FILE, "w", encoding="utf-8") as f:
-                json.dump(accounts, f, indent=2, ensure_ascii=False)
+        if changed:
+            _write_json_file(ACCOUNTS_FILE, accounts)
+
+
+def remove_tag_references(tag_key: str) -> None:
+    with auth_lock:
+        accounts = _read_json_file(ACCOUNTS_FILE, {})
+        accounts = accounts if isinstance(accounts, dict) else {}
+        if accounts:
+            accounts_changed = False
+            for account_data in accounts.values():
+                if not isinstance(account_data, dict):
+                    continue
+                normalized_tag_keys = normalize_account_tag_keys(account_data.get("tag_keys"), account_data.get("tags", []))
+                updated_tag_keys = [item for item in normalized_tag_keys if item != tag_key]
+                if updated_tag_keys != normalized_tag_keys:
+                    account_data["tag_keys"] = updated_tag_keys
+                    account_data.pop("tags", None)
+                    accounts_changed = True
+
+            if accounts_changed:
+                _write_json_file(ACCOUNTS_FILE, accounts)
 
     email_tags_data = load_email_tags_data()
     emails = email_tags_data.get("emails", {})
@@ -1019,15 +1074,10 @@ async def get_account_credentials(email_id: str) -> AccountCredentials:
         HTTPException: 账户不存在或文件读取失败
     """
     try:
-        # 检查账户文件是否存在
-        accounts_path = ACCOUNTS_FILE
-        if not accounts_path.exists():
+        accounts = load_accounts_data()
+        if not accounts:
             logger.warning(f"Accounts file {ACCOUNTS_FILE} not found")
             raise HTTPException(status_code=404, detail="No accounts configured")
-
-        # 读取账户数据
-        with open(accounts_path, 'r', encoding='utf-8') as f:
-            accounts = json.load(f)
 
         # 检查指定邮箱是否存在
         if email_id not in accounts:
@@ -1059,26 +1109,20 @@ async def get_account_credentials(email_id: str) -> AccountCredentials:
 async def save_account_credentials(email_id: str, credentials: AccountCredentials) -> None:
     """保存账户凭证到accounts.json"""
     try:
-        accounts = {}
-        if ACCOUNTS_FILE.exists():
-            with open(ACCOUNTS_FILE, 'r', encoding='utf-8') as f:
-                accounts = json.load(f)
-
-        accounts[email_id] = {
-            'refresh_token': credentials.refresh_token,
-            'client_id': credentials.client_id,
-            'auth_method': normalize_account_auth_method(getattr(credentials, 'auth_method', DEFAULT_ACCOUNT_AUTH_METHOD)),
-            'category_key': normalize_account_category_key(getattr(credentials, 'category_key', None)),
-            'tag_keys': normalize_account_tag_keys(
-                getattr(credentials, 'tag_keys', []),
-                getattr(credentials, 'tags', []),
-            ),
-        }
-
-        ACCOUNTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(ACCOUNTS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(accounts, f, indent=2, ensure_ascii=False)
-
+        with auth_lock:
+            accounts = _read_json_file(ACCOUNTS_FILE, {})
+            accounts = accounts if isinstance(accounts, dict) else {}
+            accounts[email_id] = {
+                'refresh_token': credentials.refresh_token,
+                'client_id': credentials.client_id,
+                'auth_method': normalize_account_auth_method(getattr(credentials, 'auth_method', DEFAULT_ACCOUNT_AUTH_METHOD)),
+                'category_key': normalize_account_category_key(getattr(credentials, 'category_key', None)),
+                'tag_keys': normalize_account_tag_keys(
+                    getattr(credentials, 'tag_keys', []),
+                    getattr(credentials, 'tags', []),
+                ),
+            }
+            _write_json_file(ACCOUNTS_FILE, accounts)
         logger.info(f"Account credentials saved for {email_id}")
     except Exception as e:
         logger.error(f"Error saving account credentials: {e}")
@@ -1096,7 +1140,8 @@ async def get_all_accounts(
 ) -> AccountListResponse:
     """获取所有已加载的邮箱账户列表，支持分页和搜索"""
     try:
-        if not ACCOUNTS_FILE.exists():
+        accounts_data = load_accounts_data()
+        if not accounts_data:
             return AccountListResponse(
                 total_accounts=0, 
                 page=page, 
@@ -1104,9 +1149,6 @@ async def get_all_accounts(
                 total_pages=0, 
                 accounts=[]
             )
-
-        with open(ACCOUNTS_FILE, 'r', encoding='utf-8') as f:
-            accounts_data = json.load(f)
         health_data = load_account_health_data().get("accounts", {})
         catalog = load_account_classifications_data()
 
@@ -1295,6 +1337,17 @@ def save_api_keys_data(data: dict[str, Any]) -> None:
         )
 
 
+def load_accounts_data() -> dict[str, Any]:
+    with auth_lock:
+        data = _read_json_file(ACCOUNTS_FILE, {})
+        return data if isinstance(data, dict) else {}
+
+
+def save_accounts_data(data: dict[str, Any]) -> None:
+    with auth_lock:
+        _write_json_file(ACCOUNTS_FILE, data if isinstance(data, dict) else {})
+
+
 def load_account_health_data() -> dict[str, Any]:
     with auth_lock:
         data = _read_json_file(ACCOUNT_HEALTH_FILE, {"accounts": {}})
@@ -1310,22 +1363,18 @@ def save_account_health_data(data: dict[str, Any]) -> None:
 def load_account_classifications_data() -> dict[str, Any]:
     with auth_lock:
         data = _read_json_file(ACCOUNT_CLASSIFICATIONS_FILE, {"categories": {}, "tags": {}})
-        categories = data.get("categories")
-        tags = data.get("tags")
-        return {
-            "categories": categories if isinstance(categories, dict) else {},
-            "tags": tags if isinstance(tags, dict) else {},
-        }
+        normalized_data, changed = ensure_builtin_classifications(data)
+        if changed:
+            _write_json_file(ACCOUNT_CLASSIFICATIONS_FILE, normalized_data)
+        return normalized_data
 
 
 def save_account_classifications_data(data: dict[str, Any]) -> None:
     with auth_lock:
+        normalized_data, _ = ensure_builtin_classifications(data)
         _write_json_file(
             ACCOUNT_CLASSIFICATIONS_FILE,
-            {
-                "categories": data.get("categories", {}),
-                "tags": data.get("tags", {}),
-            },
+            normalized_data,
         )
 
 
@@ -1373,6 +1422,18 @@ def save_open_access_data(data: dict[str, Any]) -> None:
                 "failed_attempts": data.get("failed_attempts", {}),
             },
         )
+
+
+def load_admin_login_attempts_data() -> dict[str, Any]:
+    with auth_lock:
+        data = _read_json_file(ADMIN_LOGIN_ATTEMPTS_FILE, {"attempts": {}})
+        attempts = data.get("attempts")
+        return {"attempts": attempts if isinstance(attempts, dict) else {}}
+
+
+def save_admin_login_attempts_data(data: dict[str, Any]) -> None:
+    with auth_lock:
+        _write_json_file(ADMIN_LOGIN_ATTEMPTS_FILE, {"attempts": data.get("attempts", {})})
 
 
 def get_default_site_settings() -> dict[str, Any]:
@@ -1433,6 +1494,22 @@ def normalize_hostname(value: str | None) -> str:
         raise HTTPException(status_code=400, detail="分享页面域名格式不正确")
 
     return host
+
+
+def normalize_icon_domain(value: str | None) -> str:
+    normalized = normalize_hostname(value)
+    host = normalized.split(":", 1)[0].strip().lower()
+    if not host:
+        return ""
+    if host != normalized:
+        raise HTTPException(status_code=400, detail="图标域名不支持自定义端口")
+    if host == "localhost" or "." not in host:
+        raise HTTPException(status_code=400, detail="图标域名必须是公开域名")
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        return host
+    raise HTTPException(status_code=400, detail="图标域名不能直接使用 IP 地址")
 
 
 def normalize_turnstile_value(value: str | None) -> str:
@@ -1551,7 +1628,7 @@ def parse_stored_datetime(value: Any) -> datetime | None:
 
 
 def get_request_ip(request: Request) -> str:
-    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    forwarded_for = request.headers.get("X-Forwarded-For", "") if TRUST_PROXY_HEADERS else ""
     if forwarded_for:
         return forwarded_for.split(",")[0].strip()
     if request.client and request.client.host:
@@ -1560,7 +1637,7 @@ def get_request_ip(request: Request) -> str:
 
 
 def get_request_host(request: Request) -> str:
-    forwarded_host = request.headers.get("X-Forwarded-Host", "")
+    forwarded_host = request.headers.get("X-Forwarded-Host", "") if TRUST_PROXY_HEADERS else ""
     if forwarded_host:
         return forwarded_host.split(",")[0].strip().lower()
     host = request.headers.get("host", "")
@@ -1589,7 +1666,7 @@ def is_share_domain_allowed_path(path: str) -> bool:
 
 
 def get_request_origin(request: Request) -> str:
-    forwarded_proto = request.headers.get("X-Forwarded-Proto", "")
+    forwarded_proto = request.headers.get("X-Forwarded-Proto", "") if TRUST_PROXY_HEADERS else ""
     scheme = request.url.scheme
     if forwarded_proto:
         scheme = forwarded_proto.split(",")[0].strip().lower() or scheme
@@ -1625,6 +1702,8 @@ def get_browser_supplied_origin(request: Request) -> tuple[bool, str]:
 
 
 def validate_browser_origin(request: Request) -> JSONResponse | None:
+    if extract_api_key_from_request(request):
+        return None
     has_browser_origin, supplied_origin = get_browser_supplied_origin(request)
     if not has_browser_origin:
         return None
@@ -1677,7 +1756,7 @@ async def enforce_turnstile(request: Request, token: str | None, audience: str) 
 def request_uses_https(request: Request | None) -> bool:
     if request is None:
         return False
-    forwarded_proto = request.headers.get("X-Forwarded-Proto", "")
+    forwarded_proto = request.headers.get("X-Forwarded-Proto", "") if TRUST_PROXY_HEADERS else ""
     if forwarded_proto:
         return forwarded_proto.split(",")[0].strip().lower() == "https"
     return request.url.scheme == "https"
@@ -1687,15 +1766,15 @@ def get_request_public_base_url(request: Request) -> str:
     site_settings = load_site_settings()
     share_domain = site_settings.get("share_domain", "")
     if site_settings.get("share_domain_enabled") and share_domain:
-        forwarded_proto = request.headers.get("X-Forwarded-Proto", "")
+        forwarded_proto = request.headers.get("X-Forwarded-Proto", "") if TRUST_PROXY_HEADERS else ""
         scheme = request.url.scheme
         if forwarded_proto:
             scheme = forwarded_proto.split(",")[0].strip().lower() or scheme
         return f"{scheme}://{share_domain}"
 
-    forwarded_proto = request.headers.get("X-Forwarded-Proto", "")
-    forwarded_host = request.headers.get("X-Forwarded-Host", "")
-    forwarded_prefix = request.headers.get("X-Forwarded-Prefix", "")
+    forwarded_proto = request.headers.get("X-Forwarded-Proto", "") if TRUST_PROXY_HEADERS else ""
+    forwarded_host = request.headers.get("X-Forwarded-Host", "") if TRUST_PROXY_HEADERS else ""
+    forwarded_prefix = request.headers.get("X-Forwarded-Prefix", "") if TRUST_PROXY_HEADERS else ""
     host = ""
 
     if forwarded_host:
@@ -1789,6 +1868,83 @@ def cleanup_expired_open_access() -> None:
 
     if active_sessions != sessions or active_failures != failed_attempts:
         save_open_access_data({"sessions": active_sessions, "failed_attempts": active_failures})
+
+
+def cleanup_expired_admin_login_attempts() -> None:
+    data = load_admin_login_attempts_data()
+    attempts = data.get("attempts", {})
+    now_ts = time.time()
+    failure_window_seconds = ADMIN_LOGIN_FAILURE_WINDOW_MINUTES * 60
+    active_attempts = {
+        attempt_key: meta
+        for attempt_key, meta in attempts.items()
+        if isinstance(meta, dict)
+        and (
+            float(meta.get("blocked_until_ts", 0) or 0) > now_ts
+            or float(meta.get("last_failed_at_ts", 0) or 0) > (now_ts - failure_window_seconds)
+        )
+    }
+    if active_attempts != attempts:
+        save_admin_login_attempts_data({"attempts": active_attempts})
+
+
+def get_admin_login_attempt_key(request: Request) -> str:
+    return get_request_ip(request) or "unknown"
+
+
+def clear_admin_login_failures(request: Request) -> None:
+    data = load_admin_login_attempts_data()
+    attempt_key = get_admin_login_attempt_key(request)
+    if attempt_key in data.get("attempts", {}):
+        del data["attempts"][attempt_key]
+        save_admin_login_attempts_data(data)
+
+
+def get_admin_login_block_state(request: Request) -> dict[str, Any] | None:
+    cleanup_expired_admin_login_attempts()
+    attempt_key = get_admin_login_attempt_key(request)
+    meta = load_admin_login_attempts_data().get("attempts", {}).get(attempt_key)
+    if not isinstance(meta, dict):
+        return None
+    if float(meta.get("blocked_until_ts", 0) or 0) <= time.time():
+        return None
+    return meta
+
+
+def record_admin_login_failure(request: Request) -> dict[str, Any]:
+    cleanup_expired_admin_login_attempts()
+    data = load_admin_login_attempts_data()
+    attempts = data.get("attempts", {})
+    attempt_key = get_admin_login_attempt_key(request)
+    now = datetime.utcnow()
+    now_ts = time.time()
+    failure_window_seconds = ADMIN_LOGIN_FAILURE_WINDOW_MINUTES * 60
+    meta = attempts.get(attempt_key)
+    meta = meta if isinstance(meta, dict) else {}
+
+    count = int(meta.get("count", 0) or 0)
+    if float(meta.get("last_failed_at_ts", 0) or 0) <= now_ts - failure_window_seconds:
+        count = 0
+    count += 1
+
+    blocked_until_ts = 0.0
+    blocked_until = None
+    if count >= ADMIN_LOGIN_FAILURE_LIMIT:
+        blocked_until_ts = now_ts + ADMIN_LOGIN_LOCKOUT_MINUTES * 60
+        blocked_until = datetime.utcfromtimestamp(blocked_until_ts).isoformat()
+
+    updated_meta = {
+        "count": count,
+        "ip": get_request_ip(request),
+        "last_failed_at": now.isoformat(),
+        "last_failed_at_ts": now_ts,
+        "blocked_until": blocked_until,
+        "blocked_until_ts": blocked_until_ts,
+    }
+    attempts[attempt_key] = updated_meta
+    data["attempts"] = attempts
+    save_admin_login_attempts_data(data)
+    return updated_meta
 
 
 def revoke_open_access_sessions(email_id: str) -> None:
@@ -2450,11 +2606,9 @@ async def refresh_account_health(email_id: str) -> dict[str, Any]:
 
 
 async def refresh_all_account_health() -> dict[str, Any]:
-    if not ACCOUNTS_FILE.exists():
+    accounts_data = load_accounts_data()
+    if not accounts_data:
         return {"total": 0, "checked": 0, "results": {}}
-
-    with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
-        accounts_data = json.load(f)
 
     results: dict[str, Any] = {}
     for email_id in accounts_data.keys():
@@ -2940,6 +3094,10 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         raise RuntimeError(f"Open access sessions path is a directory, expected a file: {OPEN_ACCESS_SESSIONS_FILE}")
     if not OPEN_ACCESS_SESSIONS_FILE.exists():
         _write_json_file(OPEN_ACCESS_SESSIONS_FILE, {"sessions": {}, "failed_attempts": {}})
+    if ADMIN_LOGIN_ATTEMPTS_FILE.exists() and ADMIN_LOGIN_ATTEMPTS_FILE.is_dir():
+        raise RuntimeError(f"Admin login attempts path is a directory, expected a file: {ADMIN_LOGIN_ATTEMPTS_FILE}")
+    if not ADMIN_LOGIN_ATTEMPTS_FILE.exists():
+        _write_json_file(ADMIN_LOGIN_ATTEMPTS_FILE, {"attempts": {}})
     if ACCOUNT_HEALTH_FILE.exists() and ACCOUNT_HEALTH_FILE.is_dir():
         raise RuntimeError(f"Account health path is a directory, expected a file: {ACCOUNT_HEALTH_FILE}")
     if not ACCOUNT_HEALTH_FILE.exists():
@@ -2947,7 +3105,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     if ACCOUNT_CLASSIFICATIONS_FILE.exists() and ACCOUNT_CLASSIFICATIONS_FILE.is_dir():
         raise RuntimeError(f"Account classifications path is a directory, expected a file: {ACCOUNT_CLASSIFICATIONS_FILE}")
     if not ACCOUNT_CLASSIFICATIONS_FILE.exists():
-        _write_json_file(ACCOUNT_CLASSIFICATIONS_FILE, {"categories": {}, "tags": {}})
+        _write_json_file(ACCOUNT_CLASSIFICATIONS_FILE, ensure_builtin_classifications({})[0])
     if EMAIL_TAGS_FILE.exists() and EMAIL_TAGS_FILE.is_dir():
         raise RuntimeError(f"Email tags path is a directory, expected a file: {EMAIL_TAGS_FILE}")
     if not EMAIL_TAGS_FILE.exists():
@@ -2959,6 +3117,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     ICON_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cleanup_expired_sessions()
     cleanup_expired_open_access()
+    cleanup_expired_admin_login_attempts()
 
     yield
 
@@ -2975,6 +3134,37 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+
+def get_cors_allow_origins() -> list[str]:
+    raw_value = str(os.getenv("CORS_ALLOW_ORIGINS", "")).strip()
+    if not raw_value:
+        return []
+
+    origins: list[str] = []
+    for item in raw_value.split(","):
+        candidate = item.strip()
+        if not candidate:
+            continue
+        if candidate == "*":
+            return ["*"]
+        normalized = normalize_origin_value(candidate)
+        if normalized:
+            origins.append(normalized)
+        else:
+            logger.warning("Ignoring invalid CORS origin: %s", candidate)
+    return origins
+
+
+cors_allow_origins = get_cors_allow_origins()
+if cors_allow_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_allow_origins,
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "X-API-Key", "Content-Type"],
+    )
 
 app.title = "Microsoft-Email-Manager API"
 app.description = "Microsoft-Email-Manager 邮件管理后台服务"
@@ -3068,9 +3258,16 @@ async def auth_login(payload: PasswordPayload, request: Request):
     settings = load_auth_settings()
     if not auth_is_configured():
         raise HTTPException(status_code=403, detail="Admin password is not configured yet")
+    blocked_state = get_admin_login_block_state(request)
+    if blocked_state:
+        raise HTTPException(status_code=429, detail="Too many login attempts. Try again later.")
     await enforce_turnstile(request, payload.turnstile_token, "admin_login")
     if not verify_password(payload.password, settings.get("admin_password_hash")):
+        failure_state = record_admin_login_failure(request)
+        if failure_state.get("blocked_until"):
+            raise HTTPException(status_code=429, detail="Too many login attempts. Try again later.")
         raise HTTPException(status_code=401, detail="Password is incorrect")
+    clear_admin_login_failures(request)
     raw_token, expires_at = create_session_token()
     return make_session_response({"ok": True, "configured": True}, raw_token, expires_at, request)
 
@@ -3574,38 +3771,34 @@ async def delete_account(email_id: str, request: Request):
     try:
         # 检查账户是否存在
         await get_account_credentials(email_id)
-        
-        # 读取现有账户
-        accounts = {}
-        if ACCOUNTS_FILE.exists():
-            with open(ACCOUNTS_FILE, 'r', encoding='utf-8') as f:
-                accounts = json.load(f)
-        
-        # 删除指定账户
-        if email_id in accounts:
-            del accounts[email_id]
-            
-            # 保存更新后的账户列表
-            with open(ACCOUNTS_FILE, 'w', encoding='utf-8') as f:
-                json.dump(accounts, f, indent=2, ensure_ascii=False)
 
-            remove_account_health_record(email_id)
-            public_shares_data = load_public_shares_data()
-            if email_id in public_shares_data.get("shares", {}):
-                del public_shares_data["shares"][email_id]
-                save_public_shares_data(public_shares_data)
-            email_tags_data = load_email_tags_data()
-            if email_id in email_tags_data.get("emails", {}):
-                del email_tags_data["emails"][email_id]
-                save_email_tags_data(email_tags_data)
-            revoke_open_access_sessions(email_id)
-            
-            return AccountResponse(
-                email_id=email_id,
-                message="Account deleted successfully."
-            )
-        else:
+        deleted = False
+        with auth_lock:
+            accounts = _read_json_file(ACCOUNTS_FILE, {})
+            accounts = accounts if isinstance(accounts, dict) else {}
+            if email_id in accounts:
+                del accounts[email_id]
+                _write_json_file(ACCOUNTS_FILE, accounts)
+                deleted = True
+
+        if not deleted:
             raise HTTPException(status_code=404, detail="Account not found")
+
+        remove_account_health_record(email_id)
+        public_shares_data = load_public_shares_data()
+        if email_id in public_shares_data.get("shares", {}):
+            del public_shares_data["shares"][email_id]
+            save_public_shares_data(public_shares_data)
+        email_tags_data = load_email_tags_data()
+        if email_id in email_tags_data.get("emails", {}):
+            del email_tags_data["emails"][email_id]
+            save_email_tags_data(email_tags_data)
+        revoke_open_access_sessions(email_id)
+        
+        return AccountResponse(
+            email_id=email_id,
+            message="Account deleted successfully."
+        )
             
     except HTTPException:
         raise
@@ -3688,13 +3881,12 @@ async def fetch_remote_domain_icon(domain: str, size: int) -> tuple[bytes | None
     sources = [
         f"https://www.google.com/s2/favicons?sz={size}&domain_url={quote(f'https://{domain}', safe='')}",
         f"https://icons.duckduckgo.com/ip3/{quote(domain, safe='')}.ico",
-        f"https://{domain}/favicon.ico",
     ]
     headers = {
         "User-Agent": "Microsoft-Email-Manager/1.0",
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
     }
-    async with httpx.AsyncClient(timeout=8.0, follow_redirects=True, headers=headers) as client:
+    async with httpx.AsyncClient(timeout=8.0, follow_redirects=False, headers=headers) as client:
         for url in sources:
             try:
                 response = await client.get(url)
@@ -3709,7 +3901,7 @@ async def fetch_remote_domain_icon(domain: str, size: int) -> tuple[bytes | None
 
 @app.get("/icons/domain/{domain}", include_in_schema=False)
 async def get_cached_domain_icon(domain: str, size: int = Query(128, ge=16, le=256)):
-    normalized_domain = normalize_hostname(domain)
+    normalized_domain = normalize_icon_domain(domain)
     if not normalized_domain:
         return Response(content=build_domain_icon_svg(domain), media_type="image/svg+xml")
 

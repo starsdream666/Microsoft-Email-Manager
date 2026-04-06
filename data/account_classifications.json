@@ -1,0 +1,18 @@
+{
+  "categories": {
+    "mregister": {
+      "name_zh": "MREGISTER",
+      "name_en": "mregister",
+      "remark": "此分类此标签为适配MREGISTER开源项目",
+      "created_at": null
+    }
+  },
+  "tags": {
+    "chatgpt_registered": {
+      "name_zh": "已注册CHATGPT",
+      "name_en": "chatgpt_registered",
+      "remark": "此分类此标签为适配MREGISTER开源项目",
+      "created_at": null
+    }
+  }
+}

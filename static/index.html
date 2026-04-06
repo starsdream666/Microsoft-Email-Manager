@@ -1402,6 +1402,13 @@
             word-break: break-all;
         }
 
+        .taxonomy-item-remark {
+            margin-top: 6px;
+            color: #475569;
+            font-size: 0.78rem;
+            line-height: 1.45;
+        }
+
         .quick-tags {
             margin-top: 18px;
             padding-top: 18px;
@@ -6587,6 +6594,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                     <div class="taxonomy-item-copy">
                         <div class="taxonomy-item-title">${escapeHtml(item.name_zh || item.key)}</div>
                         <div class="taxonomy-item-subtitle">${escapeHtml(item.name_en || item.key)} · key: ${escapeHtml(item.key || '')}</div>
+                        ${item.remark ? `<div class="taxonomy-item-remark">备注：${escapeHtml(item.remark)}</div>` : ''}
                     </div>
                     <button class="btn btn-danger btn-sm" type="button" onclick="deleteClassification('${type}', '${escapeHtml(item.key || '')}')">
                         ${buttonLabel('clear', '删除')}
