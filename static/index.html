@@ -4026,6 +4026,12 @@
             box-shadow: 0 14px 24px rgba(15, 23, 42, 0.05);
         }
 
+        .api-key-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
         .api-key-item-header,
         .api-log-item-header {
             display: flex;
@@ -4089,6 +4095,71 @@
             color: #64748b;
             text-align: center;
             background: rgba(255, 255, 255, 0.72);
+        }
+
+        .api-key-confirm-dialog {
+            max-width: 560px;
+            border-radius: 28px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+            box-shadow: 0 32px 80px rgba(15, 23, 42, 0.18);
+        }
+
+        .api-key-confirm-hero {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .api-key-confirm-icon {
+            width: 52px;
+            height: 52px;
+            flex: 0 0 52px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            background: rgba(37, 99, 235, 0.12);
+            color: #1d4ed8;
+            font-size: 1.4rem;
+        }
+
+        .api-key-confirm-icon.danger {
+            background: rgba(239, 68, 68, 0.12);
+            color: #b91c1c;
+        }
+
+        .api-key-confirm-summary {
+            display: grid;
+            gap: 10px;
+            color: #475569;
+            line-height: 1.72;
+        }
+
+        .api-key-confirm-summary p {
+            margin: 0;
+        }
+
+        .api-key-confirm-name {
+            font-size: 1.08rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .api-key-confirm-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .api-key-confirm-note {
+            margin-top: 18px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(239, 68, 68, 0.16);
+            background: rgba(254, 242, 242, 0.88);
+            color: #991b1b;
+            line-height: 1.7;
         }
 
         .api-docs-auth-grid {
@@ -5601,6 +5672,33 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
         </div>
     </div>
 
+    <div id="apiKeyActionModal" class="modal hidden">
+        <div class="modal-content api-key-confirm-dialog">
+            <div class="modal-header">
+                <h3 id="apiKeyActionModalTitle">确认操作</h3>
+                <button class="modal-close" type="button" onclick="closeApiKeyActionModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="api-key-confirm-hero">
+                    <div id="apiKeyActionModalIcon" class="api-key-confirm-icon">!</div>
+                    <div class="api-key-confirm-summary">
+                        <div id="apiKeyActionModalName" class="api-key-confirm-name">API Key</div>
+                        <div id="apiKeyActionModalDescription"></div>
+                        <div id="apiKeyActionModalMeta" class="api-key-confirm-meta"></div>
+                    </div>
+                </div>
+                <div id="apiKeyActionModalNote" class="api-key-confirm-note"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" id="apiKeyActionCancelBtn" onclick="closeApiKeyActionModal()">取消</button>
+                <button class="btn btn-danger" type="button" id="apiKeyActionConfirmBtn" onclick="submitApiKeyAction()">
+                    <span></span>
+                    确认
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 右键菜单 -->
     <div id="contextMenu" class="context-menu">
         <div class="context-menu-item" onclick="openInNewTab()">
@@ -5635,6 +5733,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
             key: '<svg viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"></circle><path d="M12 15.5h9"></path><path d="M18 12.5v6"></path><path d="M21 13.5v4"></path></svg>',
             search: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.35-4.35"></path></svg>',
             clear: '<svg viewBox="0 0 24 24"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>',
+            delete: '<svg viewBox="0 0 24 24"><path d="M4 7h16"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M6 7l1 13h10l1-13"></path><path d="M9 7V4h6v3"></path></svg>',
             refresh: '<svg viewBox="0 0 24 24"><path d="M21 2v6h-6"></path><path d="M3 22v-6h6"></path><path d="M20 8a9 9 0 0 0-15.5-3.5L3 8"></path><path d="M4 16a9 9 0 0 0 15.5 3.5L21 16"></path></svg>',
             export: '<svg viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>',
             health: '<svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 4 10 2-5h6"></path><path d="M2 12c0-4.5 3.2-8 7.5-8 2.1 0 3.6.9 4.5 2 0.9-1.1 2.4-2 4.5-2C21.8 4 25 7.5 25 12"></path></svg>',
@@ -5678,6 +5777,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
         let appBootstrapped = false;
         let setupAgreementComplete = false;
         let latestCreatedApiKey = '';
+        let apiKeyActionState = null;
         const SIDEBAR_STORAGE_KEY = 'outlookmanager-sidebar-collapsed';
         let classifications = { categories: [], tags: [] };
         let apiDocsAccounts = [];
@@ -7585,12 +7685,24 @@ example3@live.com----refresh_token3----client_id3`;
                                 <span class="api-key-badge muted">到期：${escapeHtml(key.never_expires ? '永不过期' : formatDateTime(key.expires_at, '未设置'))}</span>
                                 <span class="api-key-badge muted">最后调用：${escapeHtml(formatDateTime(key.last_used_at, '暂无'))}</span>
                             </div>
-                            ${key.status === 'active' ? `<button class="btn btn-secondary btn-sm" data-key-revoke="${escapeHtml(key.id)}" onclick="revokeApiKey('${escapeHtml(key.id)}')"><span></span>停用密钥</button>` : ''}
+                            <div class="api-key-actions">
+                                ${key.status === 'active' ? `<button class="btn btn-secondary btn-sm" data-key-action="revoke" data-key-id="${escapeHtml(key.id)}" data-key-name="${escapeHtml(key.name)}" data-key-prefix="${escapeHtml(key.prefix || '')}"><span></span>停用密钥</button>` : ''}
+                                ${key.status === 'revoked' ? `<button class="btn btn-danger btn-sm" data-key-action="delete" data-key-id="${escapeHtml(key.id)}" data-key-name="${escapeHtml(key.name)}" data-key-prefix="${escapeHtml(key.prefix || '')}"><span></span>删除密钥</button>` : ''}
+                            </div>
                         </div>
                     `).join('');
 
-                    document.querySelectorAll('[data-key-revoke]').forEach(button => {
-                        setButtonIcon(button, 'clear');
+                    document.querySelectorAll('[data-key-action]').forEach(button => {
+                        const action = button.dataset.keyAction;
+                        setButtonIcon(button, action === 'delete' ? 'delete' : 'clear');
+                        button.addEventListener('click', () => {
+                            openApiKeyActionModal(
+                                action,
+                                button.dataset.keyId || '',
+                                button.dataset.keyName || '',
+                                button.dataset.keyPrefix || ''
+                            );
+                        });
                     });
                 }
 
@@ -7685,17 +7797,82 @@ example3@live.com----refresh_token3----client_id3`;
             }
         }
 
-        async function revokeApiKey(keyId) {
-            if (!confirm('确定要停用这个 API Key 吗？停用后不能再用于接口调用。')) {
+        function openApiKeyActionModal(action, keyId, keyName, keyPrefix = '') {
+            if (!keyId) return;
+            const modal = document.getElementById('apiKeyActionModal');
+            const title = document.getElementById('apiKeyActionModalTitle');
+            const name = document.getElementById('apiKeyActionModalName');
+            const description = document.getElementById('apiKeyActionModalDescription');
+            const meta = document.getElementById('apiKeyActionModalMeta');
+            const note = document.getElementById('apiKeyActionModalNote');
+            const iconWrap = document.getElementById('apiKeyActionModalIcon');
+            const confirmBtn = document.getElementById('apiKeyActionConfirmBtn');
+
+            apiKeyActionState = {
+                action,
+                keyId,
+                keyName,
+                keyPrefix,
+                pending: false
+            };
+
+            const deleting = action === 'delete';
+            title.textContent = deleting ? '永久删除 API Key' : '停用 API Key';
+            name.textContent = keyName || '未命名 API Key';
+            description.textContent = deleting
+                ? '这个密钥已经停用。确认后会彻底删除密钥记录，并清除关联调用日志。'
+                : '停用后此密钥会立即失效，无法再用于接口调用，但仍会保留记录，方便后续审计或手动删除。';
+            meta.innerHTML = `
+                <span class="api-key-badge muted">ID：${escapeHtml(keyId)}</span>
+                <span class="api-key-badge muted">前缀：${escapeHtml(keyPrefix || '无')}</span>
+            `;
+            note.textContent = deleting
+                ? '删除操作不可恢复，且只允许删除已停用的 API Key。'
+                : '停用不会删除已有记录。如果确认不再需要，可以在停用后继续执行删除。';
+            iconWrap.classList.toggle('danger', deleting);
+            iconWrap.textContent = deleting ? '×' : '!';
+            confirmBtn.className = deleting ? 'btn btn-danger' : 'btn btn-primary';
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = buttonLabel(deleting ? 'delete' : 'clear', deleting ? '确认删除' : '确认停用');
+            modal.classList.remove('hidden');
+        }
+
+        function closeApiKeyActionModal(force = false) {
+            if (apiKeyActionState?.pending && !force) {
                 return;
             }
+            const cancelBtn = document.getElementById('apiKeyActionCancelBtn');
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+            }
+            document.getElementById('apiKeyActionModal').classList.add('hidden');
+            apiKeyActionState = null;
+        }
 
+        async function submitApiKeyAction() {
+            if (!apiKeyActionState?.keyId) return;
+            const confirmBtn = document.getElementById('apiKeyActionConfirmBtn');
+            const cancelBtn = document.getElementById('apiKeyActionCancelBtn');
+            const deleting = apiKeyActionState.action === 'delete';
+            apiKeyActionState.pending = true;
+            confirmBtn.disabled = true;
+            cancelBtn.disabled = true;
+            confirmBtn.innerHTML = buttonLabel('loading', deleting ? '删除中...' : '停用中...', 'spinning');
             try {
-                await apiRequest(`/api/api-keys/${keyId}`, { method: 'DELETE' });
+                const url = deleting
+                    ? `/api/api-keys/${apiKeyActionState.keyId}/permanent`
+                    : `/api/api-keys/${apiKeyActionState.keyId}`;
+                await apiRequest(url, { method: 'DELETE' });
                 await loadApiKeys();
-                showNotification('API Key 已停用', 'success');
+                apiKeyActionState.pending = false;
+                closeApiKeyActionModal(true);
+                showNotification(deleting ? 'API Key 已删除' : 'API Key 已停用', 'success');
             } catch (error) {
-                showNotification('停用 API Key 失败: ' + error.message, 'error');
+                apiKeyActionState.pending = false;
+                confirmBtn.disabled = false;
+                cancelBtn.disabled = false;
+                confirmBtn.innerHTML = buttonLabel(deleting ? 'delete' : 'clear', deleting ? '确认删除' : '确认停用');
+                showNotification((deleting ? '删除 API Key 失败: ' : '停用 API Key 失败: ') + error.message, 'error');
             }
         }
 
@@ -9894,6 +10071,12 @@ Authorization: Bearer om_your_api_key
             }
         });
 
+        document.getElementById('apiKeyActionModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeApiKeyActionModal();
+            }
+        });
+
         document.addEventListener('click', function(e) {
             const accountMenu = document.querySelector('.email-account-menu');
             if (accountMenu && !accountMenu.contains(e.target)) {
@@ -9917,6 +10100,7 @@ Authorization: Bearer om_your_api_key
             // Escape: 鍏抽棴妯℃€佹
             if (e.key === 'Escape') {
                 closeEmailModal();
+                closeApiKeyActionModal();
             }
 
             if ((e.ctrlKey || e.metaKey) && e.key === 'f' && document.getElementById('mailSearchInput') && !document.getElementById('emailsPage').classList.contains('hidden')) {

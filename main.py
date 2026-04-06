@@ -3410,6 +3410,33 @@ async def revoke_api_key(key_id: str, request: Request):
     }
 
 
+@app.delete("/api/api-keys/{key_id}/permanent")
+async def delete_api_key(key_id: str, request: Request):
+    require_authenticated(request)
+    data = load_api_keys_data()
+    keys = data.get("keys", {})
+    meta = keys.get(key_id)
+    if not isinstance(meta, dict):
+        raise HTTPException(status_code=404, detail="API key not found")
+    if not meta.get("revoked_at"):
+        raise HTTPException(status_code=409, detail="Only revoked API keys can be deleted permanently")
+
+    keys.pop(key_id, None)
+    data["keys"] = keys
+    usage_logs = data.get("usage_logs", [])
+    data["usage_logs"] = [
+        log for log in usage_logs
+        if not isinstance(log, dict) or log.get("key_id") != key_id
+    ]
+    save_api_keys_data(data)
+
+    return {
+        "ok": True,
+        "deleted_key_id": key_id,
+        "message": "API key deleted permanently.",
+    }
+
+
 @app.get("/api/public-shares/{email_id}")
 async def get_public_share_config(email_id: str, request: Request):
     require_authenticated(request)
@@ -3947,6 +3974,7 @@ async def api_status(request: Request):
             "list_api_keys": "GET /api/api-keys",
             "create_api_key": "POST /api/api-keys",
             "revoke_api_key": "DELETE /api/api-keys/{key_id}",
+            "delete_api_key": "DELETE /api/api-keys/{key_id}/permanent",
             "get_accounts": "GET /accounts",
             "register_account": "POST /accounts",
             "get_classifications": "GET /classifications",
