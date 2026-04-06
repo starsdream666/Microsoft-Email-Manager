@@ -3958,6 +3958,43 @@
             margin-bottom: 18px;
         }
 
+        .auth-login-brand {
+            display: none;
+            align-items: center;
+            flex-direction: column;
+            gap: 14px;
+            text-align: center;
+        }
+
+        .auth-login-brand-copy {
+            display: grid;
+            gap: 8px;
+            justify-items: center;
+        }
+
+        .auth-login-kicker {
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #0f766e;
+        }
+
+        .auth-login-brand-copy h1 {
+            margin: 0;
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            color: #0f172a;
+            letter-spacing: -0.05em;
+            line-height: 1.02;
+        }
+
+        .auth-login-brand-copy p {
+            margin: 0;
+            color: #475569;
+            font-size: 0.98rem;
+            line-height: 1.65;
+        }
+
         .auth-stage {
             display: grid;
             gap: 18px;
@@ -4020,44 +4057,13 @@
 
         .auth-login-intro {
             display: grid;
-            gap: 12px;
+            gap: 8px;
             justify-items: center;
             text-align: center;
         }
 
-        .auth-login-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 34px;
-            padding: 0 14px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.72);
-            border: 1px solid rgba(148, 163, 184, 0.22);
-            color: #0f172a;
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        .auth-login-intro .auth-stage-header {
-            gap: 8px;
-        }
-
         .auth-login-intro .auth-stage-header p {
             max-width: 420px;
-        }
-
-        .auth-login-note {
-            padding: 16px 18px;
-            border-radius: 18px;
-            border: 1px solid rgba(15, 118, 110, 0.14);
-            background: rgba(240, 253, 250, 0.88);
-            color: #0f766e;
-            font-size: 0.92rem;
-            line-height: 1.7;
-            text-align: center;
         }
 
         .auth-login-form {
@@ -4148,6 +4154,10 @@
 
         .auth-shell.auth-login-mode .auth-screen-brand {
             display: none;
+        }
+
+        .auth-shell.auth-login-mode .auth-login-brand {
+            display: flex;
         }
 
         .auth-shell.auth-login-mode .auth-panel {
@@ -4433,6 +4443,17 @@
                     </div>
                 </div>
             </div>
+            <div class="auth-login-brand" aria-hidden="true">
+                <div class="auth-brand-logo auth-brand-logo-lg is-placeholder">
+                    <img class="auth-brand-logo-image" src="/static/assets/logo.png" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
+                    <span class="auth-brand-mark">MEM</span>
+                </div>
+                <div class="auth-login-brand-copy">
+                    <div class="auth-login-kicker">管理员后台</div>
+                    <h1>Microsoft-Email-Manager</h1>
+                    <p>开源的微软邮件管理与接口后台</p>
+                </div>
+            </div>
             <section class="auth-panel">
                 <div id="authSetupView">
                     <div id="authSetupAgreementStep" class="auth-stage">
@@ -4478,17 +4499,11 @@
 
                 <div id="authLoginView" class="hidden auth-login-view">
                     <div class="auth-login-intro">
-                        <div class="auth-brand-logo auth-brand-logo-lg is-placeholder" aria-hidden="true">
-                            <img class="auth-brand-logo-image" src="/static/assets/logo.png" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
-                            <span class="auth-brand-mark">MEM</span>
-                        </div>
-                        <div class="auth-login-badge">管理员后台</div>
                         <div class="auth-stage-header">
                             <h3>管理员登录</h3>
                             <p>当前站点已经启用后台密码保护。验证通过后才可进入 Microsoft-Email-Manager。</p>
                         </div>
                     </div>
-                    <div class="auth-login-note">这个页面仅用于管理员后台登录。公开分享链接如启用了访问密码，需要在对应公开页面里单独验证。</div>
                     <form id="authLoginForm" class="auth-form auth-login-form">
                         <div class="auth-field">
                             <label class="auth-field-label" for="authLoginPassword">管理员密码</label>
