@@ -3556,10 +3556,38 @@
             align-items: center;
             justify-content: center;
             padding: 40px 24px;
+            position: relative;
+            overflow: hidden;
             background:
-                radial-gradient(circle at top left, rgba(14, 165, 233, 0.18), transparent 30%),
-                radial-gradient(circle at bottom right, rgba(37, 99, 235, 0.16), transparent 28%),
-                linear-gradient(135deg, #eaf2ff 0%, #f8fbff 48%, #eef5ff 100%);
+                radial-gradient(circle at top left, rgba(14, 165, 233, 0.16), transparent 34%),
+                radial-gradient(circle at top right, rgba(16, 185, 129, 0.14), transparent 28%),
+                linear-gradient(180deg, #eef4ff 0%, #f8fafc 52%, #ffffff 100%);
+        }
+
+        .auth-shell::before,
+        .auth-shell::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            filter: blur(6px);
+            opacity: 0.8;
+        }
+
+        .auth-shell::before {
+            width: 260px;
+            height: 260px;
+            top: -92px;
+            left: -64px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.2), transparent 68%);
+        }
+
+        .auth-shell::after {
+            width: 320px;
+            height: 320px;
+            right: -120px;
+            bottom: -140px;
+            background: radial-gradient(circle, rgba(13, 148, 136, 0.18), transparent 70%);
         }
 
         .auth-screen {
@@ -3622,6 +3650,13 @@
             box-shadow: 0 18px 34px rgba(37, 99, 235, 0.16);
         }
 
+        .auth-brand-logo.auth-brand-logo-lg {
+            width: 92px;
+            height: 92px;
+            border-radius: 28px;
+            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
+        }
+
         .auth-brand-logo-image {
             width: 100%;
             height: 100%;
@@ -3651,6 +3686,17 @@
             font-weight: 700;
             letter-spacing: 0.18em;
             box-shadow: 0 18px 34px rgba(37, 99, 235, 0.24);
+        }
+
+        .auth-brand-logo.auth-brand-logo-lg .auth-brand-mark {
+            width: 100%;
+            height: 100%;
+            border-radius: 28px;
+            background: none;
+            color: #0f766e;
+            box-shadow: none;
+            font-size: 1.7rem;
+            letter-spacing: 0.08em;
         }
 
         .auth-brand-copy h1 {
@@ -3766,18 +3812,21 @@
             min-height: 20px;
             color: #dc2626;
             font-size: 0.9rem;
+            line-height: 1.5;
         }
 
         .turnstile-slot {
             display: grid;
             gap: 8px;
-            min-height: 110px;
+            min-height: 132px;
             justify-items: center;
+            align-content: start;
+            width: 100%;
         }
 
         .turnstile-slot-shell {
-            min-height: 72px;
-            width: fit-content;
+            min-height: 92px;
+            width: min(100%, 332px);
             max-width: 100%;
             border-radius: 16px;
             border: 1px dashed rgba(15, 118, 110, 0.28);
@@ -3785,17 +3834,35 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 6px;
+            padding: 10px;
             overflow: hidden;
+            box-sizing: border-box;
         }
 
         .turnstile-widget {
-            width: auto;
+            width: 300px;
             max-width: 100%;
-            min-height: 65px;
+            min-height: 72px;
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        .turnstile-widget:empty::before {
+            content: "安全验证加载中";
+            display: inline-flex;
+            width: 100%;
+            min-height: 72px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background:
+                linear-gradient(90deg, rgba(226, 232, 240, 0.6) 0%, rgba(241, 245, 249, 0.96) 50%, rgba(226, 232, 240, 0.6) 100%);
+            background-size: 220% 100%;
+            color: rgba(100, 116, 139, 0.92);
+            font-size: 13px;
+            letter-spacing: 0.02em;
+            animation: turnstileSkeleton 1.8s linear infinite;
         }
 
         .turnstile-hint {
@@ -3803,6 +3870,7 @@
             color: #64748b;
             font-size: 0.86rem;
             line-height: 1.5;
+            text-align: center;
         }
 
         .turnstile-hint.is-error {
@@ -3850,6 +3918,8 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+            position: relative;
+            z-index: 1;
         }
 
         .auth-hero {
@@ -3875,7 +3945,7 @@
             margin: 0 auto;
             padding: 40px 40px 36px;
             border-radius: 32px;
-            background: rgba(255, 255, 255, 0.94);
+            background: rgba(255, 255, 255, 0.9);
         }
 
         .auth-panel-header {
@@ -3943,6 +4013,78 @@
             line-height: 1.65;
         }
 
+        .auth-login-view {
+            display: grid;
+            gap: 18px;
+        }
+
+        .auth-login-intro {
+            display: grid;
+            gap: 12px;
+            justify-items: center;
+            text-align: center;
+        }
+
+        .auth-login-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 34px;
+            padding: 0 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            color: #0f172a;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .auth-login-intro .auth-stage-header {
+            gap: 8px;
+        }
+
+        .auth-login-intro .auth-stage-header p {
+            max-width: 420px;
+        }
+
+        .auth-login-note {
+            padding: 16px 18px;
+            border-radius: 18px;
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            background: rgba(240, 253, 250, 0.88);
+            color: #0f766e;
+            font-size: 0.92rem;
+            line-height: 1.7;
+            text-align: center;
+        }
+
+        .auth-login-form {
+            gap: 14px;
+        }
+
+        .auth-field {
+            display: grid;
+            gap: 8px;
+            text-align: left;
+        }
+
+        .auth-field-label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        .auth-field-hint {
+            min-height: 18px;
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
         .auth-actions.center {
             justify-content: center;
         }
@@ -3964,7 +4106,62 @@
         }
 
         .auth-form .form-input {
+            min-height: 52px;
+            padding: 0 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+            color: #0f172a;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .auth-form .form-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .auth-form .form-input:focus {
+            outline: none;
+            border-color: rgba(37, 99, 235, 0.4);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            background: rgba(255, 255, 255, 0.98);
+        }
+
+        .auth-login-form .auth-error {
+            text-align: center;
+        }
+
+        .auth-login-form .auth-actions {
+            justify-content: center;
+            margin-top: 2px;
+        }
+
+        .auth-login-form .auth-actions .btn {
+            width: 100%;
             min-height: 48px;
+            justify-content: center;
+        }
+
+        .auth-shell.auth-login-mode .auth-screen {
+            width: min(520px, 100%);
+        }
+
+        .auth-shell.auth-login-mode .auth-screen-brand {
+            display: none;
+        }
+
+        .auth-shell.auth-login-mode .auth-panel {
+            width: min(100%, 520px);
+            padding: 34px 28px 30px;
+        }
+
+        @keyframes turnstileSkeleton {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: 220% 50%;
+            }
         }
 
         .api-key-grid {
@@ -4176,6 +4373,10 @@
         }
 
         @media (max-width: 960px) {
+            .auth-shell {
+                padding: 24px 14px;
+            }
+
             .auth-screen {
                 grid-template-columns: 1fr;
             }
@@ -4197,6 +4398,14 @@
                 padding-top: 22px;
                 border-left: none;
                 border-top: 1px solid #dbe4ef;
+            }
+
+            .auth-panel {
+                padding: 28px 18px 24px;
+            }
+
+            .auth-shell.auth-login-mode .auth-panel {
+                padding: 28px 18px 24px;
             }
         }
     </style>
@@ -4267,11 +4476,25 @@
                     </div>
                 </div>
 
-                <div id="authLoginView" class="hidden">
-                    <h3>登录 Microsoft-Email-Manager</h3>
-                    <p>当前站点已经启用密码保护。输入管理员密码后才可进入后台。</p>
-                    <form id="authLoginForm" class="auth-form">
-                        <input type="password" id="authLoginPassword" class="form-input" placeholder="输入管理员密码" autocomplete="current-password">
+                <div id="authLoginView" class="hidden auth-login-view">
+                    <div class="auth-login-intro">
+                        <div class="auth-brand-logo auth-brand-logo-lg is-placeholder" aria-hidden="true">
+                            <img class="auth-brand-logo-image" src="/static/assets/logo.png" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
+                            <span class="auth-brand-mark">MEM</span>
+                        </div>
+                        <div class="auth-login-badge">管理员后台</div>
+                        <div class="auth-stage-header">
+                            <h3>管理员登录</h3>
+                            <p>当前站点已经启用后台密码保护。验证通过后才可进入 Microsoft-Email-Manager。</p>
+                        </div>
+                    </div>
+                    <div class="auth-login-note">这个页面仅用于管理员后台登录。公开分享链接如启用了访问密码，需要在对应公开页面里单独验证。</div>
+                    <form id="authLoginForm" class="auth-form auth-login-form">
+                        <div class="auth-field">
+                            <label class="auth-field-label" for="authLoginPassword">管理员密码</label>
+                            <input type="password" id="authLoginPassword" class="form-input" placeholder="请输入管理员后台密码" autocomplete="current-password">
+                            <div class="auth-field-hint">使用初始化时设置的管理员密码登录后台</div>
+                        </div>
                         <div id="authLoginTurnstileWrap" class="turnstile-slot hidden">
                             <div class="turnstile-slot-shell">
                                 <div id="authLoginTurnstileWidget" class="turnstile-widget"></div>
@@ -4280,7 +4503,7 @@
                         </div>
                         <div id="authLoginError" class="auth-error"></div>
                         <div class="auth-actions">
-                            <button type="submit" id="authLoginSubmit" class="btn btn-primary">登录</button>
+                            <button type="submit" id="authLoginSubmit" class="btn btn-primary">进入后台</button>
                         </div>
                     </form>
                 </div>
@@ -6291,6 +6514,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
         function showAuthScreen(mode, message = '') {
             document.getElementById('authSetupView').classList.toggle('hidden', mode !== 'setup');
             document.getElementById('authLoginView').classList.toggle('hidden', mode !== 'login');
+            document.getElementById('authShell').classList.toggle('auth-login-mode', mode === 'login');
             if (mode === 'setup') {
                 resetSetupFlow();
             } else {
