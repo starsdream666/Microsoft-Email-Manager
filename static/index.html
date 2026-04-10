@@ -2010,13 +2010,13 @@
         .sidebar-toggle {
             width: 100%;
             min-width: 0;
-            height: 46px;
-            min-height: 46px;
+            height: 50px;
+            min-height: 50px;
             border-radius: 16px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 0 10px;
+            gap: 16px;
+            padding: 0 16px;
             justify-content: flex-start;
             background: rgba(255, 255, 255, 0.06);
             color: rgba(241, 245, 249, 0.9);
@@ -2057,9 +2057,9 @@
 
         .sidebar-utility .ui-icon,
         .sidebar-toggle .ui-icon {
-            width: 34px;
-            height: 34px;
-            flex: 0 0 34px;
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
         }
 
         .nav-item .icon svg,
@@ -2072,9 +2072,9 @@
 
         .sidebar-utility .ui-icon svg,
         .sidebar-toggle .ui-icon svg {
-            width: 20px;
-            height: 20px;
-            flex: 0 0 20px;
+            width: 24px;
+            height: 24px;
+            flex: 0 0 24px;
             transform-origin: center;
         }
 
@@ -3961,8 +3961,8 @@
         .auth-login-brand {
             display: none;
             align-items: center;
-            flex-direction: column;
-            gap: 14px;
+            justify-content: center;
+            gap: 18px;
             text-align: center;
         }
 
@@ -3998,6 +3998,110 @@
         .auth-stage {
             display: grid;
             gap: 18px;
+        }
+
+        .auth-setup-flow {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-mode-grid {
+            display: grid;
+            gap: 14px;
+        }
+
+        .auth-mode-card {
+            width: 100%;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
+            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.06);
+            padding: 18px 18px 16px;
+            display: grid;
+            gap: 10px;
+            text-align: left;
+            color: #0f172a;
+            transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+        }
+
+        .auth-mode-card:hover:not(:disabled) {
+            transform: translateY(-2px);
+            border-color: rgba(37, 99, 235, 0.28);
+            box-shadow: 0 22px 42px rgba(37, 99, 235, 0.12);
+        }
+
+        .auth-mode-card.is-active {
+            border-color: rgba(37, 99, 235, 0.42);
+            background: linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(219, 234, 254, 0.9));
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1), 0 22px 42px rgba(37, 99, 235, 0.12);
+        }
+
+        .auth-mode-card.is-disabled,
+        .auth-mode-card:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+            border-color: rgba(148, 163, 184, 0.18);
+            background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.92));
+            box-shadow: none;
+            transform: none;
+        }
+
+        .auth-mode-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .auth-mode-card-title {
+            display: grid;
+            gap: 4px;
+        }
+
+        .auth-mode-card-title strong {
+            font-size: 1.02rem;
+            line-height: 1.35;
+        }
+
+        .auth-mode-card-title span {
+            color: #475569;
+            font-size: 0.92rem;
+            line-height: 1.55;
+        }
+
+        .auth-mode-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.12);
+            color: #1d4ed8;
+            font-size: 0.76rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .auth-mode-card.is-disabled .auth-mode-badge,
+        .auth-mode-card:disabled .auth-mode-badge {
+            background: rgba(148, 163, 184, 0.16);
+            color: #64748b;
+        }
+
+        .auth-mode-card-copy {
+            color: #475569;
+            font-size: 0.94rem;
+            line-height: 1.7;
+        }
+
+        .auth-mode-note {
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: rgba(15, 23, 42, 0.04);
+            color: #475569;
+            font-size: 0.92rem;
+            line-height: 1.65;
         }
 
         .auth-stage-header {
@@ -4158,11 +4262,36 @@
 
         .auth-shell.auth-login-mode .auth-login-brand {
             display: flex;
+            width: min(100%, 520px);
+            margin: 0 auto;
+            flex-direction: row-reverse;
         }
 
         .auth-shell.auth-login-mode .auth-panel {
             width: min(100%, 520px);
             padding: 34px 28px 30px;
+        }
+
+        .auth-shell.auth-login-mode .auth-login-brand-copy {
+            justify-items: end;
+            text-align: right;
+            flex: 1;
+        }
+
+        .auth-shell.auth-login-mode .auth-brand-logo.auth-brand-logo-lg {
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 640px) {
+            .auth-shell.auth-login-mode .auth-login-brand {
+                flex-direction: column;
+                gap: 14px;
+            }
+
+            .auth-shell.auth-login-mode .auth-login-brand-copy {
+                justify-items: center;
+                text-align: center;
+            }
         }
 
         @keyframes turnstileSkeleton {
@@ -4449,51 +4578,96 @@
                     <span class="auth-brand-mark">MEM</span>
                 </div>
                 <div class="auth-login-brand-copy">
-                    <div class="auth-login-kicker">管理员后台</div>
                     <h1>Microsoft-Email-Manager</h1>
                     <p>开源的微软邮件管理与接口后台</p>
                 </div>
             </div>
             <section class="auth-panel">
                 <div id="authSetupView">
-                    <div id="authSetupAgreementStep" class="auth-stage">
-                        <div class="auth-stage-header">
-                            <h3>阅读并同意使用协议</h3>
-                            <p>请先把协议完整滑动到底部，随后才能点击同意并继续。</p>
-                        </div>
-                        <div id="authAgreementScroll" class="auth-agreement-scroll">
-                            <h4>Maishan Inc. 开源软件署名 4.0 国际版</h4>
-                            <p>1. 本程序由 Maishan Inc. 发布，官方网址为 www.maishanzero.com。该程序为开源软件，仅限合法、授权、合规的学习、研究、测试、内部运维与自主管理场景使用。</p>
-                            <p>2. 你应自行保管管理员密码、Refresh Token、Client ID、API Key 等敏感信息，并对全部登录、接入、导出、接口调用、自动化操作及其结果承担责任。</p>
-                            <p>3. 你必须保留 Maishan Inc. 的开源署名、版权说明、协议说明与来源信息，不得删除、隐藏、伪造或冒充原始发布主体。</p>
-                            <p>4. 未经 Maishan Inc. 书面授权，不得将本程序用于收费销售、SaaS 托管、二次打包分发、代运营交付、商业获利、商业引流或其他商业化用途。</p>
-                            <p>5. 如需商业化使用、再分发、OEM、白标、企业授权或其他商业合作，必须通过 Maishan Inc. 的商业化方案取得授权后方可进行。</p>
-                            <p>6. 若你将本程序暴露在公网环境中，应自行完成 HTTPS、访问控制、最小权限、日志审计、漏洞修复、备份恢复与密钥轮换等安全措施；因部署不当、权限缺失、密钥泄露或违规接入造成的后果，由部署者自行承担。</p>
-                            <p>7. 点击同意并继续，即表示你已阅读、理解并接受以上条款，并确认你有权管理当前部署环境及相关微软邮箱数据。</p>
-                        </div>
-                        <div id="authAgreementStatus" class="auth-scroll-status">请先滚动到协议底部</div>
-                        <div class="auth-actions center full-width">
-                            <button type="button" id="authAgreementContinue" class="btn btn-primary" onclick="goToSetupPasswordStep()" disabled>同意并继续</button>
-                        </div>
-                    </div>
-
-                    <div id="authSetupPasswordStep" class="auth-stage hidden">
-                        <div class="auth-stage-header">
-                            <h3>设置管理员账户与后台登录地址</h3>
-                            <p>协议已确认。现在请设置管理员密码，并指定后台登录地址，完成后将直接进入后台。</p>
-                        </div>
-                        <div class="auth-step-note">管理员密码只会保存为本地哈希值，长度至少 8 位。请妥善保管，后续登录需要使用该密码。</div>
-                        <form id="authSetupForm" class="auth-form">
-                            <input type="password" id="authSetupPassword" class="form-input" placeholder="设置管理员密码，至少 8 位" autocomplete="new-password">
-                            <input type="password" id="authSetupPasswordConfirm" class="form-input" placeholder="再次输入管理员密码" autocomplete="new-password">
-                            <input type="text" id="authSetupAdminPath" class="form-input" placeholder="设置管理员后台登录地址，例如 /admin-enter" autocomplete="off">
-                            <div class="auth-step-note" style="margin-top: -4px;">后续管理员后台只会在这个地址打开。根路径 <code>/</code> 会作为网站主页使用，这个地址后面也可以在“设置”页面修改。</div>
-                            <div id="authSetupError" class="auth-error"></div>
-                            <div class="auth-actions auth-setup-password-actions">
-                                <button type="button" class="btn btn-secondary" onclick="backToAgreementStep()">返回协议</button>
-                                <button type="submit" id="authSetupSubmit" class="btn btn-primary">完成初始化</button>
+                    <div id="authSetupFlow" class="auth-setup-flow">
+                        <div id="authSetupAgreementStep" class="auth-stage">
+                            <div class="auth-stage-header">
+                                <h3>阅读并同意使用协议</h3>
+                                <p>请先把协议完整滑动到底部，随后才能点击同意并继续。</p>
                             </div>
-                        </form>
+                            <div id="authAgreementScroll" class="auth-agreement-scroll">
+                                <h4>Maishan Inc. 开源软件署名 4.0 国际版</h4>
+                                <p>1. 本程序由 Maishan Inc. 发布，官方网址为 www.maishanzero.com。该程序为开源软件，仅限合法、授权、合规的学习、研究、测试、内部运维与自主管理场景使用。</p>
+                                <p>2. 你应自行保管管理员密码、Refresh Token、Client ID、API Key 等敏感信息，并对全部登录、接入、导出、接口调用、自动化操作及其结果承担责任。</p>
+                                <p>3. 你必须保留 Maishan Inc. 的开源署名、版权说明、协议说明与来源信息，不得删除、隐藏、伪造或冒充原始发布主体。</p>
+                                <p>4. 未经 Maishan Inc. 书面授权，不得将本程序用于收费销售、SaaS 托管、二次打包分发、代运营交付、商业获利、商业引流或其他商业化用途。</p>
+                                <p>5. 如需商业化使用、再分发、OEM、白标、企业授权或其他商业合作，必须通过 Maishan Inc. 的商业化方案取得授权后方可进行。</p>
+                                <p>6. 若你将本程序暴露在公网环境中，应自行完成 HTTPS、访问控制、最小权限、日志审计、漏洞修复、备份恢复与密钥轮换等安全措施；因部署不当、权限缺失、密钥泄露或违规接入造成的后果，由部署者自行承担。</p>
+                                <p>7. 点击同意并继续，即表示你已阅读、理解并接受以上条款，并确认你有权管理当前部署环境及相关微软邮箱数据。</p>
+                            </div>
+                            <div id="authAgreementStatus" class="auth-scroll-status">请先滚动到协议底部</div>
+                            <div class="auth-actions center full-width">
+                                <button type="button" id="authAgreementContinue" class="btn btn-primary" onclick="goToSetupModeStep()" disabled>同意并继续</button>
+                            </div>
+                        </div>
+
+                        <div id="authSetupModeStep" class="auth-stage hidden">
+                            <div class="auth-stage-header">
+                                <h3>选择安装模式</h3>
+                                <p>不同模式只影响初始化时是否预置适配分类与标签，后续仍可在后台自行增删调整。</p>
+                            </div>
+                            <div class="auth-mode-grid">
+                                <button type="button" class="auth-mode-card" data-setup-mode="mregister" onclick="selectSetupMode('mregister')">
+                                    <div class="auth-mode-card-header">
+                                        <div class="auth-mode-card-title">
+                                            <strong>MREGISTER适配模式</strong>
+                                            <span>预置适配项目常用分类与标签</span>
+                                        </div>
+                                        <span class="auth-mode-badge">适配模式</span>
+                                    </div>
+                                    <div class="auth-mode-card-copy">自动预置账户分类 <strong>MREGISTER</strong> 与快捷标签 <strong>已注册CHATGPT</strong>，适合直接对接 MREGISTER 工作流。</div>
+                                </button>
+                                <button type="button" class="auth-mode-card" data-setup-mode="normal" onclick="selectSetupMode('normal')">
+                                    <div class="auth-mode-card-header">
+                                        <div class="auth-mode-card-title">
+                                            <strong>普通模式</strong>
+                                            <span>纯净版本</span>
+                                        </div>
+                                        <span class="auth-mode-badge">推荐</span>
+                                    </div>
+                                    <div class="auth-mode-card-copy">不预置额外账户分类与快捷标签，初始化后从纯净后台开始使用，分类体系完全由你自行决定。</div>
+                                </button>
+                                <button type="button" class="auth-mode-card is-disabled" data-setup-mode="commercial" disabled>
+                                    <div class="auth-mode-card-header">
+                                        <div class="auth-mode-card-title">
+                                            <strong>商业授权版本</strong>
+                                            <span>正在开发中</span>
+                                        </div>
+                                        <span class="auth-mode-badge">敬请期待</span>
+                                    </div>
+                                    <div class="auth-mode-card-copy">用户管理与注册支付一体化的新架构，后续将作为商业授权版本提供。</div>
+                                </button>
+                            </div>
+                            <div class="auth-mode-note">普通模式与 MREGISTER 适配模式的区别，仅在于初始化时是否自动带上这 2 个默认分类配置。</div>
+                            <div class="auth-actions">
+                                <button type="button" class="btn btn-secondary" onclick="backToAgreementStep()">返回协议</button>
+                                <button type="button" id="authModeContinue" class="btn btn-primary" onclick="goToSetupPasswordStep()" disabled>确认模式并继续</button>
+                            </div>
+                        </div>
+
+                        <div id="authSetupPasswordStep" class="auth-stage hidden">
+                            <div class="auth-stage-header">
+                                <h3>设置管理员账户与后台登录地址</h3>
+                                <p>模式已确认。现在请设置管理员密码，并指定后台登录地址，完成后将直接进入后台。</p>
+                            </div>
+                            <div class="auth-step-note">管理员密码只会保存为本地哈希值，长度至少 8 位。请妥善保管，后续登录需要使用该密码。</div>
+                            <form id="authSetupForm" class="auth-form">
+                                <input type="password" id="authSetupPassword" class="form-input" placeholder="设置管理员密码，至少 8 位" autocomplete="new-password">
+                                <input type="password" id="authSetupPasswordConfirm" class="form-input" placeholder="再次输入管理员密码" autocomplete="new-password">
+                                <input type="text" id="authSetupAdminPath" class="form-input" placeholder="设置管理员后台登录地址，例如 /admin-enter" autocomplete="off">
+                                <div class="auth-step-note" style="margin-top: -4px;">后续管理员后台只会在这个地址打开。根路径 <code>/</code> 会作为网站主页使用，这个地址后面也可以在“设置”页面修改。</div>
+                                <div id="authSetupError" class="auth-error"></div>
+                                <div class="auth-actions auth-setup-password-actions">
+                                    <button type="button" class="btn btn-secondary" onclick="backToSetupModeStep()">返回上一步</button>
+                                    <button type="submit" id="authSetupSubmit" class="btn btn-primary">完成初始化</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
@@ -4501,7 +4675,7 @@
                     <div class="auth-login-intro">
                         <div class="auth-stage-header">
                             <h3>管理员登录</h3>
-                            <p>当前站点已经启用后台密码保护。验证通过后才可进入 Microsoft-Email-Manager。</p>
+                            <p>当前站点已启用后台密码保护，验证通过后才可进入后台。</p>
                         </div>
                     </div>
                     <form id="authLoginForm" class="auth-form auth-login-form">
@@ -6001,6 +6175,8 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
         let autoRefreshInterval = null;
         let lastMouseActivityAt = Date.now();
         let isLoadingEmails = false;
+        let activeEmailRequestController = null;
+        let activeEmailRequestId = 0;
         let accounts = [];
         
         // 账户管理分页相关变量
@@ -6039,6 +6215,9 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
         let authTurnstileWidgetId = null;
         let authTurnstileSiteKey = '';
         let authTurnstileScriptPromise = null;
+        let selectedSetupMode = '';
+        let currentSetupStage = 'agreement';
+        let isSetupStageAnimating = false;
 
         // 页面管理
         function icon(name, extraClass = '') {
@@ -6419,11 +6598,167 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
             return await response.json();
         }
 
+        function localizeAuthMessage(message = '') {
+            const raw = String(message || '').trim();
+            if (!raw) return '';
+
+            const directMap = {
+                'Password is incorrect': '管理员密码错误',
+                'Too many login attempts. Try again later.': '登录尝试次数过多，请稍后再试',
+                'Login required': '请先登录管理员后台',
+                'Login required or use API key': '请先登录管理员后台或使用 API Key',
+                'Admin password is not configured yet': '管理员密码尚未配置，请先完成初始化',
+                'Admin password is already configured': '管理员密码已配置，无需重复初始化',
+                'You must agree to the terms before continuing': '请先同意使用协议后再继续',
+                'Invalid setup mode': '安装模式无效，请重新选择',
+                'Cross-site browser requests are not allowed.': '当前请求来源无效，请检查域名或反向代理配置后重试',
+                'Cloudflare Turnstile validation service is temporarily unavailable. Please try again later': 'Cloudflare Turnstile 验证服务暂时不可用，请稍后重试',
+                'Cloudflare Turnstile validation failed. Please refresh and try again': 'Cloudflare Turnstile 验证失败，请刷新后重试'
+            };
+
+            if (directMap[raw]) {
+                return directMap[raw];
+            }
+
+            if (/too many login attempts/i.test(raw)) {
+                return '登录尝试次数过多，请稍后再试';
+            }
+            if (/password is incorrect/i.test(raw)) {
+                return '管理员密码错误';
+            }
+            if (/login required/i.test(raw)) {
+                return '请先登录管理员后台';
+            }
+            if (/cross-site browser requests are not allowed/i.test(raw)) {
+                return '当前请求来源无效，请检查域名或反向代理配置后重试';
+            }
+            if (/admin password is not configured yet/i.test(raw)) {
+                return '管理员密码尚未配置，请先完成初始化';
+            }
+
+            return raw;
+        }
+
         function showAuthError(view, message = '') {
             const setupError = document.getElementById('authSetupError');
             const loginError = document.getElementById('authLoginError');
-            if (setupError) setupError.textContent = view === 'setup' ? message : '';
-            if (loginError) loginError.textContent = view === 'login' ? message : '';
+            const localizedMessage = localizeAuthMessage(message);
+            if (setupError) setupError.textContent = view === 'setup' ? localizedMessage : '';
+            if (loginError) loginError.textContent = view === 'login' ? localizedMessage : '';
+        }
+
+        function getSetupStageElement(stage) {
+            const stageMap = {
+                agreement: 'authSetupAgreementStep',
+                mode: 'authSetupModeStep',
+                password: 'authSetupPasswordStep'
+            };
+            return document.getElementById(stageMap[stage] || '');
+        }
+
+        function setActiveSetupStage(stage) {
+            ['agreement', 'mode', 'password'].forEach(name => {
+                const element = getSetupStageElement(name);
+                if (!element) return;
+                element.classList.toggle('hidden', name !== stage);
+                element.style.position = '';
+                element.style.inset = '';
+                element.style.width = '';
+                element.style.opacity = '';
+                element.style.transform = '';
+            });
+            const flow = document.getElementById('authSetupFlow');
+            if (flow) {
+                flow.style.height = '';
+            }
+            currentSetupStage = stage;
+            isSetupStageAnimating = false;
+        }
+
+        async function switchSetupStage(stage, direction = 'forward', animate = true) {
+            const nextStage = getSetupStageElement(stage);
+            if (!nextStage || stage === currentSetupStage) {
+                return;
+            }
+
+            const currentStage = getSetupStageElement(currentSetupStage);
+            const flow = document.getElementById('authSetupFlow');
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (!animate || !currentStage || !flow || prefersReducedMotion) {
+                setActiveSetupStage(stage);
+                return;
+            }
+            if (isSetupStageAnimating) {
+                return;
+            }
+
+            isSetupStageAnimating = true;
+            const enterOffset = direction === 'forward' ? 72 : -72;
+            const exitOffset = -enterOffset;
+            const targetHeight = Math.max(currentStage.offsetHeight, nextStage.offsetHeight);
+
+            flow.style.height = `${targetHeight}px`;
+            nextStage.classList.remove('hidden');
+
+            [currentStage, nextStage].forEach(stageElement => {
+                stageElement.style.position = 'absolute';
+                stageElement.style.inset = '0';
+                stageElement.style.width = '100%';
+            });
+
+            nextStage.style.opacity = '0';
+            nextStage.style.transform = `translateX(${enterOffset}px)`;
+
+            try {
+                await Promise.all([
+                    currentStage.animate(
+                        [
+                            { opacity: 1, transform: 'translateX(0)' },
+                            { opacity: 0, transform: `translateX(${exitOffset}px)` }
+                        ],
+                        {
+                            duration: 320,
+                            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                            fill: 'forwards'
+                        }
+                    ).finished,
+                    nextStage.animate(
+                        [
+                            { opacity: 0, transform: `translateX(${enterOffset}px)` },
+                            { opacity: 1, transform: 'translateX(0)' }
+                        ],
+                        {
+                            duration: 320,
+                            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                            fill: 'forwards'
+                        }
+                    ).finished
+                ]);
+            } catch (error) {
+                console.warn('Setup stage animation interrupted', error);
+            } finally {
+                setActiveSetupStage(stage);
+            }
+        }
+
+        function updateSetupModeSelection() {
+            document.querySelectorAll('[data-setup-mode]').forEach(button => {
+                const mode = button.getAttribute('data-setup-mode');
+                button.classList.toggle('is-active', !!selectedSetupMode && mode === selectedSetupMode);
+            });
+            const continueButton = document.getElementById('authModeContinue');
+            if (continueButton) {
+                continueButton.disabled = !selectedSetupMode;
+            }
+        }
+
+        function selectSetupMode(mode) {
+            if (!mode || mode === 'commercial') {
+                return;
+            }
+            selectedSetupMode = mode;
+            showAuthError('setup', '');
+            updateSetupModeSelection();
         }
 
         function normalizeAdminPathInput(value = '') {
@@ -6464,16 +6799,15 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
 
         function resetSetupFlow() {
             setupAgreementComplete = false;
+            selectedSetupMode = '';
             const setupPassword = document.getElementById('authSetupPassword');
             const setupPasswordConfirm = document.getElementById('authSetupPasswordConfirm');
             const setupAdminPath = document.getElementById('authSetupAdminPath');
-            const agreementStep = document.getElementById('authSetupAgreementStep');
-            const passwordStep = document.getElementById('authSetupPasswordStep');
             if (setupPassword) setupPassword.value = '';
             if (setupPasswordConfirm) setupPasswordConfirm.value = '';
             if (setupAdminPath) setupAdminPath.value = currentAdminLoginPath || normalizeAdminPathInput(window.location.pathname);
-            if (agreementStep) agreementStep.classList.remove('hidden');
-            if (passwordStep) passwordStep.classList.add('hidden');
+            setActiveSetupStage('agreement');
+            updateSetupModeSelection();
 
             const agreementScroll = document.getElementById('authAgreementScroll');
             const continueButton = document.getElementById('authAgreementContinue');
@@ -6502,7 +6836,7 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
             status.textContent = reachedBottom ? '已到达协议底部，可以继续' : '请先滚动到协议底部';
         }
 
-        function goToSetupPasswordStep() {
+        function goToSetupModeStep() {
             const continueButton = document.getElementById('authAgreementContinue');
             if (continueButton && continueButton.disabled) {
                 showAuthError('setup', '请先完整滑动阅读协议');
@@ -6511,19 +6845,27 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
 
             setupAgreementComplete = true;
             showAuthError('setup', '');
-            const agreementStep = document.getElementById('authSetupAgreementStep');
-            const passwordStep = document.getElementById('authSetupPasswordStep');
-            if (agreementStep) agreementStep.classList.add('hidden');
-            if (passwordStep) passwordStep.classList.remove('hidden');
+            switchSetupStage('mode', 'forward');
         }
 
         function backToAgreementStep() {
             setupAgreementComplete = false;
             showAuthError('setup', '');
-            const agreementStep = document.getElementById('authSetupAgreementStep');
-            const passwordStep = document.getElementById('authSetupPasswordStep');
-            if (agreementStep) agreementStep.classList.remove('hidden');
-            if (passwordStep) passwordStep.classList.add('hidden');
+            switchSetupStage('agreement', 'backward');
+        }
+
+        function goToSetupPasswordStep() {
+            if (!selectedSetupMode) {
+                showAuthError('setup', '请先选择安装模式');
+                return;
+            }
+            showAuthError('setup', '');
+            switchSetupStage('password', 'forward');
+        }
+
+        function backToSetupModeStep() {
+            showAuthError('setup', '');
+            switchSetupStage('mode', 'backward');
         }
 
         function showAuthScreen(mode, message = '') {
@@ -6589,6 +6931,10 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                 showAuthError('setup', '请先阅读协议并点击同意');
                 return;
             }
+            if (!selectedSetupMode) {
+                showAuthError('setup', '请先选择安装模式');
+                return;
+            }
             if (!password || password.length < 8) {
                 showAuthError('setup', '管理员密码至少需要 8 位');
                 return;
@@ -6613,7 +6959,8 @@ example3@outlook.com----refresh_token3----client_id3"></textarea>
                     body: JSON.stringify({
                         password,
                         agreed_terms: true,
-                        admin_login_path: adminPath
+                        admin_login_path: adminPath,
+                        setup_mode: selectedSetupMode
                     })
                 });
                 const data = await response.json().catch(() => ({}));
@@ -9272,7 +9619,8 @@ Authorization: Bearer om_your_api_key
             currentEmailFolder = 'all';
             currentEmailPage = 1;
             updateCurrentAccountHeader(emailId);
-            clearFilters();
+            resetEmailListState({ showLoading: true });
+            clearFilters(false);
             navigateAdmin('/emails/' + encodeURIComponent(emailId));
             syncAutoRefreshTimer();
         }
@@ -9284,13 +9632,15 @@ Authorization: Bearer om_your_api_key
             currentEmailPage = 1;
             updateCurrentAccountHeader(emailId);
             populateAccountSwitcher(emailId);
+            resetEmailListState({ showLoading: true });
             navigateAdmin('/emails/' + encodeURIComponent(emailId));
-            clearFilters();
+            clearFilters(false);
             syncAutoRefreshTimer();
         }
 
         function backToAccounts() {
             closeAccountBindMenu();
+            resetEmailListState();
             currentAccount = null;
             navigateAdmin('/accounts');
             syncAutoRefreshTimer();
@@ -9315,16 +9665,53 @@ Authorization: Bearer om_your_api_key
             loadEmails();
         }
 
+        function abortActiveEmailRequest() {
+            if (activeEmailRequestController) {
+                activeEmailRequestController.abort();
+                activeEmailRequestController = null;
+            }
+        }
+
+        function resetEmailListState(options = {}) {
+            const { showLoading = false } = options;
+            abortActiveEmailRequest();
+            activeEmailRequestId += 1;
+            isLoadingEmails = false;
+            allEmails = [];
+            filteredEmails = [];
+            pendingInsertedEmailIds = [];
+            currentEmailMessageId = null;
+            currentEmailTagKeys = [];
+            updateEmailStats([]);
+            updateEmailsPagination(0, EMAIL_LIST_PAGE_SIZE);
+            document.getElementById('lastUpdateTime').textContent = '-';
+
+            const emailsList = document.getElementById('emailsList');
+            if (emailsList) {
+                emailsList.innerHTML = showLoading
+                    ? '<div class="loading"><div class="loading-spinner"></div>正在加载邮件...</div>'
+                    : '<div class="text-center" style="padding: 40px; color: #64748b;">没有找到匹配的邮件</div>';
+            }
+        }
+
         async function loadEmails(forceRefresh = false) {
-            if (!currentAccount || isLoadingEmails) return;
+            if (!currentAccount) return;
 
             const emailsList = document.getElementById('emailsList');
             const refreshBtn = document.getElementById('refreshBtn');
             const autoRefreshBtn = document.getElementById('autoRefreshBtn');
+            const requestAccount = currentAccount;
+            const requestFolder = currentEmailFolder;
+            const requestPage = currentEmailPage;
+            const requestId = activeEmailRequestId + 1;
+            const requestController = new AbortController();
             updateCurrentAccountHeader(currentAccount);
+            abortActiveEmailRequest();
+            activeEmailRequestController = requestController;
+            activeEmailRequestId = requestId;
             isLoadingEmails = true;
             const hasExistingEmails = Array.isArray(allEmails) && allEmails.length > 0;
-            const shouldProbeLatest = hasExistingEmails && currentEmailPage === 1;
+            const shouldProbeLatest = hasExistingEmails && requestPage === 1;
 
             if (!shouldProbeLatest) {
                 emailsList.innerHTML = '<div class="loading"><div class="loading-spinner"></div>正在加载邮件...</div>';
@@ -9337,10 +9724,20 @@ Authorization: Bearer om_your_api_key
 
             try {
                 const refreshParam = (forceRefresh || shouldProbeLatest) ? '&refresh=true' : '';
-                const requestPage = shouldProbeLatest ? 1 : currentEmailPage;
+                const pageToLoad = shouldProbeLatest ? 1 : requestPage;
                 const requestPageSize = shouldProbeLatest ? EMAIL_REFRESH_PROBE_SIZE : EMAIL_LIST_PAGE_SIZE;
-                const url = `/emails/${currentAccount}?folder=${currentEmailFolder}&page=${requestPage}&page_size=${requestPageSize}${refreshParam}`;
-                const data = await apiRequest(url);
+                const url = `/emails/${requestAccount}?folder=${requestFolder}&page=${pageToLoad}&page_size=${requestPageSize}${refreshParam}`;
+                const data = await apiRequest(url, { signal: requestController.signal });
+
+                if (
+                    requestId !== activeEmailRequestId ||
+                    requestAccount !== currentAccount ||
+                    requestFolder !== currentEmailFolder ||
+                    requestPage !== currentEmailPage
+                ) {
+                    return;
+                }
+
                 const fetchedEmails = data.emails || [];
                 let insertedIds = [];
 
@@ -9372,13 +9769,20 @@ Authorization: Bearer om_your_api_key
                 }
 
             } catch (error) {
+                if (error.name === 'AbortError' || requestId !== activeEmailRequestId) {
+                    return;
+                }
                 if (!shouldProbeLatest) {
                     emailsList.innerHTML = '<div class="error">加载失败: ' + error.message + '</div>';
                 }
                 showNotification('加载邮件失败: ' + error.message, 'error');
             } finally {
+                if (requestId !== activeEmailRequestId) {
+                    return;
+                }
                 // Restore refresh button state
                 isLoadingEmails = false;
+                activeEmailRequestController = null;
                 refreshBtn.disabled = false;
                 refreshBtn.innerHTML = buttonLabel('refresh', '刷新');
                 if (autoRefreshBtn) {
@@ -9532,7 +9936,7 @@ Authorization: Bearer om_your_api_key
             pendingInsertedEmailIds = [];
         }
 
-        function clearFilters() {
+        function clearFilters(shouldRender = true) {
             document.getElementById('mailSearchInput').value = '';
             document.getElementById('folderFilter').value = 'all';
             document.getElementById('statusFilter').value = 'all';
@@ -9543,7 +9947,9 @@ Authorization: Bearer om_your_api_key
             toggleCustomDateRange();
 
             filteredEmails = [...allEmails];
-            renderFilteredEmails();
+            if (shouldRender) {
+                renderFilteredEmails();
+            }
         }
 
         function toggleAccountBindMenu(forceOpen = null) {
@@ -10410,6 +10816,9 @@ Authorization: Bearer om_your_api_key
             if (relativePath.startsWith('/emails/')) {
                 const emailId = decodeURIComponent(relativePath.replace('/emails/', ''));
                 if (emailId) {
+                    if (emailId !== currentAccount) {
+                        resetEmailListState({ showLoading: true });
+                    }
                     currentAccount = emailId;
                     updateCurrentAccountHeader(emailId);
                     populateAccountSwitcher(emailId);

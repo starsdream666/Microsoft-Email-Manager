@@ -2,3 +2,24 @@
 __pycache__
 accounts.json
 .DS_Store
+
+# Local temp / verification artifacts
+__tmp_*
+.tmp-e2e/
+
+# Local Node scratch files
+/package.json
+/package-lock.json
+
+# Runtime-generated data
+data/icon_cache/
+data/account_health.json
+data/accounts.json
+data/admin_login_attempts.json
+data/api_keys.json
+data/auth.json
+data/email_tags.json
+data/open_access_sessions.json
+data/public_shares.json
+data/sessions.json
+data/site_settings.json

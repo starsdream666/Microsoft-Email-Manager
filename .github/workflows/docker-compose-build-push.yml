@@ -30,7 +30,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_HUB_USERNAME }}/outlookmanager  # 替换为你的 Docker Hub 仓库名
+          images: ${{ secrets.DOCKER_HUB_USERNAME }}/microsoft-email-manager  # 替换为你的 Docker Hub 仓库名
           tags: |
             type=ref,event=branch  # 分支触发时，标签为分支名（如 main）
             type=semver,pattern={{version}}  # 标签触发时，标签为版本号（如 v1.0.0 → 1.0.0）

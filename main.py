@@ -102,6 +102,7 @@ SOCKET_TIMEOUT = 15
 CACHE_EXPIRE_TIME = 60  # 缓存过期时间（秒）
 CLASSIFICATION_KEY_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 BUILTIN_CLASSIFICATION_REMARK = "此分类此标签为适配MREGISTER开源项目"
+SUPPORTED_SETUP_MODES = {"mregister", "normal", "commercial"}
 BUILTIN_ACCOUNT_CLASSIFICATIONS: dict[str, dict[str, dict[str, Any]]] = {
     "categories": {
         "mregister": {
@@ -333,6 +334,7 @@ class PasswordPayload(BaseModel):
 class SetupPayload(PasswordPayload):
     agreed_terms: bool = Field(default=False)
     admin_login_path: str = Field(default=DEFAULT_ADMIN_LOGIN_PATH, min_length=2, max_length=120)
+    setup_mode: str = Field(default="normal", pattern="^(mregister|normal|commercial)$")
 
 
 class ApiKeyCreatePayload(BaseModel):
@@ -689,7 +691,30 @@ def normalize_classification_record(key: str, payload: dict[str, Any]) -> dict[s
     }
 
 
-def ensure_builtin_classifications(data: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+def normalize_setup_mode(value: Any, fallback: str | None = None) -> str | None:
+    raw = str(value or "").strip().lower()
+    if raw in SUPPORTED_SETUP_MODES:
+        return raw
+    return fallback
+
+
+def get_effective_setup_mode(settings: dict[str, Any] | None = None) -> str | None:
+    current_settings = settings or load_auth_settings()
+    normalized_mode = normalize_setup_mode(current_settings.get("setup_mode"))
+    if normalized_mode:
+        return normalized_mode
+    if current_settings.get("admin_password_hash") or current_settings.get("agreement_accepted"):
+        return "mregister"
+    return None
+
+
+def get_builtin_account_classifications(setup_mode: str | None = None) -> dict[str, dict[str, dict[str, Any]]]:
+    if normalize_setup_mode(setup_mode) == "mregister":
+        return BUILTIN_ACCOUNT_CLASSIFICATIONS
+    return {"categories": {}, "tags": {}}
+
+
+def ensure_builtin_classifications(data: dict[str, Any], setup_mode: str | None = None) -> tuple[dict[str, Any], bool]:
     categories = data.get("categories")
     tags = data.get("tags")
     normalized_data = {
@@ -698,7 +723,7 @@ def ensure_builtin_classifications(data: dict[str, Any]) -> tuple[dict[str, Any]
     }
     changed = not isinstance(categories, dict) or not isinstance(tags, dict)
 
-    for collection_name, builtin_collection in BUILTIN_ACCOUNT_CLASSIFICATIONS.items():
+    for collection_name, builtin_collection in get_builtin_account_classifications(setup_mode).items():
         collection = normalized_data[collection_name]
         for key, builtin_payload in builtin_collection.items():
             existing_payload = collection.get(key) if isinstance(collection.get(key), dict) else {}
@@ -1285,6 +1310,7 @@ def load_auth_settings() -> dict[str, Any]:
                 "admin_password_hash": "",
                 "agreement_accepted": False,
                 "agreement_accepted_at": None,
+                "setup_mode": None,
                 "updated_at": None,
             },
         )
@@ -1296,6 +1322,7 @@ def save_auth_settings(settings: dict[str, Any]) -> None:
             "admin_password_hash": settings.get("admin_password_hash", ""),
             "agreement_accepted": bool(settings.get("agreement_accepted", False)),
             "agreement_accepted_at": settings.get("agreement_accepted_at"),
+            "setup_mode": normalize_setup_mode(settings.get("setup_mode")),
             "updated_at": datetime.utcnow().isoformat(),
         }
         _write_json_file(AUTH_FILE, payload)
@@ -1360,10 +1387,16 @@ def save_account_health_data(data: dict[str, Any]) -> None:
         _write_json_file(ACCOUNT_HEALTH_FILE, {"accounts": data.get("accounts", {})})
 
 
+def reset_account_classifications_for_mode(setup_mode: str | None = None) -> None:
+    with auth_lock:
+        normalized_data, _ = ensure_builtin_classifications({"categories": {}, "tags": {}}, setup_mode)
+        _write_json_file(ACCOUNT_CLASSIFICATIONS_FILE, normalized_data)
+
+
 def load_account_classifications_data() -> dict[str, Any]:
     with auth_lock:
         data = _read_json_file(ACCOUNT_CLASSIFICATIONS_FILE, {"categories": {}, "tags": {}})
-        normalized_data, changed = ensure_builtin_classifications(data)
+        normalized_data, changed = ensure_builtin_classifications(data, get_effective_setup_mode())
         if changed:
             _write_json_file(ACCOUNT_CLASSIFICATIONS_FILE, normalized_data)
         return normalized_data
@@ -1371,7 +1404,7 @@ def load_account_classifications_data() -> dict[str, Any]:
 
 def save_account_classifications_data(data: dict[str, Any]) -> None:
     with auth_lock:
-        normalized_data, _ = ensure_builtin_classifications(data)
+        normalized_data, _ = ensure_builtin_classifications(data, get_effective_setup_mode())
         _write_json_file(
             ACCOUNT_CLASSIFICATIONS_FILE,
             normalized_data,
@@ -3075,6 +3108,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
                 "admin_password_hash": "",
                 "agreement_accepted": False,
                 "agreement_accepted_at": None,
+                "setup_mode": None,
                 "updated_at": None,
             },
         )
@@ -3105,7 +3139,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     if ACCOUNT_CLASSIFICATIONS_FILE.exists() and ACCOUNT_CLASSIFICATIONS_FILE.is_dir():
         raise RuntimeError(f"Account classifications path is a directory, expected a file: {ACCOUNT_CLASSIFICATIONS_FILE}")
     if not ACCOUNT_CLASSIFICATIONS_FILE.exists():
-        _write_json_file(ACCOUNT_CLASSIFICATIONS_FILE, ensure_builtin_classifications({})[0])
+        _write_json_file(ACCOUNT_CLASSIFICATIONS_FILE, ensure_builtin_classifications({}, get_effective_setup_mode(load_auth_settings()))[0])
     if EMAIL_TAGS_FILE.exists() and EMAIL_TAGS_FILE.is_dir():
         raise RuntimeError(f"Email tags path is a directory, expected a file: {EMAIL_TAGS_FILE}")
     if not EMAIL_TAGS_FILE.exists():
@@ -3225,14 +3259,21 @@ async def auth_setup(payload: SetupPayload, request: Request):
         raise HTTPException(status_code=409, detail="Admin password is already configured")
     if not payload.agreed_terms:
         raise HTTPException(status_code=400, detail="You must agree to the terms before continuing")
+    setup_mode = normalize_setup_mode(payload.setup_mode)
+    if not setup_mode:
+        raise HTTPException(status_code=400, detail="Invalid setup mode")
+    if setup_mode == "commercial":
+        raise HTTPException(status_code=400, detail="商业授权版本暂未开放")
     admin_login_path = normalize_admin_login_path(payload.admin_login_path)
     save_auth_settings(
         {
             "admin_password_hash": hash_password(payload.password),
             "agreement_accepted": True,
             "agreement_accepted_at": datetime.utcnow().isoformat(),
+            "setup_mode": setup_mode,
         }
     )
+    reset_account_classifications_for_mode(setup_mode)
     site_settings = load_site_settings()
     save_site_settings(
         {
