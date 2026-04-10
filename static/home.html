@@ -276,6 +276,94 @@
             display: block;
             flex-shrink: 0;
         }
+        .store-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 1rem;
+            margin-top: 1.25rem;
+        }
+        .store-card {
+            position: relative;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e5e7eb;
+            border-radius: 1.25rem;
+            padding: 1.1rem 1rem 1rem;
+            display: grid;
+            gap: 0.75rem;
+            align-items: start;
+            transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+        }
+        .store-card.is-supported:hover {
+            transform: translateY(-3px);
+            border-color: #7dd3fc;
+            background: linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%);
+        }
+        .store-card.is-coming-soon {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+        .store-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+        .store-logo-shell {
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 1rem;
+            border: 1px solid #e5e7eb;
+            background: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.55rem;
+        }
+        .store-logo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .store-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            min-height: 1.75rem;
+            padding: 0 0.7rem;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .store-badge-supported {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .store-badge-soon {
+            background: #e5e7eb;
+            color: #475569;
+        }
+        .store-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #111827;
+        }
+        .store-desc {
+            color: #6b7280;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            min-height: 2.8rem;
+        }
+        .store-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            color: #0284c7;
+            font-size: 0.84rem;
+            font-weight: 600;
+        }
+        .store-card.is-coming-soon .store-action {
+            color: #94a3b8;
+        }
         ::selection {
             background: #1e6f9f;
             color: white;
@@ -308,6 +396,14 @@
             .hero-glow-a,
             .hero-glow-b {
                 filter: blur(64px);
+            }
+            .store-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        @media (max-width: 520px) {
+            .store-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -545,17 +641,17 @@
                         </a>
                     </div>
                     <div class="border-t pt-4 mt-2">
-                        <p class="font-semibold text-gray-700 text-sm">⚡ 环境变量推荐 (所有平台通用)</p>
+                        <p class="font-semibold text-gray-700 text-sm">⚠️ 强制环境变量 (所有平台通用)</p>
                         <div class="bg-gray-800 text-gray-200 rounded-lg p-3 text-xs font-mono mt-2 overflow-x-auto">
-                            HOST=0.0.0.0<br>PORT=8000<br>DATA_DIR=/app/data<br>ACCOUNTS_FILE=/app/data/accounts.json
+                            HOST=0.0.0.0<br>PORT=8000<br>DATA_DIR=/app/data<br>ACCOUNTS_FILE=/app/data/accounts.json<br>TRUST_PROXY_HEADERS=true
                         </div>
-                        <p class="text-xs text-gray-500 mt-3">⚠️ 务必挂载持久化卷到 <span class="font-mono bg-gray-100 px-1 rounded">/app/data</span>，首次访问设置管理员密码。</p>
+                        <p class="text-xs text-gray-500 mt-3">⚠️ 务必挂载持久化卷到 <span class="font-mono bg-gray-100 px-1 rounded">/app/data</span>，并强制设置 <span class="font-mono bg-gray-100 px-1 rounded">TRUST_PROXY_HEADERS=true</span>，首次访问设置管理员密码。</p>
                     </div>
                 </div>
             </div>
             <div class="mt-8 bg-sky-50/40 rounded-2xl p-5 border border-sky-100 flex flex-wrap justify-between items-center">
-                <div><i class="fas fa-hashtag text-sky-600 mr-2"></i> <span class="font-mono text-sm">maishanhub/outlookmanager:main</span> <span class="text-gray-600 text-sm ml-2">官方镜像，支持 amd64/arm64</span></div>
-                <div><code class="bg-gray-200 px-2 py-1 rounded text-sm">docker run -d -p 8073:8000 -v ./data:/app/data maishanhub/outlookmanager:main</code></div>
+                <div><i class="fas fa-hashtag text-sky-600 mr-2"></i> <span class="font-mono text-sm">maishanhub/microsoft-email-manager:main</span> <span class="text-gray-600 text-sm ml-2">官方镜像，支持 amd64/arm64</span></div>
+                <div><code class="bg-gray-200 px-2 py-1 rounded text-sm">docker run -d -p 8073:8000 -v ./data:/app/data -e TRUST_PROXY_HEADERS=true maishanhub/microsoft-email-manager:main</code></div>
             </div>
             <div class="mt-6 deploy-card border border-gray-200 p-6 lg:p-7">
                 <div class="flex items-center gap-3 mb-4">
@@ -563,6 +659,52 @@
                     <h3 class="text-2xl font-bold">应用商店下载</h3>
                 </div>
                 <p class="text-gray-600 text-sm">支持通过应用商店直接下载安装，适合希望用图形化方式快速完成部署的场景。</p>
+                <div class="store-grid">
+                    <a href="https://www.gmssh.com/" target="_blank" class="store-card is-supported">
+                        <div class="store-card-header">
+                            <span class="store-logo-shell">
+                                <img src="/static/assets/GMSSH.svg" alt="GMSSH" class="store-logo" loading="lazy">
+                            </span>
+                            <span class="store-badge store-badge-supported"><i class="fas fa-circle-check"></i>现已支持</span>
+                        </div>
+                        <div class="store-title">GMSSH</div>
+                        <div class="store-desc">当前唯一已支持的应用商店版本，可直接通过商店界面完成安装与部署。</div>
+                        <div class="store-action"><i class="fas fa-arrow-up-right-from-square"></i>打开 GMSSH</div>
+                    </a>
+                    <div class="store-card is-coming-soon">
+                        <div class="store-card-header">
+                            <span class="store-logo-shell">
+                                <img src="/static/assets/宝塔.svg" alt="宝塔" class="store-logo" loading="lazy">
+                            </span>
+                            <span class="store-badge store-badge-soon"><i class="fas fa-clock"></i>敬请期待</span>
+                        </div>
+                        <div class="store-title">宝塔</div>
+                        <div class="store-desc">应用商店版本正在准备中，后续会补齐安装包与上架流程。</div>
+                        <div class="store-action"><i class="fas fa-hourglass-half"></i>暂未开放</div>
+                    </div>
+                    <div class="store-card is-coming-soon">
+                        <div class="store-card-header">
+                            <span class="store-logo-shell">
+                                <img src="/static/assets/aaPanel.svg" alt="aaPanel" class="store-logo" loading="lazy">
+                            </span>
+                            <span class="store-badge store-badge-soon"><i class="fas fa-clock"></i>敬请期待</span>
+                        </div>
+                        <div class="store-title">aaPanel</div>
+                        <div class="store-desc">应用商店版本正在准备中，后续会补齐安装包与上架流程。</div>
+                        <div class="store-action"><i class="fas fa-hourglass-half"></i>暂未开放</div>
+                    </div>
+                    <div class="store-card is-coming-soon">
+                        <div class="store-card-header">
+                            <span class="store-logo-shell">
+                                <img src="/static/assets/1Panel.svg" alt="1Panel" class="store-logo" loading="lazy">
+                            </span>
+                            <span class="store-badge store-badge-soon"><i class="fas fa-clock"></i>敬请期待</span>
+                        </div>
+                        <div class="store-title">1Panel</div>
+                        <div class="store-desc">应用商店版本正在准备中，后续会补齐安装包与上架流程。</div>
+                        <div class="store-action"><i class="fas fa-hourglass-half"></i>暂未开放</div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
