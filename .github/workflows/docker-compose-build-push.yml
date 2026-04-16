@@ -2,6 +2,7 @@ name: Build and Push Docker Image
 
 # 触发条件：当推送到 main 分支或创建标签时执行
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
     tags: [ "v*.*.*" ]  # 匹配类似 v1.0.0 的标签
