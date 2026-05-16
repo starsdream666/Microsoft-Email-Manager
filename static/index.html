@@ -9536,6 +9536,7 @@ example3@live.com----password3----client_id3----refresh_token3`;
                                 </div>
                             </div>
                             <div class="api-key-code">${escapeHtml(log.path || '')}</div>
+                            ${log.response_summary ? `<div class="api-key-code" style="margin-top:6px;color:#334155;white-space:pre-wrap;word-break:break-all;">${escapeHtml(log.response_summary)}</div>` : ''}
                             <div class="api-key-meta" style="margin-top: 12px;">
                                 <span class="api-key-badge muted">IP：${escapeHtml(log.ip || '未知')}</span>
                                 <span class="api-key-badge muted">${log.remaining_requests == null ? '剩余额度：无限' : `剩余额度：${log.remaining_requests}`}</span>

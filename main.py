@@ -2315,14 +2315,16 @@ def authenticate_api_key(request: Request, consume: bool = True) -> dict[str, An
             meta["last_used_at"] = now.isoformat()
             keys[key_id] = meta
             usage_logs = data.get("usage_logs", [])
+            now_iso = now.isoformat()
+            log_id = secrets.token_hex(8)
             usage_logs.append(
                 {
-                    "id": secrets.token_hex(8),
+                    "id": log_id,
                     "key_id": key_id,
                     "key_name": meta.get("name", ""),
                     "path": request.url.path,
                     "method": request.method,
-                    "used_at": now.isoformat(),
+                    "used_at": now_iso,
                     "ip": get_request_ip(request),
                     "remaining_requests": None
                     if bool(meta.get("unlimited_requests", False))
@@ -2332,6 +2334,8 @@ def authenticate_api_key(request: Request, consume: bool = True) -> dict[str, An
             data["keys"] = keys
             data["usage_logs"] = usage_logs
             save_api_keys_data(data)
+            request.state.api_log_id = log_id
+            request.state.api_log_used_at = now_iso
 
         return {
             "auth_type": "api_key",
@@ -2340,6 +2344,76 @@ def authenticate_api_key(request: Request, consume: bool = True) -> dict[str, An
         }
 
     raise HTTPException(status_code=401, detail="Invalid API key")
+
+
+def build_response_summary(path: str, method: str, body: dict) -> str:
+    try:
+        if not isinstance(body, dict):
+            return ""
+
+        # GET /emails/{id} — email list
+        if "/emails/" in path and path.count("/") == 2:
+            emails = body.get("emails", [])
+            if isinstance(emails, list):
+                senders = [e.get("from_email", "") for e in emails[:5] if isinstance(e, dict)]
+                senders = [s for s in senders if s]
+                total = body.get("total_emails") or len(emails)
+                prefix = f"{total}封邮件"
+                if senders:
+                    return f"{prefix}: {', '.join(senders)}"[:300]
+                return prefix
+
+        # GET /emails/{id}/dual-view — dual view email list
+        if path.endswith("/dual-view") and "/emails/" in path:
+            all_emails = list(body.get("inbox_emails", [])) + list(body.get("junk_emails", []))
+            senders = [e.get("from_email", "") for e in all_emails[:5] if isinstance(e, dict)]
+            senders = [s for s in senders if s]
+            inbox_total = body.get("inbox_total", 0)
+            junk_total = body.get("junk_total", 0)
+            prefix = f"收件箱{inbox_total}封, 垃圾箱{junk_total}封"
+            if senders:
+                return f"{prefix}: {', '.join(senders)}"[:300]
+            return prefix
+
+        # GET /emails/{id}/{msg_id} — single email detail
+        if "/emails/" in path and path.count("/") == 3 and not path.endswith("/dual-view"):
+            subject = body.get("subject", "")
+            from_email = body.get("from_email", "")
+            if subject or from_email:
+                return f"邮件详情: {subject} — {from_email}"[:300]
+
+        # GET /accounts — account list
+        if path == "/accounts" and method == "GET" and "accounts" in body:
+            accounts = body.get("accounts", [])
+            if isinstance(accounts, list):
+                emails = [a.get("email_id", "") for a in accounts[:5] if isinstance(a, dict)]
+                emails = [e for e in emails if e]
+                total = body.get("total_accounts") or len(accounts)
+                prefix = f"{total}个账户"
+                if emails:
+                    return f"{prefix}: {', '.join(emails)}"[:300]
+                return prefix
+
+        # POST /accounts or /accounts/validate — single account
+        if path in ("/accounts", "/accounts/validate") and method == "POST":
+            email_id = body.get("email_id", "")
+            message = body.get("message", "")
+            if email_id:
+                return f"账户: {email_id} — {message}"[:300] if message else f"账户: {email_id}"
+
+        # GET /classifications
+        if path == "/classifications":
+            categories = body.get("categories", {})
+            tags = body.get("tags", {})
+            cat_count = len(categories) if isinstance(categories, dict) else 0
+            tag_count = len(tags) if isinstance(tags, dict) else 0
+            return f"{cat_count}个分类, {tag_count}个标签"
+
+        # Fallback: short JSON
+        text = json.dumps(body, ensure_ascii=False)[:200]
+        return text if len(text) < 300 else text[:297] + "..."
+    except Exception:
+        return ""
 
 
 def auth_is_configured() -> bool:
@@ -3405,6 +3479,48 @@ async def site_access_middleware(request: Request, call_next):
         return FileResponse(STATIC_DIR / "index.html")
 
     return await call_next(request)
+
+
+@app.middleware("http")
+async def api_response_logging_middleware(request: Request, call_next):
+    response = await call_next(request)
+
+    if not getattr(request.state, "api_log_id", None):
+        return response
+
+    content_type = response.headers.get("content-type", "")
+    if "json" not in content_type:
+        return response
+
+    body_bytes = b""
+    try:
+        async for chunk in response.body_iterator:
+            if isinstance(chunk, str):
+                body_bytes += chunk.encode("utf-8")
+            else:
+                body_bytes += chunk
+
+        body = json.loads(body_bytes)
+        summary = build_response_summary(request.url.path, request.method, body)
+        if summary:
+            log_id = request.state.api_log_id
+            log_used_at = request.state.api_log_used_at
+            data = load_api_keys_data()
+            for entry in data.get("usage_logs", []):
+                if entry.get("id") == log_id and entry.get("used_at") == log_used_at:
+                    entry["response_summary"] = summary
+                    break
+            save_api_keys_data(data)
+    except Exception:
+        pass
+
+    return Response(
+        content=body_bytes,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+        media_type=response.media_type,
+    )
+
 
 # 挂载静态文件服务
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
