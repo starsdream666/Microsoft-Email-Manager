@@ -4219,11 +4219,12 @@ async def get_accounts(
 
 
 @app.get("/accounts/export")
-async def export_accounts(request: Request):
-    """导出全部邮箱账户，每行格式：邮箱----密码----client_id----refresh_token
+async def export_accounts(request: Request, emails: Optional[str] = Query(None, description="要导出的邮箱(逗号分隔);缺省导出全部")):
+    """导出邮箱账户，每行格式：邮箱----密码----client_id----refresh_token
 
     该格式与「批量添加」兼容，导出的文本可直接粘贴回批量添加框重新导入
     （批量导入解析会忽略密码字段，仅取 client_id 与 refresh_token）。
+    可选 Query 参数 emails 指定单个/多个邮箱(逗号分隔),缺省导出全部账号。
     注意：本系统不保存邮箱明文密码，故密码字段统一以占位符 password-not-stored 填充。
 
     权限与审计：导出包含全部 refresh_token，属高敏感操作，仅允许管理员 session
@@ -4233,9 +4234,21 @@ async def export_accounts(request: Request):
     """
     auth = require_authenticated(request, allow_api_key=False)  # 仅 session,拒绝 API key
     accounts_data = load_accounts_data()
+
+    # 解析目标邮箱集合:emails 参数为空时导出全部
+    if emails:
+        target_emails = {str(e).strip() for e in emails.split(",") if str(e).strip()}
+        missing = sorted(target_emails - set(accounts_data.keys()))
+        if missing:
+            raise HTTPException(status_code=404, detail=f"以下账号不存在: {', '.join(missing[:5])}")
+    else:
+        target_emails = set(accounts_data.keys())
+
     lines = []
     skipped = 0
     for email_id, account_info in accounts_data.items():
+        if email_id not in target_emails:
+            continue
         if not isinstance(account_info, dict):
             skipped += 1
             continue
@@ -4361,6 +4374,22 @@ async def run_accounts_health_check(request: Request):
 async def get_accounts_health_check_status(request: Request):
     require_authenticated(request, allow_api_key=True)
     return get_account_health_check_state()
+
+
+@app.post("/accounts/refresh-one")
+async def refresh_single_account(payload: dict[str, Any], request: Request):
+    """立即刷新单个账号的 OAuth token(健康检查语义:刷新 + 探活 + 回存轮换 token)。"""
+    require_authenticated(request, allow_api_key=True)
+    email_id = str((payload or {}).get("email") or "").strip()
+    if not email_id:
+        raise HTTPException(status_code=400, detail="email 不能为空")
+    try:
+        record = await refresh_account_health(email_id)
+    except HTTPException as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc.detail))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"刷新失败: {exc}")
+    return {"email_id": email_id, "record": record}
 
 
 @app.get("/emails/{email_id}", response_model=EmailListResponse)

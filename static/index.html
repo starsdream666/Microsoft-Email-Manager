@@ -5442,6 +5442,48 @@
             .modal-content { width: 95%; max-height: 95%; }
             .email-item { padding: 12px; }
         }
+
+        /* Token 刷新管理页 */
+        .refresh-stat-card {
+            flex: 1 1 140px;
+            max-width: 200px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 16px;
+        }
+        .refresh-stat-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .refresh-stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+        .refresh-stat-value--success { color: #16a34a; }
+        .refresh-stat-value--danger { color: #dc2626; }
+        .refresh-result-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .refresh-result-row:hover { background: #f8fafc; }
+        .refresh-result-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            white-space: nowrap;
+            flex: 0 0 auto;
+        }
+        .refresh-result-badge--success { background: #dcfce7; color: #15803d; }
+        .refresh-result-badge--failed { background: #fee2e2; color: #b91c1c; }
+        .refresh-result-badge--running { background: #dbeafe; color: #1d4ed8; }
+        .refresh-result-badge--skipped { background: #f1f5f9; color: #64748b; }
     </style>
 </head>
 <body class="app-booting">
@@ -5646,6 +5688,10 @@
                     <span class="icon"></span>
                     <span class="nav-item-text">API 文档</span>
                 </button>
+                <button class="nav-item" type="button" data-page="tokenRefresh" onclick="showPage('tokenRefresh', this)">
+                    <span class="icon"></span>
+                    <span class="nav-item-text">Token 刷新</span>
+                </button>
                 <button class="nav-item" type="button" data-page="settings" onclick="showPage('settings', this)">
                     <span class="icon"></span>
                     <span class="nav-item-text">设置</span>
@@ -5776,6 +5822,10 @@
                                             <button id="accountsBatchConfigBtn" class="btn btn-secondary btn-sm" type="button" onclick="openBatchAccountConfigModal()">
                                                 <span></span>
                                                 批量配置
+                                            </button>
+                                            <button id="accountsExportSelectedBtn" class="btn btn-secondary btn-sm" type="button" onclick="exportSelectedAccounts()" disabled title="导出批量选中的账号">
+                                                <span></span>
+                                                导出选中
                                             </button>
                                         </div>
                                     </div>
@@ -6668,6 +6718,100 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
                     </div>
                 </div>
 
+                <!-- Token 刷新管理页面 -->
+                <div id="tokenRefreshPage" class="page hidden">
+                    <div class="card">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="font-semibold">Token 刷新管理</h3>
+                                <p class="text-sm" style="color: #64748b;">全量/单账号刷新 OAuth Refresh Token 并回存轮换结果，避免微软约 90 天静默过期。刷新同时执行健康探活。</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="btn btn-secondary btn-sm" type="button" onclick="loadTokenRefreshSnapshot(true)">
+                                    <span></span>
+                                    刷新状态
+                                </button>
+                                <button class="btn btn-secondary btn-sm" type="button" onclick="showPage('settings')">
+                                    <span></span>
+                                    自动刷新设置
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 统计卡片 -->
+                        <div class="flex gap-4 mb-4" style="flex-wrap: wrap;">
+                            <div class="refresh-stat-card">
+                                <div class="refresh-stat-label">总邮箱数</div>
+                                <div class="refresh-stat-value" id="refreshStatTotal">0</div>
+                            </div>
+                            <div class="refresh-stat-card">
+                                <div class="refresh-stat-label">成功</div>
+                                <div class="refresh-stat-value refresh-stat-value--success" id="refreshStatSuccess">0</div>
+                            </div>
+                            <div class="refresh-stat-card">
+                                <div class="refresh-stat-label">失败</div>
+                                <div class="refresh-stat-value refresh-stat-value--danger" id="refreshStatFailed">0</div>
+                            </div>
+                            <div class="refresh-stat-card">
+                                <div class="refresh-stat-label">状态</div>
+                                <div class="refresh-stat-value" id="refreshStatRunning">空闲</div>
+                            </div>
+                        </div>
+
+                        <!-- 操作区 -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex gap-2">
+                                <button class="btn btn-primary btn-sm" type="button" onclick="startTokenRefreshAll()" id="tokenRefreshAllBtn">
+                                    <span></span>
+                                    全量刷新 Token
+                                </button>
+                                <button class="btn btn-secondary btn-sm" type="button" onclick="tokenRefreshRetryFailed()" id="tokenRefreshRetryBtn" disabled>
+                                    <span></span>
+                                    重试失败
+                                </button>
+                                <button class="btn btn-danger btn-sm hidden" type="button" onclick="tokenRefreshStop()" id="tokenRefreshStopBtn" style="display:none;">
+                                    <span></span>
+                                    停止任务
+                                </button>
+                            </div>
+                            <div id="tokenRefreshProgressWrap" style="display:none;" class="flex items-center gap-2">
+                                <div style="flex:1; background:#e2e8f0; border-radius:999px; height:8px; overflow:hidden; min-width:160px;">
+                                    <div id="tokenRefreshProgressBar" style="width:0%; height:100%; background:#3b82f6; transition: width .3s;"></div>
+                                </div>
+                                <span class="text-sm" style="color:#475569;" id="tokenRefreshProgressText">0/0</span>
+                            </div>
+                        </div>
+
+                        <!-- 任务日志(最近记录) -->
+                        <div class="mb-4" id="tokenRefreshLogSection" style="display:none;">
+                            <div class="public-share-status" id="tokenRefreshLogBox">
+                                <div class="flex items-center justify-between">
+                                    <strong>最近任务</strong>
+                                    <span class="text-sm" style="color:#64748b;" id="tokenRefreshLogTime"></span>
+                                </div>
+                                <div class="text-sm" style="margin-top:6px; color:#475569;" id="tokenRefreshLogSummary"></div>
+                            </div>
+                        </div>
+
+                        <!-- 账号结果明细 -->
+                        <div class="mb-2 flex items-center justify-between">
+                            <h4 style="margin:0; color:#0f172a;">刷新结果明细</h4>
+                            <div class="flex gap-2">
+                                <select id="tokenRefreshResultFilter" class="form-input" style="width:auto; padding:4px 8px;" onchange="renderTokenRefreshResults()">
+                                    <option value="all">全部状态</option>
+                                    <option value="success">成功</option>
+                                    <option value="failed">失败</option>
+                                    <option value="running">刷新中</option>
+                                </select>
+                                <input type="search" id="tokenRefreshResultSearch" class="form-input" placeholder="搜索邮箱..." oninput="renderTokenRefreshResults()" style="width:200px;">
+                            </div>
+                        </div>
+                        <div id="tokenRefreshResultList" style="max-height:420px; overflow:auto;">
+                            <div class="text-center" style="padding:32px; color:#64748b;">尚未执行刷新任务。点击「全量刷新 Token」或前往账号页单账号刷新。</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="settingsPage" class="page hidden">
                     <div class="card">
                         <div class="flex items-center justify-between mb-6">
@@ -7188,6 +7332,15 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
         <div class="context-menu-item" onclick="contextEditTags()">
             <span></span>
             管理分类与标签
+        </div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item" onclick="contextRefreshAccountToken()">
+            <span>↻</span>
+            刷新此账号 Token
+        </div>
+        <div class="context-menu-item" onclick="contextExportAccount()">
+            <span>↓</span>
+            导出此账号
         </div>
         <div class="context-menu-item danger" onclick="contextDeleteAccount()">
             <span></span>
@@ -7762,6 +7915,12 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
                 batchConfigButton.classList.toggle('is-active', selectedCount > 0);
                 batchConfigButton.classList.toggle('is-disabled', selectedCount === 0);
                 setButtonIcon(batchConfigButton, 'classification');
+            }
+
+            const exportSelectedBtn = document.getElementById('accountsExportSelectedBtn');
+            if (exportSelectedBtn) {
+                exportSelectedBtn.disabled = selectedCount === 0;
+                exportSelectedBtn.classList.toggle('is-disabled', selectedCount === 0);
             }
         }
 
@@ -9011,6 +9170,7 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
                 classifications: '/classifications',
                 apiKeys: '/api-keys',
                 apiDocs: '/api-docs',
+                tokenRefresh: '/token-refresh',
                 settings: '/settings'
             };
 
@@ -9028,6 +9188,7 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
                 classifications: '分类编辑',
                 apiKeys: 'API 密钥',
                 apiDocs: 'API 接口文档',
+                tokenRefresh: 'Token 刷新管理',
                 settings: '站点设置',
                 emails: '邮箱账户管理'
             };
@@ -9049,6 +9210,8 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
                 loadApiKeys();
             } else if (pageName === 'apiDocs') {
                 initApiDocs();
+            } else if (pageName === 'tokenRefresh') {
+                loadTokenRefreshSnapshot(false);
             } else if (pageName === 'settings') {
                 loadSiteSettings();
             } else if (pageName === 'emails') {
@@ -9807,13 +9970,59 @@ example3@live.com----password3----client_id3----refresh_token3`;
         }
 
         async function exportAccounts() {
-            const button = document.getElementById('exportAccountsBtn');
-            if (!button) return;
-            button.disabled = true;
-            const originalHtml = button.innerHTML;
-            button.innerHTML = buttonLabel('loading', '导出中...', 'spinning');
+            // 兼容旧入口:全量导出
+            await downloadAccountsExport(null, '导出账户');
+        }
+
+        // 导出单个账号
+        function exportSingleAccount(emailId) {
+            if (!emailId) return;
+            downloadAccountsExport([emailId], '导出账号');
+        }
+
+        // 导出批量选中的账号
+        async function exportSelectedAccounts() {
+            const ids = Array.from(selectedAccountIds || []);
+            if (!ids.length) {
+                showNotification('请先勾选要导出的账号', 'warning');
+                return;
+            }
+            await downloadAccountsExport(ids, '导出选中账号');
+        }
+
+        // 立即刷新单个账号的 Token
+        async function refreshSingleAccount(emailId) {
+            if (!emailId) return;
             try {
-                const response = await fetch(API_BASE + '/accounts/export', { credentials: 'same-origin' });
+                const res = await apiRequest('/accounts/refresh-one', {
+                    method: 'POST',
+                    body: JSON.stringify({ email: emailId })
+                });
+                const rec = (res && res.record) || {};
+                const ok = rec.status === 'healthy';
+                showNotification(
+                    ok ? `刷新成功: ${emailId}` : `刷新未通过: ${emailId} - ${rec.summary || rec.detail || '未知'}`,
+                    ok ? 'success' : 'warning'
+                );
+                if (typeof loadAccounts === 'function') loadAccounts();
+            } catch (error) {
+                showNotification('刷新 Token 失败: ' + error.message, 'error');
+            }
+        }
+
+        // 通用导出下载:emails 为 null 导出全部;数组则导出指定账号
+        async function downloadAccountsExport(emails, successLabel = '导出账户') {            const button = document.getElementById('exportAccountsBtn');
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = buttonLabel('loading', '导出中...', 'spinning');
+            }
+            const originalHtml = button ? button.innerHTML : '';
+            try {
+                let url = API_BASE + '/accounts/export';
+                if (Array.isArray(emails) && emails.length) {
+                    url += '?emails=' + encodeURIComponent(emails.join(','));
+                }
+                const response = await fetch(url, { credentials: 'same-origin' });
                 if (!response.ok) {
                     let detail = 'HTTP ' + response.status;
                     try {
@@ -9827,7 +10036,7 @@ example3@live.com----password3----client_id3----refresh_token3`;
                 }
                 const content = await response.text();
                 if (!content.trim()) {
-                    showNotification('当前没有可导出的账户', 'warning');
+                    showNotification('没有可导出的账户', 'warning');
                     return;
                 }
                 let filename = 'accounts_export.txt';
@@ -9837,22 +10046,268 @@ example3@live.com----password3----client_id3----refresh_token3`;
 
                 const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
                 const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
+                const urlObj = URL.createObjectURL(blob);
+                link.setAttribute('href', urlObj);
                 link.setAttribute('download', filename);
                 link.style.visibility = 'hidden';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-                showNotification(`已导出 ${content.trim().split('\n').length} 个账户`, 'success');
+                URL.revokeObjectURL(urlObj);
+                const count = content.trim().split('\n').length;
+                showNotification(`已导出 ${count} 个${emails && emails.length === 1 ? '' : '账'}户`, 'success');
             } catch (error) {
-                showNotification('导出账户失败: ' + error.message, 'error');
+                showNotification(`${successLabel}失败: ` + error.message, 'error');
             } finally {
-                button.disabled = false;
-                button.innerHTML = originalHtml;
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = originalHtml;
+                }
             }
         }
+
+        // ==================== Token 刷新管理页 ====================
+        let tokenRefreshPollTimer = null;
+
+        function setTokenRefreshRunningUI(running) {
+            const allBtn = document.getElementById('tokenRefreshAllBtn');
+            const stopBtn = document.getElementById('tokenRefreshStopBtn');
+            const retryBtn = document.getElementById('tokenRefreshRetryBtn');
+            const statusEl = document.getElementById('refreshStatRunning');
+            const progressWrap = document.getElementById('tokenRefreshProgressWrap');
+            if (allBtn) allBtn.disabled = running;
+            if (stopBtn) stopBtn.style.display = running ? '' : 'none';
+            if (statusEl) statusEl.textContent = running ? '刷新中...' : '空闲';
+            if (retryBtn) retryBtn.disabled = false; // 按失败数单独控制
+            if (progressWrap) progressWrap.style.display = running ? '' : 'none';
+        }
+
+        function renderTokenRefreshResults() {
+            const filter = document.getElementById('tokenRefreshResultFilter');
+            const searchEl = document.getElementById('tokenRefreshResultSearch');
+            const container = document.getElementById('tokenRefreshResultList');
+            if (!container) return;
+            const filterValue = filter ? filter.value : 'all';
+            const searchText = (searchEl ? searchEl.value : '').trim().toLowerCase();
+
+            // 数据源:运行中优先 health-check state.results;空闲回退已保存的账号健康记录
+            const state = window.__tokenRefreshState || {};
+            const results = state.results || {};
+            let entries;
+            if (state.running || Object.keys(results).length) {
+                entries = Object.keys(results).map(email => {
+                    const rec = results[email] || {};
+                    const status = rec.status || 'unchecked';
+                    return { email, status, summary: rec.summary || '', detail: rec.detail || '', checkedAt: rec.checked_at || '' };
+                });
+            } else {
+                entries = (window.__allAccountsHealth || []).map(h => ({
+                    email: h.email,
+                    status: h.status,
+                    summary: h.summary || '',
+                    detail: h.detail || '',
+                    checkedAt: h.checkedAt || ''
+                }));
+            }
+
+            entries = entries.filter(e => {
+                if (filterValue !== 'all' && e.status !== filterValue) return false;
+                if (searchText && !e.email.toLowerCase().includes(searchText)) return false;
+                return true;
+            });
+
+            if (!entries.length) {
+                container.innerHTML = '<div class="text-center" style="padding:24px; color:#64748b;">没有符合条件的记录。</div>';
+                return;
+            }
+
+            const badgeClass = (status) => {
+                if (status === 'healthy' || status === 'success') return 'refresh-result-badge--success';
+                if (status === 'auth_error' || status === 'error' || status === 'graph_error' || status === 'failed') return 'refresh-result-badge--failed';
+                return 'refresh-result-badge--running';
+            };
+            const badgeText = (status) => {
+                const map = {
+                    healthy: '成功', success: '成功', unchecked: '未检查',
+                    auth_error: '认证失败', graph_error: 'Graph 异常',
+                    config_error: '配置错误', error: '失败', failed: '失败',
+                    running: '刷新中'
+                };
+                return map[status] || status;
+            };
+
+            container.innerHTML = entries.map(e => `
+                <div class="refresh-result-row">
+                    <span class="refresh-result-badge ${badgeClass(e.status)}">${badgeText(e.status)}</span>
+                    <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(e.email)}">${escapeHtml(e.email)}</span>
+                    <span class="text-sm" style="color:#64748b; flex:0 0 auto; max-width:40%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(e.detail || '')}">${escapeHtml(e.summary || e.detail || '')}</span>
+                    <span class="text-sm" style="color:#94a3b8; flex:0 0 auto;">${escapeHtml(e.checkedAt || '')}</span>
+                </div>
+            `).join('');
+        }
+
+        async function loadTokenRefreshSnapshot(showReloadMessage = false) {
+            try {
+                const state = await apiRequest('/accounts/health-check');
+                window.__tokenRefreshState = state;
+                const total = Number(state.total) || 0;
+                const checked = Number(state.checked) || 0;
+                const running = !!state.running;
+                const results = state.results || {};
+
+                // 统计:以 account_health 记录的 status 判定成功/失败
+                let success = 0, failed = 0;
+                Object.keys(results).forEach(email => {
+                    const status = (results[email] || {}).status || '';
+                    if (status === 'healthy') success++;
+                    else if (status === 'auth_error' || status === 'error' || status === 'graph_error' || status === 'config_error') failed++;
+                });
+                // 非 running 时用已保存 health 记录补齐统计
+                if (!running && !Object.keys(results).length) {
+                    const health = await apiRequest('/accounts?page=1&page_size=500');
+                    window.__allAccountsHealth = (health.accounts || []).map(a => ({
+                        email: a.email_id,
+                        status: a.status,
+                        summary: a.health_summary || '',
+                        detail: '',
+                        checkedAt: ''
+                    }));
+                    success = (health.accounts || []).filter(a => a.status === 'healthy').length;
+                    failed = (health.accounts || []).filter(a => ['auth_error', 'error', 'graph_error', 'config_error'].includes(a.status)).length;
+                    document.getElementById('refreshStatTotal').textContent = String(health.total_accounts || 0);
+                }
+
+                document.getElementById('refreshStatTotal').textContent = String(total || Object.keys(window.__allAccountsHealth || {}).length || 0);
+                document.getElementById('refreshStatSuccess').textContent = String(success);
+                document.getElementById('refreshStatFailed').textContent = String(failed);
+                setTokenRefreshRunningUI(running);
+
+                if (running) {
+                    document.getElementById('tokenRefreshProgressText').textContent = `${checked}/${total}`;
+                    const pct = total > 0 ? Math.round(checked / total * 100) : 0;
+                    document.getElementById('tokenRefreshProgressBar').style.width = pct + '%';
+                    scheduleTokenRefreshPoll();
+                } else {
+                    const pct = total > 0 && checked >= total ? 100 : 0;
+                    document.getElementById('tokenRefreshProgressBar').style.width = pct + '%';
+                    document.getElementById('tokenRefreshProgressText').textContent = `${total}/${total}`;
+                    stopTokenRefreshPoll();
+                }
+                renderTokenRefreshResults();
+                renderTokenRefreshRetryBtn();
+                renderTokenRefreshLog(state);
+                if (showReloadMessage) showNotification('Token 刷新状态已更新', 'success');
+            } catch (error) {
+                console.warn('loadTokenRefreshSnapshot failed', error);
+                if (showReloadMessage) showNotification('读取刷新状态失败: ' + error.message, 'error');
+            }
+        }
+
+        function scheduleTokenRefreshPoll() {
+            stopTokenRefreshPoll();
+            tokenRefreshPollTimer = window.setTimeout(() => loadTokenRefreshSnapshot(false), 1200);
+        }
+
+        function stopTokenRefreshPoll() {
+            if (tokenRefreshPollTimer) {
+                window.clearTimeout(tokenRefreshPollTimer);
+                tokenRefreshPollTimer = null;
+            }
+        }
+
+        async function startTokenRefreshAll() {
+            const allBtn = document.getElementById('tokenRefreshAllBtn');
+            if (allBtn) allBtn.disabled = true;
+            try {
+                const state = await apiRequest('/accounts/health-check', { method: 'POST' });
+                if (state && state.running) {
+                    showNotification('Token 全量刷新已启动', 'success');
+                }
+                await loadTokenRefreshSnapshot(false);
+            } catch (error) {
+                showNotification('启动全量刷新失败: ' + error.message, 'error');
+                if (allBtn) allBtn.disabled = false;
+            }
+        }
+
+        async function tokenRefreshRetryFailed() {
+            // 收集失败账号逐个调用单账号刷新
+            const state = window.__tokenRefreshState || {};
+            const results = state.results || {};
+            const failedEmails = Object.keys(results).filter(email => {
+                const s = (results[email] || {}).status || '';
+                return ['auth_error', 'error', 'graph_error', 'config_error'].includes(s);
+            });
+            const health = window.__allAccountsHealth || [];
+            const healthFailed = health.filter(a => ['auth_error', 'error', 'graph_error', 'config_error'].includes(a.status)).map(a => a.email);
+            const targets = [...new Set([...failedEmails, ...healthFailed])];
+
+            if (!targets.length) {
+                showNotification('没有失败的账号需要重试', 'info');
+                return;
+            }
+            const btn = document.getElementById('tokenRefreshRetryBtn');
+            if (btn) btn.disabled = true;
+            showNotification(`开始重试 ${targets.length} 个失败账号...`, 'info');
+            try {
+                for (let i = 0; i < targets.length; i++) {
+                    await apiRequest('/accounts/refresh-one', {
+                        method: 'POST',
+                        body: JSON.stringify({ email: targets[i] })
+                    });
+                    document.getElementById('tokenRefreshProgressText').textContent = `${i + 1}/${targets.length}`;
+                }
+                showNotification(`重试完成: ${targets.length} 个账号`, 'success');
+            } catch (error) {
+                showNotification('重试失败: ' + error.message, 'error');
+            } finally {
+                if (btn) btn.disabled = false;
+                await loadTokenRefreshSnapshot(false);
+            }
+        }
+
+        async function tokenRefreshStop() {
+            // 目标项目健康检查任务无停止接口,提示用户(任务自然短)
+            showNotification('后台刷新任务无法中途停止(每账号刷新通常数秒),请稍候', 'warning');
+        }
+
+        function renderTokenRefreshRetryBtn() {
+            const state = window.__tokenRefreshState || {};
+            const results = state.results || {};
+            const health = window.__allAccountsHealth || [];
+            const failedCount = Object.keys(results).filter(e => ['auth_error', 'error', 'graph_error', 'config_error'].includes((results[e] || {}).status || '')).length
+                + health.filter(a => ['auth_error', 'error', 'graph_error', 'config_error'].includes(a.status)).length;
+            const btn = document.getElementById('tokenRefreshRetryBtn');
+            if (btn) {
+                btn.disabled = failedCount === 0;
+                btn.textContent = `重试失败${failedCount ? ` (${failedCount})` : ''}`;
+            }
+        }
+
+        function renderTokenRefreshLog(state) {
+            const section = document.getElementById('tokenRefreshLogSection');
+            if (!section) return;
+            if (!state || (!state.started_at && !state.completed_at)) {
+                section.style.display = 'none';
+                return;
+            }
+            section.style.display = '';
+            const timeEl = document.getElementById('tokenRefreshLogTime');
+            const summaryEl = document.getElementById('tokenRefreshLogSummary');
+            if (timeEl) {
+                const when = state.completed_at || state.started_at || '';
+                timeEl.textContent = when ? ('时间: ' + when.replace('T', ' ').slice(0, 19)) : '';
+            }
+            if (summaryEl) {
+                const total = Number(state.total) || 0;
+                const checked = Number(state.checked) || 0;
+                const running = !!state.running;
+                summaryEl.textContent = running
+                    ? `正在执行: 已处理 ${checked}/${total} 个账号...`
+                    : (total > 0 ? `上次任务完成: 共 ${total} 个账号` : (state.error ? '任务异常: ' + state.error : ''));
+            }
+        }
+        // ==================== /Token 刷新管理页 ====================
 
         function renderAccountsList() {
             const accountsList = document.getElementById('accountsList');
@@ -9907,6 +10362,14 @@ example3@live.com----password3----client_id3----refresh_token3`;
                             <button class="btn btn-secondary btn-sm" onclick="editAccountTags('${account.email_id}')">
                                 <span></span>
                                 管理分类
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="exportSingleAccount('${account.email_id}')" title="导出此账号(邮箱----密码----client_id----refresh_token)">
+                                <span></span>
+                                导出
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="refreshSingleAccount('${account.email_id}')" title="立即刷新此账号的 Refresh Token 并回存轮换结果">
+                                <span></span>
+                                刷新 Token
                             </button>
                             <button class="btn btn-danger btn-sm" onclick="deleteAccount('${account.email_id}')">
                                 <span></span>
@@ -12809,6 +13272,20 @@ Authorization: Bearer om_your_api_key
         function contextDeleteAccount() {
             if (contextMenuTarget) {
                 deleteAccount(contextMenuTarget);
+            }
+            hideContextMenu();
+        }
+
+        function contextExportAccount() {
+            if (contextMenuTarget) {
+                exportSingleAccount(contextMenuTarget);
+            }
+            hideContextMenu();
+        }
+
+        function contextRefreshAccountToken() {
+            if (contextMenuTarget) {
+                refreshSingleAccount(contextMenuTarget);
             }
             hideContextMenu();
         }

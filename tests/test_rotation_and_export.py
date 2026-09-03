@@ -259,3 +259,67 @@ def test_export_reimportable_four_segments(_isolated):
     assert password == "password-not-stored"
     assert client_id == "9e5f94bc-e8a4-4e73-b8be-63364c29d753"
     assert rt == "M.REAL_TOKEN_DATA_ABC"
+
+
+# ---------------- 选中/单账号导出 + 单账号刷新 (P2-4 扩展) ----------------
+
+@pytest.fixture()
+def _two_accounts(_isolated):
+    import main as M
+    from fastapi.testclient import TestClient
+
+    M._write_json_file(M.ACCOUNTS_FILE, {
+        "alice@outlook.com": {
+            "refresh_token": "RT_ALICE", "client_id": "9e5f94bc-e8a4-4e73-b8be-63364c29d753",
+            "auth_method": "imap", "category_key": None, "tag_keys": [],
+        },
+        "bob@outlook.com": {
+            "refresh_token": "RT_BOB", "client_id": "11111111-2222-3333-4444-555555555555",
+            "auth_method": "imap", "category_key": None, "tag_keys": [],
+        },
+    })
+    raw = _auth_setup()
+    client = TestClient(M.app)
+    client.cookies.set(M.SESSION_COOKIE, raw)
+    return client
+
+
+def test_export_single(_two_accounts):
+    client = _two_accounts
+    r = client.get("/accounts/export", params={"emails": "alice@outlook.com"})
+    assert r.status_code == 200
+    lines = [l for l in r.text.strip().split("\n") if l]
+    assert len(lines) == 1 and lines[0].startswith("alice@outlook.com")
+
+
+def test_export_selected(_two_accounts):
+    client = _two_accounts
+    r = client.get("/accounts/export", params={"emails": "alice@outlook.com,bob@outlook.com"})
+    assert r.status_code == 200
+    lines = [l for l in r.text.strip().split("\n") if l]
+    assert len(lines) == 2
+
+
+def test_export_unknown_email_404(_two_accounts):
+    client = _two_accounts
+    r = client.get("/accounts/export", params={"emails": "ghost@outlook.com"})
+    assert r.status_code == 404
+
+
+def test_export_all_still_works(_two_accounts):
+    client = _two_accounts
+    r = client.get("/accounts/export")
+    assert r.status_code == 200
+    assert len([l for l in r.text.strip().split("\n") if l]) == 2
+
+
+def test_refresh_one_missing_email_400(_two_accounts):
+    client = _two_accounts
+    r = client.post("/accounts/refresh-one", json={})
+    assert r.status_code == 400
+
+
+def test_refresh_one_unknown_email_404(_two_accounts):
+    client = _two_accounts
+    r = client.post("/accounts/refresh-one", json={"email": "ghost@outlook.com"})
+    assert r.status_code == 404
