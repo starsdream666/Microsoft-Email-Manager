@@ -323,3 +323,78 @@ def test_refresh_one_unknown_email_404(_two_accounts):
     client = _two_accounts
     r = client.post("/accounts/refresh-one", json={"email": "ghost@outlook.com"})
     assert r.status_code == 404
+
+
+# ---------------- 单封邮件 .eml 下载 ----------------
+
+def _seed_one_account(_isolated, auth_method="imap"):
+    import main as M
+    from fastapi.testclient import TestClient
+
+    M._write_json_file(M.ACCOUNTS_FILE, {
+        "mail@outlook.com": {
+            "refresh_token": "RT_MAIL", "client_id": "9e5f94bc-e8a4-4e73-b8be-63364c29d753",
+            "auth_method": auth_method, "category_key": None, "tag_keys": [],
+        }
+    })
+    raw = _auth_setup()
+    client = TestClient(M.app)
+    client.cookies.set(M.SESSION_COOKIE, raw)
+    return client, M
+
+
+def test_eml_download_requires_auth(_isolated):
+    client, M = _seed_one_account(_isolated)
+    from fastapi.testclient import TestClient
+    anon = TestClient(M.app)
+    r = anon.get("/emails/mail@outlook.com/INBOX-123/download")
+    assert r.status_code == 401
+
+
+def test_eml_filename_sanitizer():
+    import main as M
+
+    assert M._build_eml_filename('你好/世界:测试?').endswith('.eml')
+    assert '/' not in M._build_eml_filename('a/b')
+    assert ':' not in M._build_eml_filename('a:b')
+    assert M._build_eml_filename('') == 'email.eml'
+
+
+def test_eml_download_imap_unknown_account_404(_isolated):
+    client, _ = _seed_one_account(_isolated)
+    r = client.get("/emails/ghost@outlook.com/INBOX-1/download")
+    assert r.status_code == 404
+
+
+def test_eml_download_graph_mock(_isolated, monkeypatch):
+    """Graph 通道:mock $value 端点返回 MIME 字节,验证响应为 message/rfc822 附件。"""
+    import main as M
+
+    client, M = _seed_one_account(_isolated, auth_method="graph")
+
+    captured = {}
+
+    async def fake_get_access_token(credentials):
+        return "FAKE_AT"
+
+    async def fake_download_graph_eml_bytes(credentials, graph_message_id):
+        captured["gid"] = graph_message_id
+        return b"From: a@b.com\r\nSubject: Test\r\n\r\nBody"
+
+    monkeypatch.setattr(M, "get_access_token", fake_get_access_token)
+    monkeypatch.setattr(M, "_download_graph_eml_bytes", fake_download_graph_eml_bytes)
+
+    # message_id 格式 graph:folder:graphid
+    r = client.get("/emails/mail@outlook.com/graph%3Ainbox%3AABC123/download")
+    assert r.status_code == 200
+    assert r.headers.get("content-type", "").startswith("message/rfc822")
+    assert "attachment" in r.headers.get("content-disposition", "")
+    assert ".eml" in r.headers.get("content-disposition", "")
+    assert r.content == b"From: a@b.com\r\nSubject: Test\r\n\r\nBody"
+    assert captured["gid"] == "ABC123"
+
+
+def test_eml_download_invalid_graph_id(_isolated):
+    client, _ = _seed_one_account(_isolated, auth_method="graph")
+    r = client.get("/emails/mail@outlook.com/badformat/download")
+    assert r.status_code == 400

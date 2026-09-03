@@ -7364,6 +7364,7 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
             delete: '<svg viewBox="0 0 24 24"><path d="M4 7h16"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M6 7l1 13h10l1-13"></path><path d="M9 7V4h6v3"></path></svg>',
             refresh: '<svg viewBox="0 0 24 24"><path d="M21 2v6h-6"></path><path d="M3 22v-6h6"></path><path d="M20 8a9 9 0 0 0-15.5-3.5L3 8"></path><path d="M4 16a9 9 0 0 0 15.5 3.5L21 16"></path></svg>',
             export: '<svg viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>',
+            download: '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>',
             health: '<svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 4 10 2-5h6"></path><path d="M2 12c0-4.5 3.2-8 7.5-8 2.1 0 3.6.9 4.5 2 0.9-1.1 2.4-2 4.5-2C21.8 4 25 7.5 25 12"></path></svg>',
             tags: '<svg viewBox="0 0 24 24"><path d="M20.59 13.41L11 3H4v7l9.59 9.59a2 2 0 0 0 2.82 0l4.18-4.18a2 2 0 0 0 0-2.82z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg>',
             docs: '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h5"></path></svg>',
@@ -12636,6 +12637,10 @@ Authorization: Bearer om_your_api_key
             const codeChip = code
                 ? `<button class="email-code-chip" type="button" title="复制验证码" onclick="copyVerificationCode('${escapeHtml(code)}', event)"><span class="code-val">${escapeHtml(code)}</span>${UI_ICONS.copy}</button>`
                 : '';
+            const downloadBtn = `
+                <button class="email-code-chip email-download-chip" type="button" title="下载此邮件 .eml" onclick="downloadEmailEml('${escapeHtml(email.message_id || '')}', event)">
+                    <span class="code-val">下载</span>${UI_ICONS.download}
+                </button>`;
 
             return `
                 <div class="email-item ${unreadClass}" data-message-id="${escapeHtml(email.message_id || '')}" onclick="showEmailDetail('${email.message_id}')">
@@ -12648,6 +12653,7 @@ Authorization: Bearer om_your_api_key
                         <div class="email-from">${readIcon} ${escapeHtml(sender.email)} ${attachmentIcon}</div>
                         <div class="email-preview">文件夹: ${escapeHtml(email.folder)} | 点击查看详情</div>
                     </div>
+                    ${downloadBtn}
                     ${codeChip}
                 </div>
             `;
@@ -12676,6 +12682,12 @@ Authorization: Bearer om_your_api_key
                 document.getElementById('emailModalTitle').textContent = data.subject || '(无主题)';
                 document.getElementById('emailModalContent').innerHTML = `
                     ${codeBanner}
+                    <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+                        <button class="btn btn-secondary btn-sm" type="button" onclick="downloadEmailEml('${escapeHtml(data.message_id)}')" title="下载此邮件的 .eml 原始文件">
+                            <span></span>
+                            下载 .eml
+                        </button>
+                    </div>
                     <div class="email-detail-hero">
                         ${renderSenderAvatar(sender.initial, senderLogoUrl, 'email-detail-avatar', data.sender_avatar_url)}
                         <div class="email-detail-hero-copy">
@@ -12707,6 +12719,50 @@ Authorization: Bearer om_your_api_key
 
             } catch (error) {
                 document.getElementById('emailModalContent').innerHTML = '<div class="error">加载失败: ' + error.message + '</div>';
+            }
+        }
+
+        // 下载单封邮件为 .eml 原始文件
+        async function downloadEmailEml(messageId, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            if (!messageId || !currentAccount) return;
+            try {
+                const response = await fetch(
+                    API_BASE + '/emails/' + encodeURIComponent(currentAccount) + '/' + encodeURIComponent(messageId) + '/download',
+                    { credentials: 'same-origin' }
+                );
+                if (!response.ok) {
+                    let detail = 'HTTP ' + response.status;
+                    try {
+                        const errData = await response.json();
+                        detail = errData.detail || detail;
+                    } catch (_e) { /* 非 JSON */ }
+                    if (response.status === 401 || response.status === 403) {
+                        await initializeAuthFlow('登录状态已失效，请重新登录');
+                    }
+                    throw new Error(detail);
+                }
+                const blob = await response.blob();
+                let filename = 'email.eml';
+                const disposition = response.headers.get('Content-Disposition') || '';
+                const match = disposition.match(/filename="?([^";]+)"?/);
+                if (match) filename = match[1];
+
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                showNotification('邮件已下载: ' + filename, 'success');
+            } catch (error) {
+                showNotification('下载邮件失败: ' + error.message, 'error');
             }
         }
 

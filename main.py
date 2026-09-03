@@ -3549,6 +3549,99 @@ async def get_email_details(credentials: AccountCredentials, message_id: str) ->
 
 
 # ============================================================================
+# 单封邮件下载(.eml 原始邮件)
+# ============================================================================
+
+def _build_eml_filename(subject: str, fallback: str = "email") -> str:
+    """由邮件主题生成安全的 .eml 文件名。"""
+    raw = decode_header_value(subject or "")
+    raw = re.sub(r'[\\/:*?"<>|\r\n\t]+', "_", raw).strip(" ._")
+    raw = raw[:80] or fallback
+    return f"{raw}.eml"
+
+
+async def _download_graph_eml_bytes(credentials: AccountCredentials, graph_message_id: str) -> bytes:
+    """通过 Graph $value 端点获取原始 MIME(RFC 822)字节。"""
+    access_token = await get_access_token(credentials)
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.get(
+                f"{GRAPH_API_BASE_URL}/me/messages/{quote(graph_message_id, safe='')}/$value",
+                headers=build_graph_headers(access_token),
+            )
+            if response.status_code == 404:
+                raise HTTPException(status_code=404, detail="Email not found")
+            response.raise_for_status()
+            return response.content
+    except httpx.HTTPStatusError as e:
+        detail = extract_graph_error_detail(e.response)
+        logger.error("Graph $value HTTP %s for message %s: %s", e.response.status_code, graph_message_id, detail)
+        if e.response.status_code in {401, 403}:
+            raise HTTPException(status_code=401, detail=detail)
+        raise HTTPException(status_code=500, detail=detail or "Failed to download email")
+    except httpx.RequestError as e:
+        logger.error(f"Graph $value request error for message {graph_message_id}: {e}")
+        raise HTTPException(status_code=500, detail="Network error during email download")
+
+
+def _download_imap_eml_sync(credentials: AccountCredentials, access_token: str,
+                            folder_name: str, msg_id: str) -> tuple[bytes, str]:
+    """同步 IMAP 下载原始邮件;返回 (mime_bytes, subject)。"""
+    imap_client = None
+    try:
+        imap_client = imap_pool.get_connection(credentials.email, access_token)
+        imap_client.select(folder_name)
+        status, msg_data = imap_client.fetch(msg_id, '(RFC822)')
+        if status != 'OK' or not msg_data or not msg_data[0]:
+            raise HTTPException(status_code=404, detail="Email not found")
+        raw_email = msg_data[0][1]
+        msg = email.message_from_bytes(raw_email)
+        subject = decode_header_value(msg.get('Subject', ''))
+        return raw_email, subject
+    finally:
+        if imap_client is not None:
+            try:
+                if hasattr(imap_client, 'state') and imap_client.state != 'LOGOUT':
+                    imap_pool.return_connection(credentials.email, imap_client)
+            except Exception:
+                pass
+
+
+async def download_email_eml(credentials: AccountCredentials, message_id: str) -> tuple[bytes, str]:
+    """下载单封邮件为 .eml 原始文件;返回 (mime_bytes, 建议文件名)。
+
+    支持两种授权通道:
+    - Graph: 通过 /me/messages/{id}/$value 获取 RFC 822 原始消息
+    - IMAP: 直接 fetch RFC822
+    """
+    if normalize_account_auth_method(credentials.auth_method) == "graph":
+        parsed = parse_graph_message_id(message_id)
+        if not parsed:
+            raise HTTPException(status_code=400, detail="Invalid Graph message_id format")
+        _folder_name, graph_message_id = parsed
+        raw_bytes = await _download_graph_eml_bytes(credentials, graph_message_id)
+        # 尝试解析 subject 用于文件名
+        subject = ""
+        try:
+            msg = email.message_from_bytes(raw_bytes)
+            subject = decode_header_value(msg.get('Subject', ''))
+        except Exception:
+            pass
+        return raw_bytes, _build_eml_filename(subject)
+
+    # IMAP:message_id 形如 folder-msgid
+    try:
+        folder_name, msg_id = message_id.split('-', 1)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid message_id format")
+    access_token = await get_access_token(credentials)
+    raw_bytes, subject = await asyncio.to_thread(
+        _download_imap_eml_sync, credentials, access_token, folder_name, msg_id
+    )
+    return raw_bytes, _build_eml_filename(subject)
+
+
+# ============================================================================
 # FastAPI应用和API端点
 # ============================================================================
 
@@ -4472,6 +4565,21 @@ async def get_email_detail(email_id: str, message_id: str, request: Request):
     """获取邮件详细内容"""
     credentials = await get_account_credentials(email_id)
     return await get_email_details(credentials, message_id)
+
+
+@app.get("/emails/{email_id}/{message_id}/download")
+async def download_email(email_id: str, message_id: str, request: Request):
+    """下载单封邮件为 .eml 原始邮件文件(RFC 822 / MIME)。"""
+    require_authenticated(request, allow_api_key=True)
+    credentials = await get_account_credentials(email_id)
+    eml_bytes, filename = await download_email_eml(credentials, message_id)
+    if not eml_bytes:
+        raise HTTPException(status_code=404, detail="Email content unavailable")
+    return Response(
+        content=eml_bytes,
+        media_type="message/rfc822",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.put("/emails/{email_id}/{message_id}/tags", response_model=EmailTagUpdateResponse)
