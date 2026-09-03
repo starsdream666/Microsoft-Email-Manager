@@ -4,8 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Microsoft-Email-Manager</title>
-    <link rel="icon" type="image/png" href="/static/assets/logo.png?v=20260406">
-    <link rel="shortcut icon" type="image/png" href="/static/assets/logo.png?v=20260406">
+    <link rel="icon" type="image/svg+xml" href="/static/assets/logo-black.svg?v=20260626">
+    <link rel="shortcut icon" type="image/svg+xml" href="/static/assets/logo-black.svg?v=20260626">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        // 首屏即应用主题，避免浅/深切换闪烁（对齐桌面版 theme.svelte.ts）
+        (function () {
+            try {
+                var saved = localStorage.getItem('mem.theme') || 'system';
+                var dark = saved === 'dark' || (saved === 'system' &&
+                    window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+            } catch (e) { /* ignore */ }
+        })();
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1758,68 +1772,155 @@
             }
         }
 
+        /* ============================================================
+           设计系统（对齐桌面版 DESIGN.md / app.css，Vercel 风，浅/深双主题）
+           token 在 :root（浅色，默认）声明，深色在 :root[data-theme="dark"] 覆盖。
+           旧 --ui-* 变量保留为别名指向新 token，使既有样式整体换肤。
+           ============================================================ */
         :root {
-            --ui-bg: #eef2f7;
-            --ui-bg-deep: #dfe7f1;
-            --ui-surface: rgba(255, 255, 255, 0.86);
-            --ui-surface-strong: #ffffff;
+            /* 圆角 */
+            --r-xs: 4px; --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px;
+            --r-pill: 100px; --r-full: 9999px;
+            /* 间距（4px 基） */
+            --s-xxs: 4px; --s-xs: 8px; --s-sm: 12px; --s-md: 16px; --s-lg: 24px;
+            --s-xl: 32px; --s-2xl: 40px; --s-3xl: 48px; --s-4xl: 64px;
+            /* 字体 */
+            --font-sans: "Inter", "Geist", system-ui, -apple-system, "Segoe UI",
+                "PingFang SC", "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: "JetBrains Mono", "Geist Mono", ui-monospace, SFMono-Regular,
+                Menlo, Monaco, Consolas, monospace;
+            /* 品牌渐变 */
+            --grad-develop: linear-gradient(90deg, #007cf0, #00dfd8);
+            --grad-preview: linear-gradient(90deg, #7928ca, #ff0080);
+            --grad-ship: linear-gradient(90deg, #ff4d4d, #f9cb28);
+            --grad-mesh: linear-gradient(110deg, #007cf0 0%, #00dfd8 30%, #7928ca 55%, #ff0080 80%, #f9cb28 100%);
+
+            /* ===== 浅色（默认） ===== */
+            --canvas: #ffffff;
+            --canvas-soft: #fafafa;
+            --canvas-soft-2: #f5f5f5;
+            --hairline: #ebebeb;
+            --hairline-strong: #a1a1a1;
+            --ink: #171717;
+            --body: #4d4d4d;
+            --mute: #888888;
+            --primary: #171717;
+            --on-primary: #ffffff;
+            --link: #0070f3;
+            --link-deep: #0761d1;
+            --link-bg-soft: #d3e5ff;
+            --success: #0a7d3e;
+            --success-soft: #d6f5e3;
+            --error: #ee0000;
+            --error-soft: #f7d4d6;
+            --error-deep: #c50000;
+            --warning: #ab570a;
+            --warning-soft: #ffefcf;
+            --warning-deep: #ab570a;
+            --cyan: #50e3c2;
+            --violet: #7928ca;
+            --focus-ring: #17171714;
+            --logo-invert: 0; /* 浅色用黑 logo */
+
+            --shadow-1: 0 0 0 1px #0000000f inset;
+            --shadow-2: 0px 1px 1px #00000005, 0px 2px 2px #0000000a, 0 0 0 1px #0000000f inset;
+            --shadow-3: 0px 2px 2px #0000000a, 0px 8px 8px -8px #0000000a, 0 0 0 1px #0000000f inset;
+            --shadow-4: 0px 2px 2px #0000000a, 0px 8px 16px -4px #0000000a, 0 0 0 1px #0000000f inset;
+            --shadow-5: 0px 1px 1px #00000005, 0px 8px 16px -4px #0000000a, 0px 24px 32px -8px #0000000f, 0 0 0 1px #0000000f inset;
+
+            color-scheme: light;
+
+            /* ===== 旧 --ui-* 别名 → 新 token（整体换肤） ===== */
+            --ui-bg: var(--canvas-soft);
+            --ui-bg-deep: var(--canvas-soft-2);
+            --ui-surface: var(--canvas);
+            --ui-surface-strong: var(--canvas);
             --ui-surface-dark: linear-gradient(180deg, #0f172a 0%, #162033 52%, #1b2941 100%);
-            --ui-line: rgba(148, 163, 184, 0.18);
-            --ui-line-strong: rgba(148, 163, 184, 0.28);
-            --ui-text: #0f172a;
-            --ui-text-soft: #64748b;
-            --ui-brand: #2563eb;
-            --ui-brand-strong: #1d4ed8;
-            --ui-brand-soft: rgba(37, 99, 235, 0.14);
-            --ui-success: #0f9f6e;
-            --ui-danger: #dc2626;
-            --ui-warning: #d97706;
-            --ui-shadow: 0 24px 50px rgba(15, 23, 42, 0.08);
-            --ui-shadow-soft: 0 12px 28px rgba(15, 23, 42, 0.06);
-            --ui-radius: 22px;
-            --ui-radius-sm: 14px;
+            --ui-line: var(--hairline);
+            --ui-line-strong: var(--hairline-strong);
+            --ui-text: var(--ink);
+            --ui-text-soft: var(--body);
+            --ui-brand: var(--primary);
+            --ui-brand-strong: var(--primary);
+            --ui-brand-soft: var(--canvas-soft-2);
+            --ui-success: var(--success);
+            --ui-danger: var(--error);
+            --ui-warning: var(--warning-deep);
+            --ui-shadow: var(--shadow-4);
+            --ui-shadow-soft: var(--shadow-2);
+            --ui-radius: var(--r-lg);
+            --ui-radius-sm: var(--r-md);
+        }
+
+        /* ===== 深色 ===== */
+        :root[data-theme="dark"] {
+            --canvas: #171a21;
+            --canvas-soft: #0f1115;
+            --canvas-soft-2: #1f232c;
+            --hairline: #2a2f3a;
+            --hairline-strong: #3a4150;
+            --ink: #e6e9ef;
+            --body: #b3bccb;
+            --mute: #8a93a3;
+            --primary: #e6e9ef; /* 极性翻转：近白 CTA + 深字 */
+            --on-primary: #0f1115;
+            --link: #4a9eff;
+            --link-deep: #3b82f6;
+            --link-bg-soft: #15314f;
+            --success: #7ee2a0;
+            --success-soft: #16331f;
+            --error: #f85149;
+            --error-soft: #3a1d1d;
+            --error-deep: #ff6b66;
+            --warning: #f5c451;
+            --warning-soft: #352a12;
+            --warning-deep: #f5c451;
+            --cyan: #50e3c2;
+            --violet: #a371f7;
+            --focus-ring: #ffffff22;
+            --logo-invert: 1; /* 深色用白 logo（对黑 logo 取反） */
+
+            --shadow-1: 0 0 0 1px #ffffff14 inset;
+            --shadow-2: 0px 1px 2px #00000040, 0 0 0 1px #ffffff12 inset;
+            --shadow-3: 0px 2px 10px #00000050, 0 0 0 1px #ffffff12 inset;
+            --shadow-4: 0px 8px 24px #00000060, 0 0 0 1px #ffffff12 inset;
+            --shadow-5: 0px 16px 40px #00000070, 0 0 0 1px #ffffff14 inset;
+
+            color-scheme: dark;
         }
 
         body {
-            font-family: "IBM Plex Sans", "Segoe UI Variable", "Segoe UI", "PingFang SC", "Microsoft YaHei UI", sans-serif;
-            color: var(--ui-text);
-            background:
-                radial-gradient(circle at top left, rgba(59, 130, 246, 0.14), transparent 30%),
-                radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 22%),
-                linear-gradient(180deg, #f7f9fc 0%, var(--ui-bg) 100%);
+            font-family: var(--font-sans);
+            color: var(--ink);
+            background: var(--canvas-soft);
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+            transition: background 0.2s, color 0.2s;
         }
 
         body::before {
-            content: "";
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            background-image:
-                linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
-            background-size: 32px 32px;
-            mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 90%);
-            z-index: -1;
+            content: none;
         }
 
         .app-container {
             min-height: 100vh;
-            gap: 24px;
-            padding: 24px;
+            gap: 0;
+            padding: 0;
             align-items: stretch;
         }
 
         .sidebar {
-            width: 288px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: var(--ui-surface-dark);
-            border-radius: 28px;
-            box-shadow: 0 28px 60px rgba(15, 23, 42, 0.24);
+            width: 224px;
+            border: none;
+            border-right: 1px solid var(--hairline);
+            background: var(--canvas);
+            border-radius: 0;
+            box-shadow: none;
             position: fixed;
-            top: 24px;
-            left: 24px;
-            height: calc(100vh - 48px);
+            top: 0;
+            left: 0;
+            height: 100vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -1827,13 +1928,7 @@
         }
 
         .sidebar::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(circle at top, rgba(96, 165, 250, 0.22), transparent 34%),
-                linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 18%);
-            pointer-events: none;
+            content: none;
         }
 
         .sidebar-header {
@@ -2285,15 +2380,15 @@
 
         .main-content {
             min-width: 0;
-            border-radius: 30px;
-            margin-left: 312px;
-            width: calc(100% - 312px);
+            border-radius: 0;
+            margin-left: 224px;
+            width: calc(100% - 224px);
             transition: margin-left 0.24s ease, width 0.24s ease;
         }
 
         .sidebar.is-collapsed + .main-content {
-            margin-left: 110px;
-            width: calc(100% - 110px);
+            margin-left: 104px;
+            width: calc(100% - 104px);
         }
 
         .main-header {
@@ -5055,6 +5150,298 @@
                 padding: 0;
             }
         }
+
+        /* ============================================================
+           DESKTOP SKIN — 对齐桌面版（Vercel 风）。本块位于样式末尾，
+           以来源顺序覆盖前面的旧组件样式；引用 §设计系统 的 token。
+           ============================================================ */
+        ::selection { background: var(--ink); color: var(--canvas); }
+        a { color: var(--link); }
+
+        .main-body { background: var(--canvas-soft); }
+        .main-content h1, .main-content h2, .main-content h3,
+        .main-content h4 { color: var(--ink); }
+
+        /* ---- 侧栏（浅色 flat） ---- */
+        .sidebar-header { border-bottom: 1px solid var(--hairline); padding: var(--s-md) var(--s-sm) var(--s-sm); }
+        .sidebar-title-stack h1 { color: var(--ink); font-size: 1rem; letter-spacing: -0.01em; }
+        .sidebar-header p { color: var(--body); }
+        .sidebar-logo-image { filter: invert(var(--logo-invert)); }
+        .sidebar .brand-mark { color: var(--ink); }
+        .sidebar-nav { padding: var(--s-xs) 0; }
+        .sidebar .nav-item {
+            position: relative; color: var(--body); border-radius: var(--r-sm);
+            margin: 1px var(--s-xs); padding: 9px var(--s-sm); width: auto;
+            font-weight: 500; font-size: 0.875rem;
+        }
+        .sidebar .nav-item:hover { background: var(--canvas-soft-2); color: var(--ink); }
+        .sidebar .nav-item.active { background: var(--canvas-soft); color: var(--ink); }
+        .sidebar .nav-item.active::before {
+            content: ""; position: absolute; left: 0; top: 9px; bottom: 9px;
+            width: 3px; border-radius: var(--r-full); background: var(--ink);
+        }
+        .sidebar-footer { border-top: 1px solid var(--hairline); }
+        .sidebar-footer-divider { background: var(--hairline); }
+        .sidebar-toggle, .sidebar-utility { color: var(--body); }
+        .sidebar-toggle:hover, .sidebar-utility:hover { background: var(--canvas-soft-2); color: var(--ink); }
+        .sidebar-logout { color: var(--body); }
+        .sidebar-logout:hover { color: var(--error); background: var(--error-soft); }
+        .sidebar-utility-label { color: inherit; }
+        /* 主题切换 */
+        .theme-toggle { color: var(--body); }
+        .theme-toggle:hover { background: var(--canvas-soft-2); color: var(--ink); }
+
+        /* ---- 按钮 ---- */
+        .btn {
+            background: var(--canvas); border: 1px solid var(--hairline); color: var(--ink);
+            border-radius: var(--r-sm); font-weight: 500; box-shadow: none;
+        }
+        .btn:hover { background: var(--canvas-soft); border-color: var(--hairline-strong); }
+        .btn-primary, .pagination .page-number.active {
+            background: var(--primary); border-color: var(--primary); color: var(--on-primary);
+        }
+        .btn-primary:hover { background: var(--primary); border-color: var(--primary); filter: brightness(1.15); }
+        .btn-secondary { background: var(--canvas); color: var(--ink); border-color: var(--hairline); }
+        .btn-secondary:hover { background: var(--canvas-soft); border-color: var(--hairline-strong); }
+        .btn-danger { background: var(--canvas); color: var(--error); border-color: var(--error-soft); }
+        .btn-danger:hover { background: var(--error-soft); border-color: var(--error); color: var(--error-deep); }
+        .btn:disabled { opacity: 0.45; }
+
+        /* ---- 表单 ---- */
+        input, select, textarea, .form-input, .filter-select, .search-input {
+            background: var(--canvas); border: 1px solid var(--hairline); color: var(--ink);
+            border-radius: var(--r-sm);
+        }
+        input::placeholder, textarea::placeholder, .form-input::placeholder, .search-input::placeholder { color: var(--mute); }
+        input:focus, select:focus, textarea:focus,
+        .form-input:focus, .filter-select:focus, .search-input:focus {
+            outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+
+        /* ---- 卡片 / 容器 ---- */
+        .card {
+            background: var(--canvas); border: 1px solid var(--hairline);
+            border-radius: var(--r-lg); box-shadow: var(--shadow-2);
+        }
+
+        /* ---- 统计卡 ---- */
+        .stat-item {
+            background: var(--canvas); border: 1px solid var(--hairline);
+            border-radius: var(--r-lg); box-shadow: var(--shadow-1);
+        }
+        .stat-value { color: var(--ink); }
+        .stat-label { color: var(--mute); }
+
+        /* ---- 文件夹 tab ---- */
+        .tab { background: var(--canvas); border: 1px solid var(--hairline); color: var(--ink); border-radius: var(--r-sm); }
+        .tab:hover { background: var(--canvas-soft); border-color: var(--hairline-strong); }
+        .tab.active { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+
+        /* ---- 账户/邮件行 ---- */
+        .account-item {
+            background: var(--canvas); border: 1px solid var(--hairline);
+            border-radius: var(--r-lg); box-shadow: var(--shadow-1); transition: box-shadow 0.15s;
+        }
+        .account-item:hover { box-shadow: var(--shadow-3); }
+        .account-avatar, .email-avatar {
+            background: var(--canvas-soft-2); color: var(--ink); border-radius: var(--r-md); overflow: hidden;
+        }
+        .email-avatar.has-avatar { background: #fff; box-shadow: 0 0 0 1px var(--hairline) inset; }
+        .email-avatar.has-avatar img { width: 100%; height: 100%; object-fit: contain; padding: 5px; display: block; border-radius: var(--r-sm); }
+        .email-list { background: transparent; }
+        .email-item { background: transparent; border: 1px solid transparent; border-radius: var(--r-md); }
+        .email-item:hover { background: var(--canvas-soft); border-color: var(--hairline); }
+        .email-item.unread { border-left: 3px solid var(--link); }
+        .email-subject { color: var(--ink); }
+        .email-from, .email-from-text { color: var(--body); }
+        .email-date, .email-preview { color: var(--mute); }
+
+        /* ---- 验证码胶囊（列表行） ---- */
+        .email-code-chip {
+            align-self: center; flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
+            height: 30px; padding: 0 10px; border-radius: var(--r-full); cursor: pointer;
+            background: var(--link-bg-soft); border: 1px solid transparent; color: var(--link-deep);
+        }
+        .email-code-chip:hover { border-color: var(--link); }
+        .email-code-chip .code-val { font-family: var(--font-mono); font-weight: 700; letter-spacing: 1px; font-size: 13px; }
+        /* ---- 验证码横幅（详情） ---- */
+        .code-banner {
+            display: flex; align-items: center; gap: var(--s-sm); padding: var(--s-sm) var(--s-md);
+            background: var(--link-bg-soft); border-radius: var(--r-md); margin-bottom: var(--s-sm);
+        }
+        .code-banner .cb-label { font-size: 12px; color: var(--link-deep); white-space: nowrap; }
+        .code-banner .cb-code { flex: 1; font-family: var(--font-mono); font-size: 20px; font-weight: 700; letter-spacing: 2px; color: var(--ink); }
+
+        /* ---- 模态 ---- */
+        .modal-content { background: var(--canvas); border: 1px solid var(--hairline); border-radius: var(--r-xl); box-shadow: var(--shadow-5); }
+        .modal-header { border-bottom: 1px solid var(--hairline); }
+        .modal-header h3 { color: var(--ink); }
+        .modal-close { color: var(--mute); }
+        .modal-close:hover { color: var(--ink); }
+        .modal-footer { border-top: 1px solid var(--hairline); }
+
+        /* ---- 通知 ---- */
+        .notification { background: var(--canvas); color: var(--ink); border-radius: var(--r-md); box-shadow: var(--shadow-4); }
+        .notification.success { box-shadow: var(--shadow-4), 0 0 0 1px var(--success) inset; }
+        .notification.error { box-shadow: var(--shadow-4), 0 0 0 1px var(--error) inset; }
+        .notification.warning { box-shadow: var(--shadow-4), 0 0 0 1px var(--warning) inset; }
+        .notification-title { color: var(--ink); }
+        .notification-message { color: var(--body); }
+
+        /* ---- 分页 ---- */
+        .pagination .page-number { background: var(--canvas); border: 1px solid var(--hairline); color: var(--ink); }
+        .pagination .page-number:hover { background: var(--canvas-soft); border-color: var(--hairline-strong); }
+        .pagination .page-number.disabled { color: var(--mute); }
+
+        /* ---- 加载 ---- */
+        .loading { color: var(--body); }
+        .loading-spinner { border-color: var(--hairline); border-top-color: var(--ink); }
+
+        /* ---- 徽章 / 药丸（分类·标签展示，对齐桌面版） ---- */
+        .badge {
+            display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+            border-radius: var(--r-full); font-size: 12px; background: var(--canvas-soft);
+            border: 1px solid var(--hairline); color: var(--body);
+        }
+        .badge.mono { font-family: var(--font-mono); }
+        .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: var(--r-full); font-size: 12px; font-weight: 500; }
+        .pill.ok { background: var(--success-soft); color: var(--success); }
+        .pill.warn { background: var(--warning-soft); color: var(--warning-deep); }
+        .pill.bad { background: var(--error-soft); color: var(--error-deep); }
+        .mini-badge {
+            display: inline-flex; align-items: center; padding: 1px 7px; border-radius: var(--r-full);
+            font-size: 11px; line-height: 1.5; background: var(--primary); color: var(--on-primary); white-space: nowrap;
+        }
+        .mini-badge.soft { background: var(--canvas-soft-2); color: var(--body); border: 1px solid var(--hairline); }
+
+        /* 当前账户的分类 + 标签行 */
+        .account-meta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+
+        /* ---- 自定义账户下拉（对齐桌面版 Select.svelte） ---- */
+        .ms-select { position: relative; display: inline-flex; }
+        .ms-trigger {
+            display: inline-flex; align-items: center; justify-content: space-between; gap: var(--s-xs);
+            width: 100%; height: 40px; padding: 0 var(--s-sm); font: inherit; font-weight: 400;
+            background: var(--canvas); border: 1px solid var(--hairline); color: var(--ink);
+            border-radius: var(--r-sm); cursor: pointer;
+        }
+        .ms-trigger:hover { border-color: var(--hairline-strong); }
+        .ms-select.open .ms-trigger { border-color: var(--ink); box-shadow: 0 0 0 3px var(--focus-ring); }
+        .ms-cur { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; }
+        .ms-cur-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ms-cur-badges { display: inline-flex; gap: 4px; flex-shrink: 0; }
+        .ms-ph { color: var(--mute); }
+        .ms-chev { flex-shrink: 0; color: var(--mute); transition: transform 0.18s ease; }
+        .ms-select.open .ms-chev { transform: rotate(180deg); }
+        .ms-menu {
+            position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; min-width: 100%;
+            max-height: 320px; overflow: auto; padding: 5px; background: var(--canvas);
+            border: 1px solid var(--hairline); border-radius: var(--r-lg); box-shadow: var(--shadow-5);
+            display: flex; flex-direction: column; gap: 2px; animation: ms-pop-in 0.14s ease both;
+        }
+        @keyframes ms-pop-in { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .ms-opt {
+            display: flex; align-items: center; justify-content: flex-start; gap: var(--s-xs);
+            width: 100%; min-height: 36px; padding: 7px var(--s-xs) 7px var(--s-sm);
+            border: 1px solid transparent; background: transparent; border-radius: var(--r-sm);
+            text-align: left; font: inherit; font-weight: 400; color: var(--ink); cursor: pointer;
+        }
+        .ms-opt:hover { background: var(--canvas-soft-2); }
+        .ms-opt.on { background: var(--canvas-soft); }
+        .ms-opt-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+        .ms-opt-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ms-opt-sub { font-size: 11px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ms-opt-badges { display: inline-flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; flex-shrink: 0; max-width: 50%; }
+        .ms-tick { width: 15px; flex-shrink: 0; color: var(--link); display: inline-flex; }
+        .ms-empty { padding: var(--s-sm); font-size: 13px; text-align: center; color: var(--mute); }
+        /* 自定义组件内联图标统一描边/尺寸（UI_ICONS 的 path 不自带样式） */
+        .ms-chev svg, .ms-tick svg, .email-code-chip svg, .code-banner svg {
+            width: 14px; height: 14px; fill: none; stroke: currentColor;
+            stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: block;
+        }
+        /* 快捷查看 pin 按钮激活态 */
+        .account-pin-btn.is-active { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+
+        /* ---- 快捷查看空状态 ---- */
+        .quickview-empty {
+            display: grid; place-items: center; min-height: 320px; text-align: center;
+            color: var(--mute); padding: var(--s-2xl); max-width: 520px; margin: 0 auto;
+        }
+
+        /* ---- 账户切换工具条（浅色） ---- */
+        .email-account-menu-panel { background: var(--canvas); border: 1px solid var(--hairline); box-shadow: var(--shadow-5); border-radius: var(--r-md); }
+        .email-account-menu-item { color: var(--ink); }
+        .email-account-menu-item:hover { background: var(--canvas-soft-2); }
+        .email-account-switcher-label { color: var(--mute); }
+
+        /* ===== 启动 / 引导 / 登录 / 认证：整套套色到 Vercel token（浅/深一致） ===== */
+        .boot-splash { background: var(--canvas-soft); color: var(--ink); }
+        .boot-splash-card { background: var(--canvas); border: 1px solid var(--hairline); box-shadow: var(--shadow-2); }
+        .boot-splash-card h2 { color: var(--ink); }
+        .boot-splash-card p { color: var(--body); }
+        .boot-splash-spinner { border-color: var(--hairline); border-top-color: var(--ink); }
+
+        /* 容器：去掉蓝绿渐变与装饰光斑 */
+        .auth-shell { background: var(--canvas-soft); }
+        .auth-shell::before, .auth-shell::after, .auth-hero::after { content: none; display: none; }
+
+        /* 卡片面板：玻璃拟物 → canvas + hairline + 轻阴影 */
+        .auth-hero, .auth-stage-fill, .auth-login-view {
+            background: var(--canvas); border: 1px solid var(--hairline);
+            box-shadow: var(--shadow-2); backdrop-filter: none; border-radius: var(--r-xl);
+        }
+        .auth-hero, .auth-panel { backdrop-filter: none; }
+
+        /* 品牌 logo */
+        .auth-brand-logo { background: var(--canvas); border: 1px solid var(--hairline); box-shadow: var(--shadow-1); }
+        .auth-brand-logo-image { filter: invert(var(--logo-invert)); }
+        .auth-brand-mark, .auth-brand-logo.auth-brand-logo-lg .auth-brand-mark { background: var(--canvas-soft-2); color: var(--ink); box-shadow: none; }
+
+        /* 文字 */
+        .auth-brand-copy h1, .auth-hero h2, .auth-panel h3,
+        .auth-login-brand-copy h1, .auth-stage-header h3, .auth-agreement h4,
+        .auth-agreement-scroll h4, .auth-mode-card-title strong, .auth-feature strong { color: var(--ink); }
+        .auth-brand-copy p, .auth-hero p, .auth-panel p, .auth-login-brand-copy p,
+        .auth-stage-header p, .auth-feature span, .auth-mode-card-title span,
+        .auth-mode-card-copy, .auth-check { color: var(--body); }
+        .auth-muted, .auth-field-hint, .auth-field-label, .auth-scroll-status, .auth-setup-footer { color: var(--mute); }
+        .auth-login-kicker { color: var(--link); }
+
+        /* 协议框 */
+        .auth-agreement, .auth-agreement-scroll {
+            background: var(--canvas-soft); border: 1px solid var(--hairline); color: var(--body);
+        }
+
+        /* 认证模式卡片 */
+        .auth-mode-card { background: var(--canvas); border: 1px solid var(--hairline); color: var(--ink); }
+        .auth-mode-card:hover:not(:disabled), .auth-mode-card:focus-visible:not(:disabled) { border-color: var(--hairline-strong); }
+        .auth-mode-card.is-active { border-color: var(--ink); background: var(--canvas-soft); outline: 4px solid var(--focus-ring); }
+        .auth-mode-card.is-disabled, .auth-mode-card:disabled { background: var(--canvas-soft); border-color: var(--hairline); }
+        .auth-mode-badge { background: var(--canvas-soft-2); color: var(--body); }
+        .auth-mode-note { background: var(--canvas-soft-2); color: var(--body); }
+        .auth-step-note { background: var(--link-bg-soft); color: var(--link-deep); }
+
+        /* 认证输入框（覆盖玻璃拟物硬编码） */
+        .auth-form .form-input {
+            background: var(--canvas); border: 1px solid var(--hairline); color: var(--ink); box-shadow: none;
+        }
+        .auth-form .form-input::placeholder { color: var(--mute); }
+        .auth-form .form-input:focus { border-color: var(--ink); box-shadow: 0 0 0 3px var(--focus-ring); background: var(--canvas); }
+
+        /* 禁用按钮（覆盖硬编码灰 !important，使深色一致） */
+        #authAgreementContinue:disabled, .btn:disabled {
+            background: var(--canvas-soft-2) !important; color: var(--mute) !important;
+            border-color: var(--hairline) !important; box-shadow: none !important;
+        }
+
+        /* ---- 响应式补充（来源顺序在前面 @media 之后，需重申） ---- */
+        @media (max-width: 820px) {
+            .stats-container { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .modal-content { width: 95%; max-height: 95%; }
+            .email-item { padding: 12px; }
+        }
     </style>
 </head>
 <body class="app-booting">
@@ -5071,7 +5458,7 @@
             <div class="auth-screen-brand">
                 <div class="auth-brand">
                     <div class="auth-brand-logo is-placeholder" id="authBrandLogoWrap">
-                        <img id="authBrandLogo" class="auth-brand-logo-image" src="/static/assets/logo.png" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
+                        <img id="authBrandLogo" class="auth-brand-logo-image" src="/static/assets/logo-black.svg" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
                         <span class="auth-brand-mark">MEM</span>
                     </div>
                     <div class="auth-brand-copy">
@@ -5082,7 +5469,7 @@
             </div>
             <div class="auth-login-brand" aria-hidden="true">
                 <div class="auth-brand-logo auth-brand-logo-lg is-placeholder">
-                    <img class="auth-brand-logo-image" src="/static/assets/logo.png" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
+                    <img class="auth-brand-logo-image" src="/static/assets/logo-black.svg" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
                     <span class="auth-brand-mark">MEM</span>
                 </div>
                 <div class="auth-login-brand-copy">
@@ -5221,7 +5608,7 @@
                 <div class="sidebar-brand">
                     <div class="sidebar-brand-main">
                         <div class="sidebar-logo is-placeholder" id="sidebarLogoWrap">
-                            <img id="sidebarLogo" class="sidebar-logo-image" src="/static/assets/logo.png" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
+                            <img id="sidebarLogo" class="sidebar-logo-image" src="/static/assets/logo-black.svg" alt="Microsoft-Email-Manager logo" onload="this.parentElement.classList.remove('is-placeholder')" onerror="this.style.display='none'; this.parentElement.classList.add('is-placeholder')">
                             <span class="brand-mark">MEM</span>
                         </div>
                         <div class="sidebar-title-stack">
@@ -5234,6 +5621,10 @@
                 <button id="accountsNav" class="nav-item active" type="button" data-page="accounts" onclick="showPage('accounts', this)">
                     <span class="icon"></span>
                     <span class="nav-item-text">邮箱账户管理</span>
+                </button>
+                <button id="quickViewNav" class="nav-item" type="button" onclick="showQuickView(this)">
+                    <span class="icon"></span>
+                    <span class="nav-item-text">快捷查看</span>
                 </button>
                 <button class="nav-item" type="button" data-page="addAccount" onclick="showPage('addAccount', this)">
                     <span class="icon"></span>
@@ -5272,6 +5663,10 @@
                 <button id="sidebarToggle" class="sidebar-toggle" type="button" onclick="toggleSidebar()" data-tooltip="收起侧栏" aria-label="收起侧栏">
                     <span></span>
                     <span class="sidebar-utility-label">收起</span>
+                </button>
+                <button id="themeToggle" class="sidebar-utility theme-toggle" type="button" onclick="cycleTheme()" data-tooltip="主题" aria-label="切换主题">
+                    <span></span>
+                    <span class="sidebar-utility-label" id="themeToggleLabel">主题</span>
                 </button>
                 <div class="sidebar-footer-divider"></div>
                 <button id="logoutBtn" class="sidebar-utility sidebar-logout" type="button" onclick="logout()" data-tooltip="退出登录" aria-label="退出登录">
@@ -6412,12 +6807,14 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
                             <div class="email-account-header">
                                 <h3 class="font-semibold">当前账户</h3>
                                 <div class="email-account-switcher">
-                                    <label class="email-account-switcher-label" for="currentAccountSelect">当前账户 / 快速切换 / 复制 / 快捷绑定</label>
+                                    <label class="email-account-switcher-label" for="accountDropdown">当前账户 / 快速切换 / 复制 / 快捷绑定</label>
                                     <div class="email-account-toolbar">
-                                        <select id="currentAccountSelect" class="form-input email-account-select" onchange="switchCurrentAccount(this.value)">
-                                            <option value="">请选择账户</option>
-                                        </select>
-                                        <button type="button" class="copy-icon email-account-copy-btn" onclick="copyEmailAddress(document.getElementById('currentAccountSelect').value)" title="复制当前账户"><span></span></button>
+                                        <div id="accountDropdown" class="ms-select email-account-select" style="flex:1 1 260px; min-width:240px; max-width:360px;"></div>
+                                        <button type="button" class="copy-icon email-account-copy-btn" onclick="copyEmailAddress(currentAccount)" title="复制当前账户"><span></span></button>
+                                        <button type="button" id="accountPinBtn" class="btn btn-secondary btn-sm account-pin-btn" onclick="toggleCurrentAccountQuick()" title="加入 / 移出快捷查看">
+                                            <span></span>
+                                            <span class="account-pin-label">加入快捷查看</span>
+                                        </button>
                                         <div class="email-account-menu">
                                             <button type="button" id="accountBindMenuBtn" class="btn btn-secondary btn-sm email-account-menu-btn" onclick="toggleAccountBindMenu()">
                                                 <span></span>
@@ -6429,8 +6826,9 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
                                         </div>
                                     </div>
                                 </div>
+                                <div id="accountMetaRow" class="account-meta-row"></div>
                                 <span id="currentAccountEmail" class="hidden"></span>
-                                <p class="text-sm" style="color: #64748b;">最后更新：<span id="lastUpdateTime">-</span></p>
+                                <p class="text-sm" style="color: var(--mute);">最后更新：<span id="lastUpdateTime">-</span></p>
                             </div>
                             <div class="flex gap-2">
                                 <button class="btn btn-secondary btn-sm" onclick="toggleAutoRefresh()" id="autoRefreshBtn">
@@ -6804,7 +7202,14 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
             loading: '<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3.02-6.72"></path></svg>',
             unread: '<svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"></path><path d="M4 6l8 6 8-6"></path></svg>',
             read: '<svg viewBox="0 0 24 24"><path d="M22 6l-10 7L2 6"></path><path d="M2 6v12h20V6"></path><path d="M2 18l6-6"></path><path d="M22 18l-6-6"></path></svg>',
-            attachment: '<svg viewBox="0 0 24 24"><path d="M21.44 11.05l-8.49 8.49a6 6 0 1 1-8.49-8.49l9.19-9.19a4 4 0 1 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.82-2.83l8.48-8.48"></path></svg>'
+            attachment: '<svg viewBox="0 0 24 24"><path d="M21.44 11.05l-8.49 8.49a6 6 0 1 1-8.49-8.49l9.19-9.19a4 4 0 1 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.82-2.83l8.48-8.48"></path></svg>',
+            quick: '<svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>',
+            pin: '<svg viewBox="0 0 24 24"><path d="M12 17v5"></path><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"></path></svg>',
+            check: '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg>',
+            'chevron-down': '<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg>',
+            theme: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>',
+            'theme-dark': '<svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"></path></svg>',
+            'theme-system': '<svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8"></path><path d="M12 17v4"></path></svg>'
         };
         let currentAccount = null;
         let currentEmailFolder = 'all';
@@ -6817,9 +7222,256 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
         let autoRefreshEnabled = true;
         let autoRefreshInterval = null;
         let lastMouseActivityAt = Date.now();
-        let isLoadingEmails = false;
-        let activeEmailRequestController = null;
-        let activeEmailRequestId = 0;
+        // ===== 邮件视图状态模块 =====
+        // 修复账户切换竞态：集中维护「当前视图标识(token) + 最新请求编号(requestId) + 初始空状态」。
+        // 任何在途请求返回后，仅当 token / requestId 仍匹配当前视图时才允许写入与渲染，
+        // 从根本上避免旧账户的请求覆盖当前邮箱的列表。
+        const emailView = {
+            token: 0,              // 当前视图标识：切换账户 / 返回账户页时自增
+            account: null,         // 当前视图所属邮箱（数据归属校验）
+            requestId: 0,          // 最新请求编号
+            controller: null,      // 在途请求 AbortController
+            loading: false,        // 是否正在加载
+            emails: [],            // 初始空状态：当前视图的全部邮件
+            filtered: [],          // 当前视图的筛选结果
+            pendingInsertedIds: [] // 待入场动画的新邮件 id
+        };
+        // 快捷查看：固定一组邮箱，仅在这组之间切换（对齐桌面版 quickview.svelte.ts）
+        const QUICKVIEW_KEY = 'mem.quickview.v2';
+        const QUICKVIEW_LEGACY = 'mem.quickview';
+        let quickView = readQuickView();
+        let quickViewMode = false;
+        let accountDropdownOptions = [];
+        let accountDropdownAllAccounts = [];
+        let accountDropdownOpen = false;
+
+        // ===================== 快捷查看（对齐桌面版 quickview.svelte.ts）=====================
+        function readQuickView() {
+            try {
+                const raw = localStorage.getItem(QUICKVIEW_KEY);
+                if (raw) {
+                    const p = JSON.parse(raw);
+                    if (p && Array.isArray(p.emails)) {
+                        const emails = p.emails.filter(e => typeof e === 'string');
+                        const current = (typeof p.current === 'string' && emails.includes(p.current)) ? p.current : (emails[0] || '');
+                        return { emails, current };
+                    }
+                }
+                const legacy = localStorage.getItem(QUICKVIEW_LEGACY);
+                if (legacy) return { emails: [legacy], current: legacy };
+            } catch (e) { /* ignore */ }
+            return { emails: [], current: '' };
+        }
+        function persistQuickView() {
+            try { localStorage.setItem(QUICKVIEW_KEY, JSON.stringify({ emails: quickView.emails, current: quickView.current })); } catch (e) { /* ignore */ }
+        }
+        function isQuick(email) { return !!email && quickView.emails.includes(email); }
+        function addQuick(email) {
+            if (!email) return;
+            if (!quickView.emails.includes(email)) quickView.emails = [...quickView.emails, email];
+            quickView.current = email; persistQuickView();
+        }
+        function removeQuick(email) {
+            quickView.emails = quickView.emails.filter(e => e !== email);
+            if (quickView.current === email) quickView.current = quickView.emails[0] || '';
+            persistQuickView();
+        }
+        function toggleQuick(email) { if (quickView.emails.includes(email)) removeQuick(email); else addQuick(email); }
+        function setCurrentQuick(email) { if (quickView.emails.includes(email)) { quickView.current = email; persistQuickView(); } }
+
+        function toggleCurrentAccountQuick() {
+            if (!currentAccount) { showNotification('请先选择当前邮箱账户', 'warning'); return; }
+            toggleQuick(currentAccount);
+            showNotification(isQuick(currentAccount) ? '已加入快捷查看' : '已移出快捷查看', 'success', '', 1400);
+            updateAccountPinButton();
+            renderAccountMetaRow(currentAccount);
+            if (quickViewMode) populateAccountSwitcher(currentAccount);
+        }
+        function updateAccountPinButton() {
+            const btn = document.getElementById('accountPinBtn');
+            if (!btn) return;
+            const active = isQuick(currentAccount);
+            btn.classList.toggle('is-active', active);
+            const label = btn.querySelector('.account-pin-label');
+            if (label) label.textContent = active ? '移出快捷查看' : '加入快捷查看';
+        }
+
+        // 快捷查看页：进入邮件视图但只在已固定邮箱间切换
+        function showQuickView(navEl) {
+            quickViewMode = true;
+            if (!quickView.emails.length) {
+                currentAccount = null;
+                resetEmailView(null);
+                showPage('emails', null, false);
+                const list = document.getElementById('emailsList');
+                if (list) list.innerHTML = '<div class="quickview-empty">还没有固定到快捷查看的邮箱。<br>在邮件页点「加入快捷查看」即可把一个邮箱固定到这里。</div>';
+                highlightQuickViewNav(navEl);
+                return;
+            }
+            const target = (quickView.current && quickView.emails.includes(quickView.current)) ? quickView.current : quickView.emails[0];
+            currentAccount = target;
+            currentEmailFolder = 'all';
+            currentEmailPage = 1;
+            resetEmailView(target, { showLoading: true });
+            showPage('emails', null, false);
+            highlightQuickViewNav(navEl);
+            syncAutoRefreshTimer();
+        }
+        function highlightQuickViewNav(navEl) {
+            document.querySelectorAll('.sidebar .nav-item').forEach(b => b.classList.remove('active'));
+            const qn = navEl || document.getElementById('quickViewNav');
+            if (qn) qn.classList.add('active');
+        }
+
+        // ===================== 自定义账户下拉（对齐桌面版 Select.svelte）=====================
+        function tagShortLabel(tag) { return tag ? (tag.name_zh || tag.nameZh || tag.key || '') : ''; }
+        function categoryShortLabel(category) { return category ? (category.name_zh || category.nameZh || category.key || '') : ''; }
+
+        function setAccountDropdownOptions(list, selectedAccount) {
+            let opts = (Array.isArray(list) ? list : []).map(a => ({
+                email: a.email_id,
+                category: a.category || null,
+                tagDetails: Array.isArray(a.tag_details) ? a.tag_details : []
+            }));
+            if (quickViewMode) opts = opts.filter(o => quickView.emails.includes(o.email));
+            accountDropdownOptions = opts;
+            renderAccountDropdown(selectedAccount || currentAccount);
+        }
+        function renderAccountDropdown(selected = currentAccount) {
+            const root = document.getElementById('accountDropdown');
+            if (!root) return;
+            const opts = accountDropdownOptions;
+            const cur = opts.find(o => o.email === selected) || (selected ? { email: selected, category: null, tagDetails: [] } : null);
+            const curBadges = cur ? cur.tagDetails.slice(0, 2).map(t => `<span class="mini-badge soft">${escapeHtml(tagShortLabel(t))}</span>`).join('') : '';
+            const trigger = `
+                <button type="button" class="ms-trigger" onclick="toggleAccountDropdown(event)" aria-haspopup="listbox" aria-expanded="${accountDropdownOpen}">
+                    <span class="ms-cur">
+                        ${cur
+                            ? `<span class="ms-cur-label">${escapeHtml(cur.email)}</span>${curBadges ? `<span class="ms-cur-badges">${curBadges}</span>` : ''}`
+                            : `<span class="ms-ph">${quickViewMode ? '选择已固定邮箱' : '请选择账户'}</span>`}
+                    </span>
+                    <span class="ms-chev">${UI_ICONS['chevron-down']}</span>
+                </button>`;
+            let menu = '';
+            if (accountDropdownOpen) {
+                const items = opts.length
+                    ? opts.map(o => {
+                        const on = o.email === selected;
+                        const sub = categoryShortLabel(o.category);
+                        const badges = o.tagDetails.map(t => `<span class="mini-badge soft">${escapeHtml(tagShortLabel(t))}</span>`).join('');
+                        return `<button type="button" class="ms-opt ${on ? 'on' : ''}" role="option" aria-selected="${on}" onclick="selectAccountFromDropdown('${escapeHtml(o.email)}')">
+                            <span class="ms-opt-main"><span class="ms-opt-label">${escapeHtml(o.email)}</span>${sub ? `<span class="ms-opt-sub">${escapeHtml(sub)}</span>` : ''}</span>
+                            ${badges ? `<span class="ms-opt-badges">${badges}</span>` : ''}
+                            <span class="ms-tick">${on ? UI_ICONS.check : ''}</span>
+                        </button>`;
+                    }).join('')
+                    : `<div class="ms-empty">${quickViewMode ? '还没有固定到快捷查看的邮箱' : '暂无账户'}</div>`;
+                menu = `<div class="ms-menu" role="listbox">${items}</div>`;
+            }
+            root.className = 'ms-select email-account-select' + (accountDropdownOpen ? ' open' : '');
+            root.innerHTML = trigger + menu;
+        }
+        function toggleAccountDropdown(event) {
+            if (event) event.stopPropagation();
+            accountDropdownOpen = !accountDropdownOpen;
+            renderAccountDropdown(currentAccount);
+        }
+        function closeAccountDropdown() {
+            if (!accountDropdownOpen) return;
+            accountDropdownOpen = false;
+            renderAccountDropdown(currentAccount);
+        }
+        function selectAccountFromDropdown(email) {
+            accountDropdownOpen = false;
+            switchCurrentAccount(email);
+            renderAccountDropdown(email);
+        }
+        function renderAccountMetaRow(accountId = currentAccount) {
+            const row = document.getElementById('accountMetaRow');
+            if (!row) return;
+            const acc = accountDropdownAllAccounts.find(a => a.email_id === accountId);
+            if (!accountId || !acc) { row.innerHTML = ''; return; }
+            const parts = [];
+            parts.push(`<span class="badge">${escapeHtml(acc.category ? categoryShortLabel(acc.category) : '未分类')}</span>`);
+            (Array.isArray(acc.tag_details) ? acc.tag_details : []).forEach(t => parts.push(`<span class="mini-badge soft">${escapeHtml(tagShortLabel(t))}</span>`));
+            if (isQuick(accountId)) parts.push(`<span class="pill ok">已固定快捷查看</span>`);
+            row.innerHTML = parts.join('');
+        }
+
+        // ===================== 验证码提取（对齐桌面版 verifyCode.ts）=====================
+        const OTP_KEYWORDS = /(验证码|校验码|动态码|动态密码|安全码|安全代码|登录码|确认码|verification\s*code|verification|one[\s-]?time|passcode|pass\s*code|security\s*code|\botp\b|\bcode\b)/i;
+        function pickOtp(text) {
+            if (!text) return null;
+            const kw = text.match(OTP_KEYWORDS);
+            if (kw && kw.index != null) {
+                const start = Math.max(0, kw.index - 28);
+                const around = text.slice(start, kw.index + 60);
+                // 避免 lookbehind（部分浏览器不支持），改用非捕获前缀 + 捕获组
+                const digits = around.match(/(?:^|[^0-9])([0-9]{4,8})(?![0-9])/);
+                if (digits) return digits[1];
+                const alnum = around.match(/\b([0-9A-Za-z]{5,8})\b/g);
+                if (alnum) {
+                    const code = alnum.find(s => /[0-9]/.test(s) && /^[0-9A-Za-z]+$/.test(s) && !/^[A-Za-z]+$/.test(s));
+                    if (code) return code.toUpperCase();
+                }
+            }
+            const six = text.match(/(?:^|[^0-9])([0-9]{6})(?![0-9])/);
+            if (six) return six[1];
+            return null;
+        }
+        function extractCode() {
+            const text = Array.prototype.slice.call(arguments).filter(Boolean).join('  ');
+            return pickOtp(text);
+        }
+        function copyVerificationCode(code, ev) {
+            if (ev && ev.stopPropagation) ev.stopPropagation();
+            if (!code) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code).then(() => showNotification('验证码已复制', 'success', '', 1200)).catch(() => {});
+            }
+        }
+
+        // ===================== 主题（对齐桌面版 theme.svelte.ts）=====================
+        const THEME_KEY = 'mem.theme';
+        function readThemeMode() {
+            try { const v = localStorage.getItem(THEME_KEY); if (v === 'light' || v === 'dark' || v === 'system') return v; } catch (e) { /* ignore */ }
+            return 'system';
+        }
+        let themeMode = readThemeMode();
+        function resolvedTheme(mode) {
+            if (mode === 'system') { try { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; } catch (e) { return 'light'; } }
+            return mode;
+        }
+        function applyThemeMode(mode) {
+            try { document.documentElement.setAttribute('data-theme', resolvedTheme(mode)); } catch (e) { /* ignore */ }
+            updateThemeToggleUi(mode);
+        }
+        function setThemeMode(mode) {
+            themeMode = mode;
+            try { localStorage.setItem(THEME_KEY, mode); } catch (e) { /* ignore */ }
+            applyThemeMode(mode);
+        }
+        function cycleTheme() {
+            const order = ['light', 'dark', 'system'];
+            const next = order[(order.indexOf(themeMode) + 1) % order.length];
+            const names = { light: '浅色', dark: '深色', system: '跟随系统' };
+            setThemeMode(next);
+            showNotification('主题：' + names[next], 'info', '', 1000);
+        }
+        function updateThemeToggleUi(mode) {
+            const btn = document.getElementById('themeToggle');
+            if (btn) {
+                const iconSpan = btn.querySelector('span');
+                if (iconSpan) {
+                    const iconName = mode === 'dark' ? 'theme-dark' : (mode === 'system' ? 'theme-system' : 'theme');
+                    iconSpan.className = 'ui-icon';
+                    iconSpan.innerHTML = UI_ICONS[iconName] || UI_ICONS.theme;
+                }
+            }
+            const label = document.getElementById('themeToggleLabel');
+            if (label) label.textContent = ({ light: '浅色', dark: '深色', system: '跟随系统' })[mode] || '主题';
+        }
+        try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (themeMode === 'system') applyThemeMode('system'); }); } catch (e) { /* ignore */ }
         let accounts = [];
         
         // 账户管理分页相关变量
@@ -7566,7 +8218,7 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
         }
 
         function syncSidebarContext(pageName) {
-            const navButtons = document.querySelectorAll('.sidebar .nav-item[data-page]');
+            const navButtons = document.querySelectorAll('.sidebar .nav-item');
             navButtons.forEach(button => button.classList.remove('active'));
 
             const activePage = pageName === 'emails' ? 'accounts' : pageName;
@@ -8134,6 +8786,17 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
 
             setButtonIcon(document.getElementById('sidebarToggle'), 'arrow-left');
             setButtonIcon(document.getElementById('logoutBtn'), 'logout');
+            setButtonIcon(document.getElementById('quickViewNav'), 'quick', true);
+            setButtonIcon(document.getElementById('accountPinBtn'), 'pin');
+            applyThemeMode(themeMode);
+            if (!window.__msAccountDropdownBound) {
+                window.__msAccountDropdownBound = true;
+                document.addEventListener('click', (e) => {
+                    const root = document.getElementById('accountDropdown');
+                    if (root && !root.contains(e.target)) closeAccountDropdown();
+                });
+                document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAccountDropdown(); });
+            }
             applySidebarState(readSidebarState());
             toggleCustomDateRange();
             toggleEmailSearch(window.innerWidth <= 768);
@@ -8232,7 +8895,7 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
         function decorateEmailList(root = document) {
             const items = root.querySelectorAll('.email-item');
             items.forEach((item, index) => {
-                const email = filteredEmails[index];
+                const email = emailView.filtered[index];
                 const fromElement = item.querySelector('.email-from');
                 if (!email || !fromElement) return;
                 const sender = getSenderProfile(email.from_email);
@@ -8293,7 +8956,7 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
                     disableAutoRefreshForInactivity();
                     return;
                 }
-                if (document.hidden || !autoRefreshEnabled || !currentAccount || !isEmailsPageVisible() || isLoadingEmails) {
+                if (document.hidden || !autoRefreshEnabled || !currentAccount || !isEmailsPageVisible() || emailView.loading) {
                     return;
                 }
                 loadEmails();
@@ -8311,6 +8974,7 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
         }
 
         function showPage(pageName, targetElement = null, updateRoute = true) {
+            if (pageName !== 'emails') { quickViewMode = false; }
             document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
             document.getElementById(pageName + 'Page').classList.remove('hidden');
             syncSidebarContext(pageName);
@@ -10900,27 +11564,22 @@ Authorization: Bearer om_your_api_key
         }
 
         // 全局变量
-        let allEmails = [];
-        let filteredEmails = [];
         let searchTimeout = null;
         const EMAIL_LIST_PAGE_SIZE = 100;
         const EMAIL_REFRESH_PROBE_SIZE = 12;
-        let pendingInsertedEmailIds = [];
 
         function updateCurrentAccountHeader(accountId = currentAccount) {
             const accountLabel = document.getElementById('currentAccountEmail');
-            const accountSelect = document.getElementById('currentAccountSelect');
             if (accountLabel) {
                 accountLabel.textContent = accountId || '';
             }
-            if (accountSelect && accountId) {
-                accountSelect.value = accountId;
-            }
+            renderAccountDropdown(accountId);
+            renderAccountMetaRow(accountId);
+            updateAccountPinButton();
         }
 
         async function populateAccountSwitcher(selectedAccount = currentAccount) {
-            const accountSelect = document.getElementById('currentAccountSelect');
-            if (!accountSelect) return;
+            if (!document.getElementById('accountDropdown')) return;
 
             let optionAccounts = Array.isArray(accounts) ? [...accounts] : [];
             try {
@@ -10939,38 +11598,40 @@ Authorization: Bearer om_your_api_key
                 uniqueAccounts.push(account);
             });
 
-            if (selectedAccount && !seen.has(selectedAccount)) {
+            if (selectedAccount && !seen.has(selectedAccount) && !quickViewMode) {
                 uniqueAccounts.unshift({ email_id: selectedAccount });
             }
 
-            accountSelect.innerHTML = uniqueAccounts.map(account => {
-                const emailId = account.email_id;
-                const selected = emailId === selectedAccount ? ' selected' : '';
-                return `<option value="${escapeHtml(emailId)}"${selected}>${escapeHtml(emailId)}</option>`;
-            }).join('');
+            accountDropdownAllAccounts = uniqueAccounts;
+            setAccountDropdownOptions(uniqueAccounts, selectedAccount);
+            renderAccountMetaRow(selectedAccount);
+            updateAccountPinButton();
         }
 
         function switchCurrentAccount(emailId) {
             if (!emailId || emailId === currentAccount) return;
             closeAccountBindMenu();
+            if (quickViewMode) setCurrentQuick(emailId);
             currentAccount = emailId;
             currentEmailFolder = 'all';
             currentEmailPage = 1;
             updateCurrentAccountHeader(emailId);
-            resetEmailListState({ showLoading: true });
+            resetEmailView(emailId, { showLoading: true });
             clearFilters(false);
             navigateAdmin('/emails/' + encodeURIComponent(emailId));
+            if (quickViewMode) highlightQuickViewNav();
             syncAutoRefreshTimer();
         }
 
         // 邮件管理
         function viewAccountEmails(emailId) {
+            quickViewMode = false;
             currentAccount = emailId;
             currentEmailFolder = 'all';
             currentEmailPage = 1;
             updateCurrentAccountHeader(emailId);
             populateAccountSwitcher(emailId);
-            resetEmailListState({ showLoading: true });
+            resetEmailView(emailId, { showLoading: true });
             navigateAdmin('/emails/' + encodeURIComponent(emailId));
             clearFilters(false);
             syncAutoRefreshTimer();
@@ -10978,7 +11639,8 @@ Authorization: Bearer om_your_api_key
 
         function backToAccounts() {
             closeAccountBindMenu();
-            resetEmailListState();
+            quickViewMode = false;
+            resetEmailView(null);
             currentAccount = null;
             navigateAdmin('/accounts');
             syncAutoRefreshTimer();
@@ -11004,20 +11666,24 @@ Authorization: Bearer om_your_api_key
         }
 
         function abortActiveEmailRequest() {
-            if (activeEmailRequestController) {
-                activeEmailRequestController.abort();
-                activeEmailRequestController = null;
+            if (emailView.controller) {
+                emailView.controller.abort();
+                emailView.controller = null;
             }
         }
 
-        function resetEmailListState(options = {}) {
+        // 统一重置邮件视图上下文：账户切换 / 返回账户页时调用。
+        // 自增 token 使任何在途请求作废，并把视图置回初始空状态，避免旧请求覆盖当前视图。
+        function resetEmailView(account = null, options = {}) {
             const { showLoading = false } = options;
             abortActiveEmailRequest();
-            activeEmailRequestId += 1;
-            isLoadingEmails = false;
-            allEmails = [];
-            filteredEmails = [];
-            pendingInsertedEmailIds = [];
+            emailView.token += 1;
+            emailView.requestId += 1;
+            emailView.account = account || null;
+            emailView.loading = false;
+            emailView.emails = [];
+            emailView.filtered = [];
+            emailView.pendingInsertedIds = [];
             currentEmailMessageId = null;
             currentEmailTagKeys = [];
             updateEmailStats([]);
@@ -11028,7 +11694,7 @@ Authorization: Bearer om_your_api_key
             if (emailsList) {
                 emailsList.innerHTML = showLoading
                     ? '<div class="loading"><div class="loading-spinner"></div>正在加载邮件...</div>'
-                    : '<div class="text-center" style="padding: 40px; color: #64748b;">没有找到匹配的邮件</div>';
+                    : '<div class="text-center" style="padding: 40px; color: var(--mute);">没有找到匹配的邮件</div>';
             }
         }
 
@@ -11041,14 +11707,17 @@ Authorization: Bearer om_your_api_key
             const requestAccount = currentAccount;
             const requestFolder = currentEmailFolder;
             const requestPage = currentEmailPage;
-            const requestId = activeEmailRequestId + 1;
+            // 捕获本次请求所属的视图标识与请求编号；返回时据此判断是否仍然有效
+            const myToken = emailView.token;
+            const requestId = emailView.requestId + 1;
             const requestController = new AbortController();
             updateCurrentAccountHeader(currentAccount);
             abortActiveEmailRequest();
-            activeEmailRequestController = requestController;
-            activeEmailRequestId = requestId;
-            isLoadingEmails = true;
-            const hasExistingEmails = Array.isArray(allEmails) && allEmails.length > 0;
+            emailView.account = requestAccount;
+            emailView.controller = requestController;
+            emailView.requestId = requestId;
+            emailView.loading = true;
+            const hasExistingEmails = Array.isArray(emailView.emails) && emailView.emails.length > 0;
             const shouldProbeLatest = hasExistingEmails && requestPage === 1;
 
             if (!shouldProbeLatest) {
@@ -11067,9 +11736,12 @@ Authorization: Bearer om_your_api_key
                 const url = `/emails/${requestAccount}?folder=${requestFolder}&page=${pageToLoad}&page_size=${requestPageSize}${refreshParam}`;
                 const data = await apiRequest(url, { signal: requestController.signal });
 
+                // 视图已切换 / 已有更新的请求 / 账户·文件夹·页码已变 → 丢弃过期结果
                 if (
-                    requestId !== activeEmailRequestId ||
+                    myToken !== emailView.token ||
+                    requestId !== emailView.requestId ||
                     requestAccount !== currentAccount ||
+                    requestAccount !== emailView.account ||
                     requestFolder !== currentEmailFolder ||
                     requestPage !== currentEmailPage
                 ) {
@@ -11080,16 +11752,16 @@ Authorization: Bearer om_your_api_key
                 let insertedIds = [];
 
                 if (shouldProbeLatest) {
-                    insertedIds = getNewlyInsertedEmailIds(fetchedEmails, allEmails);
-                    pendingInsertedEmailIds = insertedIds;
-                    allEmails = mergeLatestEmails(fetchedEmails, allEmails, EMAIL_LIST_PAGE_SIZE);
+                    insertedIds = getNewlyInsertedEmailIds(fetchedEmails, emailView.emails);
+                    emailView.pendingInsertedIds = insertedIds;
+                    emailView.emails = mergeLatestEmails(fetchedEmails, emailView.emails, EMAIL_LIST_PAGE_SIZE);
                 } else {
-                    pendingInsertedEmailIds = [];
-                    allEmails = fetchedEmails;
+                    emailView.pendingInsertedIds = [];
+                    emailView.emails = fetchedEmails;
                 }
 
                 // 更新统计信息
-                updateEmailStats(allEmails);
+                updateEmailStats(emailView.emails);
 
                 // Apply active filters
                 applyFilters();
@@ -11107,7 +11779,7 @@ Authorization: Bearer om_your_api_key
                 }
 
             } catch (error) {
-                if (error.name === 'AbortError' || requestId !== activeEmailRequestId) {
+                if (error.name === 'AbortError' || myToken !== emailView.token || requestId !== emailView.requestId) {
                     return;
                 }
                 if (!shouldProbeLatest) {
@@ -11115,12 +11787,12 @@ Authorization: Bearer om_your_api_key
                 }
                 showNotification('加载邮件失败: ' + error.message, 'error');
             } finally {
-                if (requestId !== activeEmailRequestId) {
+                if (myToken !== emailView.token || requestId !== emailView.requestId) {
                     return;
                 }
                 // Restore refresh button state
-                isLoadingEmails = false;
-                activeEmailRequestController = null;
+                emailView.loading = false;
+                emailView.controller = null;
                 refreshBtn.disabled = false;
                 refreshBtn.innerHTML = buttonLabel('refresh', '刷新');
                 if (autoRefreshBtn) {
@@ -11197,7 +11869,7 @@ Authorization: Bearer om_your_api_key
             const dateFrom = document.getElementById('dateFromFilter').value;
             const dateTo = document.getElementById('dateToFilter').value;
 
-            filteredEmails = allEmails.filter(email => {
+            emailView.filtered = emailView.emails.filter(email => {
                 if (searchTerm) {
                     const tagText = Array.isArray(email.tag_details)
                         ? email.tag_details.map(tag => `${tag.key || ''} ${tag.name_zh || ''} ${tag.name_en || ''}`).join(' ')
@@ -11262,16 +11934,16 @@ Authorization: Bearer om_your_api_key
         function renderFilteredEmails() {
             const emailsList = document.getElementById('emailsList');
 
-            if (filteredEmails.length === 0) {
-                emailsList.innerHTML = '<div class="text-center" style="padding: 40px; color: #64748b;">没有找到匹配的邮件</div>';
-                pendingInsertedEmailIds = [];
+            if (emailView.filtered.length === 0) {
+                emailsList.innerHTML = '<div class="text-center" style="padding: 40px; color: var(--mute);">没有找到匹配的邮件</div>';
+                emailView.pendingInsertedIds = [];
                 return;
             }
 
-            emailsList.innerHTML = filteredEmails.map(email => createEmailItem(email)).join('');
+            emailsList.innerHTML = emailView.filtered.map(email => createEmailItem(email)).join('');
             decorateEmailList(emailsList);
-            animateInsertedEmailItems(emailsList, pendingInsertedEmailIds);
-            pendingInsertedEmailIds = [];
+            animateInsertedEmailItems(emailsList, emailView.pendingInsertedIds);
+            emailView.pendingInsertedIds = [];
         }
 
         function clearFilters(shouldRender = true) {
@@ -11284,7 +11956,7 @@ Authorization: Bearer om_your_api_key
             document.getElementById('dateToFilter').value = '';
             toggleCustomDateRange();
 
-            filteredEmails = [...allEmails];
+            emailView.filtered = [...emailView.emails];
             if (shouldRender) {
                 renderFilteredEmails();
             }
@@ -11357,8 +12029,8 @@ Authorization: Bearer om_your_api_key
                 };
             });
 
-            allEmails = applyToList(allEmails);
-            filteredEmails = applyToList(filteredEmails);
+            emailView.emails = applyToList(emailView.emails);
+            emailView.filtered = applyToList(emailView.filtered);
             renderFilteredEmails();
         }
 
@@ -11384,8 +12056,12 @@ Authorization: Bearer om_your_api_key
             const unreadClass = email.is_read ? '' : 'unread';
             const sender = getSenderProfile(email.from_email);
             const senderLogoUrl = resolveSenderLogoUrl(sender.email);
-            const attachmentIcon = email.has_attachments ? '<span style="color: #8b5cf6;">📎</span>' : '';
+            const attachmentIcon = email.has_attachments ? '<span style="color: var(--violet);">📎</span>' : '';
             const readIcon = email.is_read ? '✉️' : '📩';
+            const code = extractCode(email.subject);
+            const codeChip = code
+                ? `<button class="email-code-chip" type="button" title="复制验证码" onclick="copyVerificationCode('${escapeHtml(code)}', event)"><span class="code-val">${escapeHtml(code)}</span>${UI_ICONS.copy}</button>`
+                : '';
 
             return `
                 <div class="email-item ${unreadClass}" data-message-id="${escapeHtml(email.message_id || '')}" onclick="showEmailDetail('${email.message_id}')">
@@ -11398,6 +12074,7 @@ Authorization: Bearer om_your_api_key
                         <div class="email-from">${readIcon} ${escapeHtml(sender.email)} ${attachmentIcon}</div>
                         <div class="email-preview">文件夹: ${escapeHtml(email.folder)} | 点击查看详情</div>
                     </div>
+                    ${codeChip}
                 </div>
             `;
         }
@@ -11415,8 +12092,16 @@ Authorization: Bearer om_your_api_key
                 currentEmailMessageId = data.message_id;
                 currentEmailTagKeys = Array.isArray(data.tag_keys) ? data.tag_keys.map(normalizeKey) : [];
 
+                const detailPlain = data.body_plain || '';
+                const detailHtmlText = (data.body_html || '').replace(/<[^>]+>/g, ' ');
+                const detailCode = extractCode(data.subject, detailPlain, detailHtmlText);
+                const codeBanner = detailCode
+                    ? `<div class="code-banner"><span class="cb-label">验证码</span><span class="cb-code">${escapeHtml(detailCode)}</span><button class="btn btn-secondary btn-sm" type="button" onclick="copyVerificationCode('${escapeHtml(detailCode)}', event)">${UI_ICONS.copy} 复制</button></div>`
+                    : '';
+
                 document.getElementById('emailModalTitle').textContent = data.subject || '(无主题)';
                 document.getElementById('emailModalContent').innerHTML = `
+                    ${codeBanner}
                     <div class="email-detail-hero">
                         ${renderSenderAvatar(sender.initial, senderLogoUrl, 'email-detail-avatar', data.sender_avatar_url)}
                         <div class="email-detail-hero-copy">
@@ -11460,7 +12145,14 @@ Authorization: Bearer om_your_api_key
             }
 
             if (hasHtml) {
-                const sanitizedHtml = email.body_html.replace(/"/g, '&quot;');
+                // 安全：邮件 HTML 是攻击者可控内容（任何人都能发邮件到被管账户）。
+                // 这里用 sandbox 渲染且【刻意不加 allow-scripts】，浏览器会禁用其中的脚本，
+                // 从而阻断存储型 XSS。切勿同时加入 allow-scripts —— allow-same-origin + allow-scripts
+                // 组合会让邮件脚本获得本站同源权限，等同于完全 XSS。
+                // 额外注入 CSP（纵深防御 + 隐私）：禁脚本/对象/表单，且只允许 data: 图片，
+                // 阻断远程图片等追踪像素回连。srcdoc 会先做 HTML 解码，故此处用普通引号即可。
+                const cspMeta = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; style-src \'unsafe-inline\' data:; font-src data:; media-src data:; base-uri \'none\'; form-action \'none\'">';
+                const sanitizedHtml = (cspMeta + email.body_html).replace(/"/g, '&quot;');
 
                 return `
                     <div class="email-content-tabs">
@@ -11526,12 +12218,12 @@ Authorization: Bearer om_your_api_key
         }
 
         function exportEmails() {
-            if (!filteredEmails || filteredEmails.length === 0) {
+            if (!emailView.filtered || emailView.filtered.length === 0) {
                 showNotification('没有邮件可导出', 'warning');
                 return;
             }
 
-            const csvContent = generateEmailCSV(filteredEmails);
+            const csvContent = generateEmailCSV(emailView.filtered);
             downloadCSV(csvContent, 'emails_' + currentAccount + '_' + new Date().toISOString().split('T')[0] + '.csv');
             showNotification('邮件已导出', 'success');
         }
@@ -12178,7 +12870,7 @@ Authorization: Bearer om_your_api_key
                 const emailId = decodeURIComponent(relativePath.replace('/emails/', ''));
                 if (emailId) {
                     if (emailId !== currentAccount) {
-                        resetEmailListState({ showLoading: true });
+                        resetEmailView(emailId, { showLoading: true });
                     }
                     currentAccount = emailId;
                     updateCurrentAccountHeader(emailId);

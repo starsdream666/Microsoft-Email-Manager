@@ -75,10 +75,18 @@ ADMIN_LOGIN_FAILURE_LIMIT = max(1, int(os.getenv("ADMIN_LOGIN_FAILURE_LIMIT", "5
 ADMIN_LOGIN_FAILURE_WINDOW_MINUTES = max(1, int(os.getenv("ADMIN_LOGIN_FAILURE_WINDOW_MINUTES", "15")))
 ADMIN_LOGIN_LOCKOUT_MINUTES = max(1, int(os.getenv("ADMIN_LOGIN_LOCKOUT_MINUTES", "15")))
 TRUST_PROXY_HEADERS = str(os.getenv("TRUST_PROXY_HEADERS", "")).strip().lower() in {"1", "true", "yes", "on"}
+# 介于客户端与本服务之间的可信反向代理数量。X-Forwarded-For 的最左侧值由客户端控制、
+# 可被伪造（Nginx 默认 $proxy_add_x_forwarded_for 是追加而非替换），因此必须从右侧
+# （最靠近本服务的可信代理写入的值）反向取第 N 跳，才能得到真实客户端 IP，避免伪造
+# X-Forwarded-For 绕过登录/分享的失败锁定。
+TRUSTED_PROXY_COUNT = max(1, int(os.getenv("TRUSTED_PROXY_COUNT", "1")))
 TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 DEFAULT_ADMIN_LOGIN_PATH = "/admin"
 DEFAULT_HOME_TITLE = "Microsoft-Email-Manager"
 DEFAULT_HOME_INTRO = "批量管理 微软邮箱账户\n邮件与 API 自动化中枢"
+# 是否暴露交互式 API 文档（/docs、/redoc、/openapi.json）。默认关闭以避免在生产环境
+# 泄露完整接口结构；本地开发可设 ENABLE_API_DOCS=true 开启。
+ENABLE_API_DOCS = str(os.getenv("ENABLE_API_DOCS", "")).strip().lower() in {"1", "true", "yes", "on"}
 
 # OAuth2配置
 TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
@@ -1333,8 +1341,25 @@ def _read_json_file(path: Path, default: dict[str, Any]) -> dict[str, Any]:
 
 def _write_json_file(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=2, ensure_ascii=False)
+    # 原子写入：先写临时文件再 rename，避免进程中途崩溃导致目标文件被截断/损坏。
+    tmp_path = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
+        # 数据文件可能包含刷新令牌、密码哈希、会话令牌等敏感信息，限制为仅属主可读写。
+        try:
+            os.chmod(tmp_path, 0o600)
+        except OSError:
+            pass
+        os.replace(tmp_path, path)
+    finally:
+        try:
+            if tmp_path.exists():
+                tmp_path.unlink()
+        except OSError:
+            pass
 
 
 def load_auth_settings() -> dict[str, Any]:
@@ -1768,9 +1793,16 @@ def parse_stored_datetime(value: Any) -> datetime | None:
 
 
 def get_request_ip(request: Request) -> str:
-    forwarded_for = request.headers.get("X-Forwarded-For", "") if TRUST_PROXY_HEADERS else ""
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
+    if TRUST_PROXY_HEADERS:
+        forwarded_for = request.headers.get("X-Forwarded-For", "")
+        if forwarded_for:
+            # 从右往左数第 TRUSTED_PROXY_COUNT 跳即真实客户端 IP；最左侧值不可信。
+            parts = [item.strip() for item in forwarded_for.split(",") if item.strip()]
+            if parts:
+                index = len(parts) - TRUSTED_PROXY_COUNT
+                if index < 0:
+                    index = 0
+                return parts[index]
     if request.client and request.client.host:
         return request.client.host
     return ""
@@ -3344,7 +3376,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     if ACCOUNTS_FILE.exists() and ACCOUNTS_FILE.is_dir():
         raise RuntimeError(f"Accounts path is a directory, expected a file: {ACCOUNTS_FILE}")
     if not ACCOUNTS_FILE.exists():
-        ACCOUNTS_FILE.write_text("{}", encoding="utf-8")
+        _write_json_file(ACCOUNTS_FILE, {})
         logger.info(f"Created empty accounts file at {ACCOUNTS_FILE}")
     if AUTH_FILE.exists() and AUTH_FILE.is_dir():
         raise RuntimeError(f"Auth path is a directory, expected a file: {AUTH_FILE}")
@@ -3413,7 +3445,10 @@ app = FastAPI(
     title="Microsoft-Email-Manager API 服务",
     description="基于FastAPI和IMAP协议的高性能邮件管理系统",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if ENABLE_API_DOCS else None,
+    redoc_url="/redoc" if ENABLE_API_DOCS else None,
+    openapi_url="/openapi.json" if ENABLE_API_DOCS else None,
 )
 
 
@@ -3901,7 +3936,7 @@ async def create_open_email_access(email_id: str, payload: PublicShareAccessPayl
 async def get_open_emails(
     request: Request,
     email_id: str,
-    folder: str = Query("all", regex="^(inbox|junk|all)$"),
+    folder: str = Query("all", pattern="^(inbox|junk|all)$"),
     page: int = Query(1, ge=1),
     page_size: int = Query(100, ge=1, le=500),
     refresh: bool = Query(False, description="强制刷新缓存")
@@ -4031,7 +4066,7 @@ async def get_accounts_health_check_status(request: Request):
 async def get_emails(
     request: Request,
     email_id: str,
-    folder: str = Query("all", regex="^(inbox|junk|all)$"),
+    folder: str = Query("all", pattern="^(inbox|junk|all)$"),
     page: int = Query(1, ge=1),
     page_size: int = Query(100, ge=1, le=500),
     refresh: bool = Query(False, description="强制刷新缓存")

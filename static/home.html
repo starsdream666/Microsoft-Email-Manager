@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Microsoft-Email-Manager | 批量管理 微软邮箱账户 · 邮件与 API 自动化中枢</title>
-    <link rel="icon" type="image/png" href="/static/assets/logo.png?v=20260406">
-    <link rel="shortcut icon" type="image/png" href="/static/assets/logo.png?v=20260406">
+    <link rel="icon" type="image/svg+xml" href="/static/assets/logo-black.svg?v=20260626">
+    <link rel="shortcut icon" type="image/svg+xml" href="/static/assets/logo-black.svg?v=20260626">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -427,7 +427,7 @@
         <div class="container-custom mx-auto flex flex-wrap justify-between items-center py-3 md:py-4">
             <div class="site-brand">
                 <span class="site-logo-badge" aria-hidden="true">
-                    <img src="/static/assets/logo.png" alt="" class="site-logo-image">
+                    <img src="/static/assets/logo-black.svg" alt="" class="site-logo-image">
                 </span>
                 <div class="site-brand-copy">
                     <div class="site-brand-title">
@@ -439,6 +439,7 @@
             <div class="flex items-center gap-4 md:gap-6 text-sm font-medium">
                 <a href="#features" class="text-gray-600 hover:text-sky-700 transition hidden sm:block">特性</a>
                 <a href="#screenshots" class="text-gray-600 hover:text-sky-700 transition hidden sm:block">界面预览</a>
+                <a href="#desktop" class="text-gray-600 hover:text-sky-700 transition hidden sm:block">桌面版</a>
                 <a href="#deploy" class="text-gray-600 hover:text-sky-700 transition hidden sm:block">部署指南</a>
                 <a href="#faq" class="text-gray-600 hover:text-sky-700 transition hidden sm:block">常见问题</a>
                 <a href="https://github.com/Maishan-Inc/Microsoft-Email-Manager" target="_blank" class="flex items-center gap-1.5 bg-gray-900 text-white px-4 py-1.5 rounded-full text-sm hover:bg-gray-800 transition shadow-sm">
@@ -502,6 +503,9 @@
                     </a>
                     <a href="#screenshots" class="bg-transparent text-white/90 border border-white/30 px-6 py-3 rounded-xl hover:bg-white/5 transition flex items-center gap-2">
                         <i class="fas fa-images"></i> 产品预览
+                    </a>
+                    <a href="#desktop" class="bg-transparent text-white/90 border border-white/30 px-6 py-3 rounded-xl hover:bg-white/5 transition flex items-center gap-2">
+                        <i class="fas fa-desktop"></i> 下载桌面版
                     </a>
                 </div>
                 <div class="flex flex-wrap gap-6 mt-12 text-sm text-gray-200/80">
@@ -598,6 +602,49 @@
                 </div>
             </div>
             <p class="text-center text-sm text-gray-400 mt-6">✨ 点击任意图片可放大查看高清界面</p>
+        </div>
+    </section>
+
+    <section id="desktop" class="py-20 bg-gray-900 text-white relative overflow-hidden">
+        <div class="hero-glow hero-glow-a" aria-hidden="true" style="opacity:.35"></div>
+        <div class="hero-glow hero-glow-b" aria-hidden="true" style="opacity:.35"></div>
+        <div class="container-custom mx-auto relative" style="z-index:2">
+            <div class="text-center max-w-2xl mx-auto mb-12">
+                <span class="text-sky-400 font-semibold text-sm uppercase tracking-wide" style="font-family:'SF Mono','Fira Code',monospace">Desktop · 本地加密</span>
+                <h2 class="text-3xl md:text-4xl font-bold mt-2">已推出桌面版本</h2>
+                <p class="text-gray-300 mt-4">基于 <span class="font-semibold text-white">Tauri + Rust + Svelte</span> 的单机桌面端：账号凭据用 AES‑256‑GCM 本地加密、主密码不落盘；内存占用约 47MB；支持 Windows / macOS / Linux 三平台。</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-7 text-center transition hover:bg-white/10">
+                    <div class="w-14 h-14 mx-auto rounded-2xl bg-white/10 flex items-center justify-center text-3xl"><i class="fab fa-windows"></i></div>
+                    <h3 class="font-bold text-xl mt-4">Windows</h3>
+                    <p class="text-gray-400 text-sm mt-1">Windows 10 / 11</p>
+                    <p class="text-xs text-gray-500 mt-2" style="font-family:'SF Mono','Fira Code',monospace">.msi · .exe (NSIS)</p>
+                    <a href="https://github.com/Maishan-Inc/Microsoft-Email-Manager-Desktop/releases/latest" target="_blank" rel="noopener" class="mt-5 inline-flex items-center gap-2 bg-white text-gray-900 px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-gray-200 transition"><i class="fas fa-download"></i> 下载</a>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-7 text-center transition hover:bg-white/10">
+                    <div class="w-14 h-14 mx-auto rounded-2xl bg-white/10 flex items-center justify-center text-3xl"><i class="fab fa-apple"></i></div>
+                    <h3 class="font-bold text-xl mt-4">macOS</h3>
+                    <p class="text-gray-400 text-sm mt-1">macOS 11+（Apple Silicon / Intel）</p>
+                    <p class="text-xs text-gray-500 mt-2" style="font-family:'SF Mono','Fira Code',monospace">.dmg · .app</p>
+                    <a href="https://github.com/Maishan-Inc/Microsoft-Email-Manager-Desktop/releases/latest" target="_blank" rel="noopener" class="mt-5 inline-flex items-center gap-2 bg-white text-gray-900 px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-gray-200 transition"><i class="fas fa-download"></i> 下载</a>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-7 text-center transition hover:bg-white/10">
+                    <div class="w-14 h-14 mx-auto rounded-2xl bg-white/10 flex items-center justify-center text-3xl"><i class="fab fa-linux"></i></div>
+                    <h3 class="font-bold text-xl mt-4">Linux</h3>
+                    <p class="text-gray-400 text-sm mt-1">Debian / Ubuntu / Fedora</p>
+                    <p class="text-xs text-gray-500 mt-2" style="font-family:'SF Mono','Fira Code',monospace">.AppImage · .deb · .rpm</p>
+                    <a href="https://github.com/Maishan-Inc/Microsoft-Email-Manager-Desktop/releases/latest" target="_blank" rel="noopener" class="mt-5 inline-flex items-center gap-2 bg-white text-gray-900 px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-gray-200 transition"><i class="fas fa-download"></i> 下载</a>
+                </div>
+            </div>
+            <div class="mt-10 grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto text-sm">
+                <div class="flex items-center gap-2 text-gray-300"><i class="fas fa-lock text-sky-400"></i> 主密码 + AES‑256 本地加密</div>
+                <div class="flex items-center gap-2 text-gray-300"><i class="fas fa-bolt text-sky-400"></i> 约 47MB 内存，启动迅速</div>
+                <div class="flex items-center gap-2 text-gray-300"><i class="fas fa-shield-halved text-sky-400"></i> 离线优先 · 不连任何后端</div>
+            </div>
+            <div class="mt-8 text-center">
+                <a href="https://github.com/Maishan-Inc/Microsoft-Email-Manager-Desktop/releases" target="_blank" rel="noopener" class="text-sky-400 font-medium hover:underline"><i class="fas fa-arrow-up-right-from-square mr-1"></i> 查看全部版本与发行说明</a>
+            </div>
         </div>
     </section>
 

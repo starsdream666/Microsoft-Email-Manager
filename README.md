@@ -1,3 +1,9 @@
+> ## 🎉 换新来袭：Microsoft-Email-Manager v1.0.0 发布
+>
+> 本地化的 Microsoft 邮箱账户与邮件管理桌面应用。由此版本重构为 **Tauri + Rust + Svelte** 单机桌面端。
+>
+> 前往 👉 <https://github.com/Maishan-Inc/Microsoft-Email-Manager-Desktop>
+
 # Microsoft-Email-Manager
 
 Microsoft-Email-Manager 是由 Maishan Inc. 维护的 Microsoft 邮箱账户与邮件管理面板，提供 Web UI、批量导入、邮件检索、标签管理、API Key 管理和接口文档。

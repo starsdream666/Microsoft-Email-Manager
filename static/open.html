@@ -1860,7 +1860,11 @@
 
                 const frame = document.getElementById('htmlContentFrame');
                 if (frame && data.body_html) {
-                    frame.srcdoc = data.body_html;
+                    // 安全：邮件 HTML 攻击者可控。iframe 使用 sandbox 且【刻意不加 allow-scripts】，
+                    // 脚本被浏览器禁用以阻断 XSS。切勿加入 allow-scripts（配合 allow-same-origin 等同完全 XSS）。
+                    // 额外注入 CSP：禁脚本/对象/表单，只允许 data: 图片，阻断远程追踪像素。
+                    const cspMeta = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; style-src \'unsafe-inline\' data:; font-src data:; media-src data:; base-uri \'none\'; form-action \'none\'">';
+                    frame.srcdoc = cspMeta + data.body_html;
                 }
             } catch (error) {
                 modalContent.innerHTML = `<div class="loading">${escapeHtml(error.message)}</div>`;
