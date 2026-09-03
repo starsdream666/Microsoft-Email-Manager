@@ -7320,29 +7320,29 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
 
     <!-- 右键菜单 -->
     <div id="contextMenu" class="context-menu">
-        <div class="context-menu-item" onclick="openInNewTab()">
+        <div class="context-menu-item" data-icon="open" onclick="openInNewTab()">
             <span>↗</span>
             在新标签页中打开
         </div>
-        <div class="context-menu-item" onclick="copyAccountLink()">
+        <div class="context-menu-item" data-icon="copy" onclick="copyAccountLink()">
             <span>⧉</span>
             复制链接
         </div>
         <div class="context-menu-divider"></div>
-        <div class="context-menu-item" onclick="contextEditTags()">
+        <div class="context-menu-item" data-icon="tags" onclick="contextEditTags()">
             <span></span>
             管理分类与标签
         </div>
         <div class="context-menu-divider"></div>
-        <div class="context-menu-item" onclick="contextRefreshAccountToken()">
+        <div class="context-menu-item" data-icon="refresh" onclick="contextRefreshAccountToken()">
             <span>↻</span>
             刷新此账号 Token
         </div>
-        <div class="context-menu-item" onclick="contextExportAccount()">
+        <div class="context-menu-item" data-icon="export" onclick="contextExportAccount()">
             <span>↓</span>
             导出此账号
         </div>
-        <div class="context-menu-item danger" onclick="contextDeleteAccount()">
+        <div class="context-menu-item danger" data-icon="clear" onclick="contextDeleteAccount()">
             <span></span>
             删除账户
         </div>
@@ -8953,13 +8953,36 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
 
         function decorateStaticUi() {
             const navButtons = document.querySelectorAll('.sidebar .nav-item[data-page]');
-            ['accounts', 'plus', 'batch', 'classification', 'key', 'api', 'settings', 'mail'].forEach((name, index) => {
-                setButtonIcon(navButtons[index], name, true);
+            // 按 data-page 精确配图标,不依赖 DOM 顺序(新增导航项不会错位)
+            const navIconByPage = {
+                accounts: 'accounts',
+                addAccount: 'plus',
+                batchAdd: 'batch',
+                classifications: 'classification',
+                apiKeys: 'key',
+                apiDocs: 'api',
+                tokenRefresh: 'refresh',
+                settings: 'settings',
+                emails: 'mail'
+            };
+            navButtons.forEach(button => {
+                const iconName = navIconByPage[button.dataset.page];
+                if (iconName) setButtonIcon(button, iconName, true);
             });
 
-            const navLabels = ['邮箱账户管理', '添加账户', '批量添加', '分类编辑', 'API 密钥', 'API 文档', '设置', '邮件列表'];
-            navButtons.forEach((button, index) => {
-                const label = navLabels[index];
+            const navLabels = {
+                accounts: '邮箱账户管理',
+                addAccount: '添加账户',
+                batchAdd: '批量添加',
+                classifications: '分类编辑',
+                apiKeys: 'API 密钥',
+                apiDocs: 'API 文档',
+                tokenRefresh: 'Token 刷新',
+                settings: '设置',
+                emails: '邮件列表'
+            };
+            navButtons.forEach(button => {
+                const label = navLabels[button.dataset.page];
                 if (!label) return;
                 button.dataset.tooltip = label;
                 button.setAttribute('aria-label', label);
@@ -8993,6 +9016,8 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
             setButtonIcon(document.getElementById('accountsDisplaySettingsBtn'), 'settings');
             setButtonIcon(document.getElementById('accountsSelectAllBtn'), 'error');
             setButtonIcon(document.getElementById('accountsBatchConfigBtn'), 'classification');
+            setButtonIcon(document.getElementById('exportAccountsBtn'), 'export');
+            setButtonIcon(document.getElementById('accountsExportSelectedBtn'), 'export');
             setButtonIcon(document.querySelector('#accountsPage .btn-primary[onclick="searchAccounts()"]'), 'search');
             setButtonIcon(document.querySelector('#accountsPage .btn-secondary[onclick="clearSearch()"]'), 'clear');
             setButtonIcon(document.getElementById('prevPageBtn'), 'arrow-left');
@@ -9055,24 +9080,22 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
             });
 
             const contextItems = document.querySelectorAll('#contextMenu .context-menu-item');
-            ['open', 'copy', 'tags', 'clear'].forEach((name, index) => {
-                const item = contextItems[index];
-                if (!item) return;
+            contextItems.forEach(item => {
+                const iconName = item.dataset.icon;
+                if (!iconName) return;
                 const iconElement = item.querySelector('span');
                 if (!iconElement) return;
                 iconElement.className = 'ui-icon';
-                iconElement.innerHTML = UI_ICONS[name] || UI_ICONS.info;
+                iconElement.innerHTML = UI_ICONS[iconName] || UI_ICONS.info;
             });
 
         }
 
         function decorateAccountList(root = document) {
             root.querySelectorAll('.account-actions').forEach(actions => {
-                const buttons = actions.querySelectorAll('.btn');
-                setButtonIcon(buttons[0], 'mail');
-                setButtonIcon(buttons[1], 'open');
-                setButtonIcon(buttons[2], 'tags');
-                setButtonIcon(buttons[3], 'clear');
+                actions.querySelectorAll('.btn[data-icon]').forEach(btn => {
+                    setButtonIcon(btn, btn.dataset.icon);
+                });
             });
         }
 
@@ -10351,27 +10374,27 @@ example3@live.com----password3----client_id3----refresh_token3`;
                         </div>
                         ${bulkAccountSelectionEnabled ? `<div class="account-selection-chip">${isSelected ? '已选中' : '点击或拖拽选择'}</div>` : ''}
                         <div class="account-actions" onclick="event.stopPropagation()">
-                            <button class="btn btn-primary btn-sm" onclick="viewAccountEmails('${account.email_id}')">
+                            <button class="btn btn-primary btn-sm" data-icon="mail" onclick="viewAccountEmails('${account.email_id}')">
                                 <span></span>
                                 查看邮件
                             </button>
-                            <button class="btn btn-secondary btn-sm" onclick="openPublicShareModal('${account.email_id}')">
+                            <button class="btn btn-secondary btn-sm" data-icon="open" onclick="openPublicShareModal('${account.email_id}')">
                                 <span></span>
                                 公开页面
                             </button>
-                            <button class="btn btn-secondary btn-sm" onclick="editAccountTags('${account.email_id}')">
+                            <button class="btn btn-secondary btn-sm" data-icon="tags" onclick="editAccountTags('${account.email_id}')">
                                 <span></span>
                                 管理分类
                             </button>
-                            <button class="btn btn-secondary btn-sm" onclick="exportSingleAccount('${account.email_id}')" title="导出此账号(邮箱----密码----client_id----refresh_token)">
+                            <button class="btn btn-secondary btn-sm" data-icon="export" onclick="exportSingleAccount('${account.email_id}')" title="导出此账号(邮箱----密码----client_id----refresh_token)">
                                 <span></span>
                                 导出
                             </button>
-                            <button class="btn btn-secondary btn-sm" onclick="refreshSingleAccount('${account.email_id}')" title="立即刷新此账号的 Refresh Token 并回存轮换结果">
+                            <button class="btn btn-secondary btn-sm" data-icon="refresh" onclick="refreshSingleAccount('${account.email_id}')" title="立即刷新此账号的 Refresh Token 并回存轮换结果">
                                 <span></span>
                                 刷新 Token
                             </button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteAccount('${account.email_id}')">
+                            <button class="btn btn-danger btn-sm" data-icon="clear" onclick="deleteAccount('${account.email_id}')">
                                 <span></span>
                                 删除
                             </button>
