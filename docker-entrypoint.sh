@@ -3,7 +3,6 @@ set -e
 
 HOST=${HOST:-"0.0.0.0"}
 PORT=${PORT:-8000}
-WORKERS=${WORKERS:-1}
 DATA_DIR=${DATA_DIR:-/app/data}
 ACCOUNTS_FILE=${ACCOUNTS_FILE:-$DATA_DIR/accounts.json}
 
@@ -28,11 +27,12 @@ echo "Starting Outlook Email API service..."
 echo "Configuration:"
 echo "  - Host: $HOST"
 echo "  - Port: $PORT"
-echo "  - Workers: $WORKERS"
 echo "  - Data dir: $DATA_DIR"
 echo "  - Accounts file: $ACCOUNTS_FILE"
 
 # 以非 root 用户 appuser 启动应用（容器以 root 启动仅用于修正挂载卷属主，随后立即降权）。
+# 注意:python main.py 固定单 worker(uvicorn.run 默认 workers=1)。本应用内含自动刷新
+# 后台任务,多 worker 会导致重复刷新与轮换写竞争,请勿改用 `uvicorn --workers N`。
 if command -v su-exec >/dev/null 2>&1; then
     exec su-exec appuser:appuser python main.py
 fi

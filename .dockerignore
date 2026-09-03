@@ -51,6 +51,7 @@ Thumbs.db
 demo.py
 demo2.py
 emails/
+tests/
 
 # Docker相关
 Dockerfile
@@ -63,6 +64,7 @@ Task*.md
 
 # 用户数据（将通过数据卷挂载）
 accounts.json
+data/
 
 # 其他不需要的文件夹
 4.30caprun-微软注册/ 

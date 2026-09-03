@@ -96,6 +96,122 @@ GRAPH_API_BASE_URL = "https://graph.microsoft.com/v1.0"
 COMMON_TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 DEFAULT_ACCOUNT_AUTH_METHOD = "imap"
 SUPPORTED_ACCOUNT_AUTH_METHODS = {"imap", "graph", "oauth2"}
+# 后台自动刷新 refresh_token 的周期配置(默认 24 小时)。微软对 MSA refresh token 的滑动
+# 有效期约 90 天,只要周期内成功刷新一次即可无限续期;刷新响应中轮换出的新 token 由
+# persist_rotated_refresh_token 落盘(见 get_access_token)。禁用请设 TOKEN_AUTO_REFRESH_ENABLED=false。
+TOKEN_AUTO_REFRESH_INTERVAL_MIN_HOURS = 1
+TOKEN_AUTO_REFRESH_INTERVAL_MAX_HOURS = 720
+
+
+def _env_token_auto_refresh_interval() -> int:
+    """解析 TOKEN_AUTO_REFRESH_INTERVAL_HOURS 环境变量,非法值回退 24,并限幅 [1,720]。"""
+    try:
+        parsed = int(os.getenv("TOKEN_AUTO_REFRESH_INTERVAL_HOURS", "24"))
+    except (TypeError, ValueError):
+        try:
+            parsed = int(float(os.getenv("TOKEN_AUTO_REFRESH_INTERVAL_HOURS", "24")))
+        except (TypeError, ValueError, OverflowError):
+            return 24
+    return max(TOKEN_AUTO_REFRESH_INTERVAL_MIN_HOURS,
+               min(TOKEN_AUTO_REFRESH_INTERVAL_MAX_HOURS, parsed))
+
+
+def _env_token_auto_refresh_enabled() -> bool:
+    """解析 TOKEN_AUTO_REFRESH_ENABLED 环境变量;仅显式 false/no/off/0/disable 视为禁用。"""
+    return str(os.getenv("TOKEN_AUTO_REFRESH_ENABLED", "true")).strip().lower() not in {
+        "0", "false", "no", "off", "disable", "disabled",
+    }
+
+
+TOKEN_AUTO_REFRESH_ENABLED = _env_token_auto_refresh_enabled()
+TOKEN_AUTO_REFRESH_INTERVAL_HOURS = _env_token_auto_refresh_interval()
+# 导出账户时密码字段的占位符。系统不保存邮箱明文密码;占位串不含连续 4 个连字符,
+# 避免与 ---- 字段分隔符冲突(批量导入解析时会忽略密码字段)。
+PASSWORD_PLACEHOLDER = "password-not-stored"
+
+
+# ============================================================================
+# Refresh token 自动刷新配置解析(供默认值/站点设置/调度循环统一使用)
+# ============================================================================
+
+# 站点设置合法取值范围:1~720 小时(30 天)。MSA refresh token 约 90 天滑动过期,
+# 上限 720 仍远小于窗口,下限 1 防止配置错误导致高频空转。
+_TOKEN_AUTO_REFRESH_FALSE_STRINGS = frozenset({"0", "false", "no", "off", "disable", "disabled"})
+
+
+def normalize_token_auto_refresh_interval(value: Any, default: int) -> int:
+    """把任意来源的刷新间隔解析为 [1, 720] 的整数。
+
+    - None/空串/无法解析的值 → default
+    - 0 或负数 → 下限 1(注意:禁用请用 enabled=false,interval 没有"0=禁用"语义)
+    - 超过 720 → 上限 720
+    """
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        # 兼容 "24.0" / " 24 " 这类宽松输入,仍失败则回退默认
+        try:
+            parsed = int(float(value))
+        except (TypeError, ValueError, OverflowError):
+            return default
+    return max(TOKEN_AUTO_REFRESH_INTERVAL_MIN_HOURS,
+               min(TOKEN_AUTO_REFRESH_INTERVAL_MAX_HOURS, parsed))
+
+
+def normalize_token_auto_refresh_enabled(value: Any, default: bool) -> bool:
+    """把任意来源的开关值规范化为 bool。
+
+    - 已是 bool → 原样
+    - 字符串:true/1/yes/on/enable → True;false/0/no/off/disable → False
+    - 其它数值:非 0 → True
+    - None/无法解析 → default
+    """
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return value != 0
+    text = str(value).strip().lower()
+    if not text:
+        return default
+    if text in _TOKEN_AUTO_REFRESH_FALSE_STRINGS:
+        return False
+    if text in {"1", "true", "yes", "on", "enable", "enabled"}:
+        return True
+    return default
+
+
+# 供「设置变更后唤醒调度循环」使用的进程内事件。在 lifespan 启动时创建并赋值;
+# update_site_settings 保存后调用 wake_token_auto_refresh_scheduler() 通知循环立即重算。
+_token_auto_refresh_event: Optional[asyncio.Event] = None
+
+
+def wake_token_auto_refresh_scheduler() -> None:
+    """站点设置中的自动刷新配置变化后调用:唤醒后台调度循环立即重新计时。
+
+    线程安全:asyncio.Event.set() 可在任意线程调用,后续 loop 内 wait 会返回。
+    事件未初始化(未启用自动刷新/未启动)时为空操作。
+    """
+    event = _token_auto_refresh_event
+    if event is not None:
+        event.set()
+
+
+def resolve_token_auto_refresh_config(settings: Optional[dict[str, Any]]) -> tuple[bool, int]:
+    """从 site_settings(或 None)解析自动刷新开关与间隔(小时)。
+
+    返回 (enabled, interval_hours);缺失/损坏字段回退到 env 默认值。
+    纯函数,便于调度循环与单元测试共用。
+    """
+    source = settings if isinstance(settings, dict) else {}
+    enabled = normalize_token_auto_refresh_enabled(
+        source.get("token_auto_refresh_enabled"), TOKEN_AUTO_REFRESH_ENABLED
+    )
+    interval_hours = normalize_token_auto_refresh_interval(
+        source.get("token_auto_refresh_interval_hours"), TOKEN_AUTO_REFRESH_INTERVAL_HOURS
+    )
+    return enabled, interval_hours
 
 # IMAP服务器配置
 IMAP_SERVER = "outlook.live.com"
@@ -380,6 +496,8 @@ class SiteSettingsPayload(BaseModel):
     turnstile_secret_key: Optional[str] = Field(default=None, max_length=512)
     turnstile_enabled_for_admin_login: bool = Field(default=False)
     turnstile_enabled_for_public_access: bool = Field(default=False)
+    token_auto_refresh_enabled: bool = Field(default=True)
+    token_auto_refresh_interval_hours: int = Field(default=24, ge=1, le=720)
 
 # ============================================================================
 # IMAP连接池管理
@@ -1166,6 +1284,50 @@ async def save_account_credentials(email_id: str, credentials: AccountCredential
         raise HTTPException(status_code=500, detail="Failed to save account")
 
 
+async def persist_rotated_refresh_token(email_id: str, new_refresh_token: str,
+                                        expected_current_refresh_token: str = "") -> bool:
+    """微软在刷新时可能轮换 refresh_token,将其落盘,避免 90 天静默过期。
+
+    仅更新 accounts.json 中的 refresh_token,保留 auth_method/category_key/tag_keys 等其余字段。
+
+    采用 compare-and-set 语义防并发覆盖:只有当磁盘中该账号当前的 refresh_token
+    仍等于本次 OAuth 请求所使用的旧 token(expected_current_refresh_token)时,才允许写入
+    响应返回的新 token。若期间管理员已重新导入/更新了同一账号(磁盘 token 与 expected
+    不一致),说明本次刷新基于过期快照,放弃写入以免覆盖新凭据。
+    """
+    token_value = str(new_refresh_token or "").strip()
+    if not token_value:
+        return False
+    expected_value = str(expected_current_refresh_token or "").strip()
+    try:
+        with auth_lock:
+            accounts = _read_json_file(ACCOUNTS_FILE, {})
+            accounts = accounts if isinstance(accounts, dict) else {}
+            account = accounts.get(email_id)
+            if not account or not isinstance(account, dict):
+                logger.warning("Rotated refresh_token skipped for %s: 账号不存在", email_id)
+                return False
+            current = str(account.get("refresh_token") or "").strip()
+            if expected_value and current != expected_value:
+                # 磁盘 token 已非本次请求所用旧值:管理员已更新,避免覆盖新凭据
+                logger.warning(
+                    "Rotated refresh_token skipped for %s: 磁盘 token 已变化(长度 %d != 期望 %d),放弃写入",
+                    email_id,
+                    len(current),
+                    len(expected_value),
+                )
+                return False
+            if current == token_value:
+                return False
+            account["refresh_token"] = token_value
+            _write_json_file(ACCOUNTS_FILE, accounts)
+        logger.info("Rotated refresh_token persisted for %s (length=%d)", email_id, len(token_value))
+        return True
+    except Exception as exc:
+        logger.error("Failed to persist rotated refresh_token for %s: %s", email_id, exc)
+        return False
+
+
 async def get_all_accounts(
     page: int = 1, 
     page_size: int = 10, 
@@ -1543,6 +1705,8 @@ def get_default_site_settings() -> dict[str, Any]:
         "turnstile_secret_key": "",
         "turnstile_enabled_for_admin_login": False,
         "turnstile_enabled_for_public_access": False,
+        "token_auto_refresh_enabled": TOKEN_AUTO_REFRESH_ENABLED,
+        "token_auto_refresh_interval_hours": TOKEN_AUTO_REFRESH_INTERVAL_HOURS,
         "updated_at": None,
     }
 
@@ -1694,6 +1858,12 @@ def load_site_settings() -> dict[str, Any]:
             "turnstile_secret_key": normalize_turnstile_value(data.get("turnstile_secret_key")),
             "turnstile_enabled_for_admin_login": bool(data.get("turnstile_enabled_for_admin_login", False)),
             "turnstile_enabled_for_public_access": bool(data.get("turnstile_enabled_for_public_access", False)),
+            "token_auto_refresh_enabled": normalize_token_auto_refresh_enabled(
+                data.get("token_auto_refresh_enabled"), defaults["token_auto_refresh_enabled"]
+            ),
+            "token_auto_refresh_interval_hours": normalize_token_auto_refresh_interval(
+                data.get("token_auto_refresh_interval_hours"), defaults["token_auto_refresh_interval_hours"]
+            ),
             "updated_at": data.get("updated_at"),
         }
 
@@ -1735,6 +1905,12 @@ def save_site_settings(settings: dict[str, Any]) -> dict[str, Any]:
         "turnstile_secret_key": normalize_turnstile_value(settings.get("turnstile_secret_key")),
         "turnstile_enabled_for_admin_login": bool(settings.get("turnstile_enabled_for_admin_login", False)),
         "turnstile_enabled_for_public_access": bool(settings.get("turnstile_enabled_for_public_access", False)),
+        "token_auto_refresh_enabled": normalize_token_auto_refresh_enabled(
+            settings.get("token_auto_refresh_enabled"), TOKEN_AUTO_REFRESH_ENABLED
+        ),
+        "token_auto_refresh_interval_hours": normalize_token_auto_refresh_interval(
+            settings.get("token_auto_refresh_interval_hours"), TOKEN_AUTO_REFRESH_INTERVAL_HOURS
+        ),
         "updated_at": datetime.utcnow().isoformat(),
     }
     if not payload["share_domain"]:
@@ -2576,6 +2752,20 @@ async def get_access_token(credentials: AccountCredentials) -> str:
                                 status_code=401,
                                 detail="Failed to obtain access token from response",
                             )
+
+                        # 微软可能在刷新时轮换 refresh_token:若响应带新 token,立即回存,
+                        # 否则旧 refresh_token 会在约 90 天静默过期,导致账号无法再刷新。
+                        # 传 expected=本次请求所用旧 token,CAS 防覆盖管理员并发保存的新凭据。
+                        rotated = str(token_data.get("refresh_token") or "").strip()
+                        if rotated and rotated != credentials.refresh_token:
+                            try:
+                                await persist_rotated_refresh_token(
+                                    credentials.email,
+                                    rotated,
+                                    expected_current_refresh_token=credentials.refresh_token,
+                                )
+                            except Exception:
+                                logger.exception("Failed to persist rotated refresh_token for %s", credentials.email)
 
                         logger.info(
                             "Successfully obtained %s access token for %s via %s",
@@ -3432,10 +3622,66 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     cleanup_expired_open_access()
     cleanup_expired_admin_login_attempts()
 
+    # 后台自动刷新 refresh_token:按站点设置里的开关与间隔(可前端修改)周期调用
+    # refresh_all_account_health(),每次都会真实执行 OAuth 刷新(顺带把轮换出的
+    # 新 token 落盘,见 get_access_token)。环境变量仅作进程启动时的初始默认。
+    auto_refresh_task: asyncio.Task | None = None
+
+    async def _auto_refresh_loop() -> None:
+        global _token_auto_refresh_event
+        _token_auto_refresh_event = asyncio.Event()
+        logger.info("Token auto-refresh loop started (env enabled=%s)", TOKEN_AUTO_REFRESH_ENABLED)
+        while True:
+            try:
+                enabled, interval_hours = resolve_token_auto_refresh_config(load_site_settings())
+                if enabled:
+                    logger.info(
+                        "Token auto-refresh: 将于 %s 小时后执行(配置变更会即时唤醒)",
+                        interval_hours,
+                    )
+                else:
+                    logger.info("Token auto-refresh: 已禁用,等待配置唤醒")
+                try:
+                    # 等待到计划时刻;配置变更(Event 被 set)会提前返回并重新计时
+                    await asyncio.wait_for(
+                        _token_auto_refresh_event.wait(),
+                        timeout=interval_hours * 3600,
+                    )
+                    _token_auto_refresh_event.clear()
+                    logger.info("Token auto-refresh: 检测到配置变更,重新计算调度")
+                    continue
+                except asyncio.TimeoutError:
+                    pass
+                # 执行前再确认一次当前设置,避免旧快照下多刷一次
+                enabled, _ = resolve_token_auto_refresh_config(load_site_settings())
+                if not enabled:
+                    logger.info("Token auto-refresh: 到点但已被禁用,跳过本轮")
+                    continue
+                await refresh_all_account_health()
+            except asyncio.CancelledError:
+                logger.info("Token auto-refresh loop cancelled")
+                raise
+            except Exception as exc:
+                logger.exception("Token auto-refresh loop iteration failed: %s", exc)
+                try:
+                    await asyncio.wait_for(_token_auto_refresh_event.wait(), timeout=3600)
+                    _token_auto_refresh_event.clear()
+                except asyncio.TimeoutError:
+                    pass
+
+    if TOKEN_AUTO_REFRESH_ENABLED:
+        auto_refresh_task = asyncio.create_task(_auto_refresh_loop())
+
     yield
 
     # 应用关闭
     logger.info("Shutting down Microsoft-Email-Manager...")
+    if auto_refresh_task is not None:
+        auto_refresh_task.cancel()
+        try:
+            await auto_refresh_task
+        except asyncio.CancelledError:
+            pass
     logger.info("Closing IMAP connection pool...")
     imap_pool.close_all_connections()
     logger.info("Application shutdown complete.")
@@ -3671,6 +3917,8 @@ async def get_site_settings(request: Request):
 async def update_site_settings(payload: SiteSettingsPayload, request: Request):
     require_authenticated(request)
     saved = save_site_settings(payload.dict())
+    # 若刷新开关/间隔发生变化,唤醒后台调度循环立即重新计时(而非等满旧周期)
+    wake_token_auto_refresh_scheduler()
     return {
         **saved,
         "admin_login_url": f"{get_request_origin(request)}{saved['admin_login_path']}",
@@ -3968,6 +4216,59 @@ async def get_accounts(
     """获取所有已加载的邮箱账户列表，支持分页和搜索"""
     require_authenticated(request, allow_api_key=True)
     return await get_all_accounts(page, page_size, email_search, email_domain, tag_search, category_search, category_key, tag_key)
+
+
+@app.get("/accounts/export")
+async def export_accounts(request: Request):
+    """导出全部邮箱账户，每行格式：邮箱----密码----client_id----refresh_token
+
+    该格式与「批量添加」兼容，导出的文本可直接粘贴回批量添加框重新导入
+    （批量导入解析会忽略密码字段，仅取 client_id 与 refresh_token）。
+    注意：本系统不保存邮箱明文密码，故密码字段统一以占位符 password-not-stored 填充。
+
+    权限与审计：导出包含全部 refresh_token，属高敏感操作，仅允许管理员 session
+    （不允许 API key）；每次成功导出记录审计日志（认证主体、来源、时间、记录数），
+    日志不含任何 token 正文。字段中含 \\r、\\n 或连续 4 个连字符的异常账号会被跳过，
+    避免破坏导出文本的可再导入性。
+    """
+    auth = require_authenticated(request, allow_api_key=False)  # 仅 session,拒绝 API key
+    accounts_data = load_accounts_data()
+    lines = []
+    skipped = 0
+    for email_id, account_info in accounts_data.items():
+        if not isinstance(account_info, dict):
+            skipped += 1
+            continue
+        email_addr = str(email_id or "").strip()
+        client_id = str(account_info.get("client_id") or "").strip()
+        refresh_token = str(account_info.get("refresh_token") or "").strip()
+        if not email_addr or not client_id or not refresh_token:
+            skipped += 1
+            continue
+        # 字段含换行或分隔符会破坏导出文本的「每行四段」结构,甚至注入额外记录
+        if any("\r" in f or "\n" in f or "----" in f for f in (email_addr, client_id, refresh_token)):
+            logger.warning("Skip account %s during export: 字段含非法字符(换行/分隔符)", email_addr)
+            skipped += 1
+            continue
+        lines.append(f"{email_addr}----{PASSWORD_PLACEHOLDER}----{client_id}----{refresh_token}")
+    content = "\n".join(lines)
+    if content:
+        content += "\n"
+    # 审计日志:认证类型、调用方、来源 IP、时间、导出/跳过数量;不记录 token 正文
+    logger.info(
+        "Account export performed by auth_type=%s subject=%s ip=%s records=%d skipped=%d",
+        auth.get("auth_type", "?"),
+        auth.get("key_name") or auth.get("key_id") or "admin_session",
+        get_request_ip(request),
+        len(lines),
+        skipped,
+    )
+    filename = f"accounts_export_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.txt"
+    return Response(
+        content=content,
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/classifications", response_model=ClassificationCatalogResponse)
@@ -4374,7 +4675,11 @@ if __name__ == "__main__":
     HOST = "0.0.0.0"
     PORT = 8000
 
-    logger.info(f"Starting Microsoft-Email-Manager on {HOST}:{PORT}")
+    # 注意:本应用内置后台自动刷新任务(lifespan 内),refresh token 轮换写回依赖
+    # 进程内事件唤醒与 auth_lock(仅进程内)。若用 `uvicorn --workers N`(N>1) 启动,
+    # 每个 worker 都会创建各自的自动刷新任务与事件,导致重复刷新与写竞争。
+    # 请保持单 worker 运行;需要横向扩容时应把定时刷新迁移为外部单实例 job。
+    logger.info(f"Starting Microsoft-Email-Manager on {HOST}:{PORT} (single worker)")
     logger.info("Access the web interface at: http://localhost:8000")
     logger.info("Access the API documentation at: http://localhost:8000/docs")
 

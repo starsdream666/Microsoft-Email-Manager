@@ -5706,6 +5706,10 @@
                                     <span></span>
                                     检查账户健康
                                 </button>
+                                <button class="btn btn-secondary btn-sm" onclick="exportAccounts()" id="exportAccountsBtn" title="导出全部账户为 邮箱----密码----client_id----refresh_token 格式">
+                                    <span></span>
+                                    导出账户
+                                </button>
                                 <button class="btn btn-secondary btn-sm" onclick="showPage('batchAdd')">
                                     <span></span>
                                     批量添加
@@ -6787,6 +6791,27 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
                                     为了减少页面跳动，登录页和公开密码页都预留了固定高度的验证区域。请确保你的 Turnstile 小组件已允许管理员域名和分享域名访问。
                                 </div>
                             </div>
+
+                                <div class="api-key-panel">
+                                    <h4 style="margin: 0 0 16px; color: #0f172a;">Token 自动刷新</h4>
+                                    <div class="form-group">
+                                        <label class="public-share-inline">
+                                            <input type="checkbox" id="siteSettingsTokenAutoRefreshEnabled">
+                                            <span>启用 Refresh Token 后台自动刷新</span>
+                                        </label>
+                                        <div class="public-share-help">开启后，系统会按下方间隔周期性刷新所有账户的 Refresh Token，避免微软约 90 天静默过期导致无法收信。</div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="siteSettingsTokenAutoRefreshInterval">刷新间隔（小时）</label>
+                                        <input type="number" id="siteSettingsTokenAutoRefreshInterval" class="form-input" min="1" max="720" step="1" placeholder="24">
+                                        <div class="public-share-help">范围 1～720 小时。建议 ≤ 720（30 天）即可远小于 90 天过期窗口；默认 24 小时。保存后下一轮生效。</div>
+                                    </div>
+                                    <div class="api-docs-auth-box">
+                                        <p class="text-sm" style="color: #475569; line-height: 1.7;">
+                                            手动立即刷新可前往「邮箱账户管理」页点击「检查账户健康」——每次检查都会真实刷新 Token 并保存轮换结果。
+                                        </p>
+                                    </div>
+                                </div>
                         </div>
 
                         <div id="siteSettingsStatus" class="public-share-status" style="margin-top: 20px;">正在读取当前站点设置...</div>
@@ -9781,6 +9806,54 @@ example3@live.com----password3----client_id3----refresh_token3`;
             }
         }
 
+        async function exportAccounts() {
+            const button = document.getElementById('exportAccountsBtn');
+            if (!button) return;
+            button.disabled = true;
+            const originalHtml = button.innerHTML;
+            button.innerHTML = buttonLabel('loading', '导出中...', 'spinning');
+            try {
+                const response = await fetch(API_BASE + '/accounts/export', { credentials: 'same-origin' });
+                if (!response.ok) {
+                    let detail = 'HTTP ' + response.status;
+                    try {
+                        const errData = await response.json();
+                        detail = errData.detail || detail;
+                    } catch (_e) { /* 非 JSON 响应 */ }
+                    if (response.status === 401 || response.status === 403) {
+                        await initializeAuthFlow('登录状态已失效，请重新登录');
+                    }
+                    throw new Error(detail);
+                }
+                const content = await response.text();
+                if (!content.trim()) {
+                    showNotification('当前没有可导出的账户', 'warning');
+                    return;
+                }
+                let filename = 'accounts_export.txt';
+                const disposition = response.headers.get('Content-Disposition') || '';
+                const match = disposition.match(/filename="?([^";]+)"?/);
+                if (match) filename = match[1];
+
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                showNotification(`已导出 ${content.trim().split('\n').length} 个账户`, 'success');
+            } catch (error) {
+                showNotification('导出账户失败: ' + error.message, 'error');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+            }
+        }
+
         function renderAccountsList() {
             const accountsList = document.getElementById('accountsList');
             if (!accountsList) return;
@@ -11379,12 +11452,18 @@ Authorization: Bearer om_your_api_key
             const shareTurnstileText = shareDomainTurnstileEnabled
                 ? '公开分享域名已启用独立 Turnstile'
                 : '公开分享域名未启用独立 Turnstile';
+            const tokenRefreshEnabled = config.token_auto_refresh_enabled !== false;
+            const tokenRefreshInterval = Number(config.token_auto_refresh_interval_hours) || 24;
+            const tokenRefreshText = tokenRefreshEnabled
+                ? `已启用，每 ${tokenRefreshInterval} 小时自动刷新`
+                : '已禁用';
             const summary = message || `网站主页会显示“${config.home_title || 'Microsoft-Email-Manager'}”及其介绍文案。`;
             statusElement.innerHTML = `
                 <strong>当前后台入口：</strong>${escapeHtml(adminPath)}<br>
                 <strong>分享域名：</strong>${escapeHtml(shareText)}<br>
                 <strong>Turnstile：</strong>${escapeHtml(turnstileText)}<br>
                 <strong>公开域名独立 Turnstile：</strong>${escapeHtml(shareTurnstileText)}<br>
+                <strong>Token 自动刷新：</strong>${escapeHtml(tokenRefreshText)}<br>
                 <strong>说明：</strong>${escapeHtml(summary)}
             `;
         }
@@ -11434,6 +11513,8 @@ Authorization: Bearer om_your_api_key
                 document.getElementById('siteSettingsTurnstileSecretKey').value = config.turnstile_secret_key || '';
                 document.getElementById('siteSettingsTurnstileAdminEnabled').checked = !!config.turnstile_enabled_for_admin_login;
                 document.getElementById('siteSettingsTurnstilePublicEnabled').checked = !!config.turnstile_enabled_for_public_access;
+                document.getElementById('siteSettingsTokenAutoRefreshEnabled').checked = config.token_auto_refresh_enabled !== false;
+                document.getElementById('siteSettingsTokenAutoRefreshInterval').value = Number(config.token_auto_refresh_interval_hours) || 24;
                 toggleShareDomainSettings();
                 renderSiteSettingsStatus(config);
                 if (showReloadMessage) {
@@ -11461,6 +11542,9 @@ Authorization: Bearer om_your_api_key
             const turnstileSecretKey = document.getElementById('siteSettingsTurnstileSecretKey').value.trim();
             const turnstileAdminEnabled = document.getElementById('siteSettingsTurnstileAdminEnabled').checked;
             const turnstilePublicEnabled = document.getElementById('siteSettingsTurnstilePublicEnabled').checked;
+            const tokenAutoRefreshEnabled = document.getElementById('siteSettingsTokenAutoRefreshEnabled').checked;
+            const tokenAutoRefreshIntervalRaw = document.getElementById('siteSettingsTokenAutoRefreshInterval').value;
+            const tokenAutoRefreshInterval = Math.max(1, Math.min(720, Math.round(Number(tokenAutoRefreshIntervalRaw) || 24)));
             const previousAdminPath = getAdminBasePath();
 
             if (!homeTitle) {
@@ -11510,7 +11594,9 @@ Authorization: Bearer om_your_api_key
                         turnstile_site_key: turnstileSiteKey,
                         turnstile_secret_key: turnstileSecretKey,
                         turnstile_enabled_for_admin_login: turnstileAdminEnabled,
-                        turnstile_enabled_for_public_access: shareDomainTurnstileEnabled ? false : turnstilePublicEnabled
+                        turnstile_enabled_for_public_access: shareDomainTurnstileEnabled ? false : turnstilePublicEnabled,
+                        token_auto_refresh_enabled: tokenAutoRefreshEnabled,
+                        token_auto_refresh_interval_hours: tokenAutoRefreshInterval
                     })
                 });
 
@@ -11526,6 +11612,8 @@ Authorization: Bearer om_your_api_key
                 document.getElementById('siteSettingsTurnstileSecretKey').value = config.turnstile_secret_key || '';
                 document.getElementById('siteSettingsTurnstileAdminEnabled').checked = !!config.turnstile_enabled_for_admin_login;
                 document.getElementById('siteSettingsTurnstilePublicEnabled').checked = !!config.turnstile_enabled_for_public_access;
+                document.getElementById('siteSettingsTokenAutoRefreshEnabled').checked = config.token_auto_refresh_enabled !== false;
+                document.getElementById('siteSettingsTokenAutoRefreshInterval').value = Number(config.token_auto_refresh_interval_hours) || 24;
                 toggleShareDomainSettings();
                 renderSiteSettingsStatus(config, '设置已保存，主页介绍、后台入口、公开分享域名和 Turnstile 配置都已更新。');
                 showNotification('站点设置已保存', 'success');

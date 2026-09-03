@@ -148,6 +148,15 @@ docker-compose up -d
 
 - `GET /api/auth/state`
 
+Refresh Token 自动刷新(可选环境变量):
+
+| 变量名 | 默认值 | 说明 |
+| --- | --- | --- |
+| `TOKEN_AUTO_REFRESH_ENABLED` | `true` | 进程级硬开关。设为 `false` 时后台自动刷新任务完全不创建(即使站点设置里开启也无效)。通常保持默认,在后台「设置 → Token 自动刷新」里控制即可 |
+| `TOKEN_AUTO_REFRESH_INTERVAL_HOURS` | `24` | 仅当站点设置尚未保存过该字段时,作为首次初始化的默认间隔(1~720 小时,越界自动限幅);管理员在后台保存后以站点设置值为准 |
+
+> **单 worker 约束**:本应用内置后台自动刷新任务,依赖进程内事件与文件锁。**请勿**用 `uvicorn --workers N`(N>1) 或 gunicorn 多 worker 启动——每个 worker 都会各自刷新并竞争写 `accounts.json`,导致重复请求与轮换写冲突。本项目入口固定单 worker(见 `docker-entrypoint.sh`);需要横向扩容时,应把定时刷新迁移为独立的外部单实例 job。
+
 反向代理补充说明：
 
 - 如果你的站点前面挂了 Nginx、宝塔反向代理、Caddy、Cloudflare 或其他 HTTPS 终止层，必须同时转发 `Host` 和 `X-Forwarded-Proto`

@@ -1,11 +1,13 @@
 .vscode
 __pycache__
+*.pyc
 accounts.json
 .DS_Store
 
 # Local temp / verification artifacts
 __tmp_*
 .tmp-e2e/
+.pytest_cache/
 
 # Local Node scratch files
 /package.json
@@ -13,3 +15,8 @@ __tmp_*
 
 # Runtime-generated data
 data/
+
+# 审查/修复辅助产物与回滚备份(不随源码提交)
+*.bak
+MODIFICATION_NOTES.md
+REVIEW_FIX_PLAN.md
