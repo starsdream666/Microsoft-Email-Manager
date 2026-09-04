@@ -3824,6 +3824,23 @@ if cors_allow_origins:
 app.title = "Microsoft-Email-Manager API"
 app.description = "Microsoft-Email-Manager 邮件管理后台服务"
 
+# ============================================================================
+# HTML 页面响应(带 no-cache,避免浏览器/代理缓存旧版页面)
+# ============================================================================
+
+def _html_response(path: Path) -> Response:
+    """返回 HTML 页面并禁用启发式缓存:允许缓存但必须回源校验(ETag 304)。
+
+    管理端 index.html 会随版本迭代,若浏览器对 /admin/... 整页导航沿用旧缓存,
+    会导致「重登/导入后回到旧版、新按钮消失」的假象,须刷新才恢复。
+    no-cache 保证每次导航都向服务端校验,内容变化即拿到最新版。
+    """
+    return FileResponse(
+        path,
+        headers={"Cache-Control": "no-cache, must-revalidate"},
+    )
+
+
 @app.middleware("http")
 async def site_access_middleware(request: Request, call_next):
     site_settings = load_site_settings()
@@ -3850,7 +3867,7 @@ async def site_access_middleware(request: Request, call_next):
             return csrf_violation
 
     if request.method in {"GET", "HEAD"} and (path == admin_path or path.startswith(admin_path + "/")):
-        return FileResponse(STATIC_DIR / "index.html")
+        return _html_response(STATIC_DIR / "index.html")
 
     return await call_next(request)
 
@@ -4645,7 +4662,7 @@ async def delete_account(email_id: str, request: Request):
 
 @app.get("/open/emails/{email_id}")
 async def open_email_page(email_id: str):
-    return FileResponse(STATIC_DIR / "open.html")
+    return _html_response(STATIC_DIR / "open.html")
 
 @app.get("/")
 async def root(request: Request):
@@ -4656,10 +4673,10 @@ async def root(request: Request):
     if share_domain_enabled and hosts_match(get_request_host(request), share_domain):
         if not auth_is_configured():
             return PlainTextResponse("Not Found", status_code=404)
-        return FileResponse(STATIC_DIR / "home.html")
+        return _html_response(STATIC_DIR / "home.html")
     if not auth_is_configured():
-        return FileResponse(STATIC_DIR / "index.html")
-    return FileResponse(STATIC_DIR / "home.html")
+        return _html_response(STATIC_DIR / "index.html")
+    return _html_response(STATIC_DIR / "home.html")
 
 @app.delete("/cache/{email_id}")
 async def clear_cache(email_id: str, request: Request):
