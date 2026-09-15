@@ -60,6 +60,7 @@ ACCOUNT_HEALTH_FILE = Path(os.getenv("ACCOUNT_HEALTH_FILE", str(DATA_DIR / "acco
 ACCOUNT_CLASSIFICATIONS_FILE = Path(os.getenv("ACCOUNT_CLASSIFICATIONS_FILE", str(DATA_DIR / "account_classifications.json")))
 EMAIL_TAGS_FILE = Path(os.getenv("EMAIL_TAGS_FILE", str(DATA_DIR / "email_tags.json")))
 SITE_SETTINGS_FILE = Path(os.getenv("SITE_SETTINGS_FILE", str(DATA_DIR / "site_settings.json")))
+TOKEN_AUTO_REFRESH_STATE_FILE = Path(os.getenv("TOKEN_AUTO_REFRESH_STATE_FILE", str(DATA_DIR / "token_auto_refresh_state.json")))
 STATIC_DIR = BASE_DIR / "static"
 ICON_CACHE_DIR = DATA_DIR / "icon_cache"
 ICON_ASSET_DIR = STATIC_DIR / "assets" / "icons"
@@ -97,8 +98,9 @@ COMMON_TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 DEFAULT_ACCOUNT_AUTH_METHOD = "imap"
 SUPPORTED_ACCOUNT_AUTH_METHODS = {"imap", "graph", "oauth2"}
 # 后台自动刷新 refresh_token 的周期配置(默认 24 小时)。微软对 MSA refresh token 的滑动
-# 有效期约 90 天,只要周期内成功刷新一次即可无限续期;刷新响应中轮换出的新 token 由
-# persist_rotated_refresh_token 落盘(见 get_access_token)。禁用请设 TOKEN_AUTO_REFRESH_ENABLED=false。
+# 有效期可能受账号策略、撤销授权等影响;定期刷新不保证令牌永不失效。
+# 轮换出的新 token 由 persist_rotated_refresh_token 落盘。环境变量仅提供初始默认值,
+# 已保存的站点设置优先,可在设置页面启用或禁用自动刷新。
 TOKEN_AUTO_REFRESH_INTERVAL_MIN_HOURS = 1
 TOKEN_AUTO_REFRESH_INTERVAL_MAX_HOURS = 720
 
@@ -185,17 +187,18 @@ def normalize_token_auto_refresh_enabled(value: Any, default: bool) -> bool:
 # 供「设置变更后唤醒调度循环」使用的进程内事件。在 lifespan 启动时创建并赋值;
 # update_site_settings 保存后调用 wake_token_auto_refresh_scheduler() 通知循环立即重算。
 _token_auto_refresh_event: Optional[asyncio.Event] = None
+_token_auto_refresh_loop: Optional[asyncio.AbstractEventLoop] = None
 
 
 def wake_token_auto_refresh_scheduler() -> None:
-    """站点设置中的自动刷新配置变化后调用:唤醒后台调度循环立即重新计时。
-
-    线程安全:asyncio.Event.set() 可在任意线程调用,后续 loop 内 wait 会返回。
-    事件未初始化(未启用自动刷新/未启动)时为空操作。
-    """
+    """配置变化后唤醒调度,跨线程通过事件所属循环通知。"""
     event = _token_auto_refresh_event
+    loop = _token_auto_refresh_loop
     if event is not None:
-        event.set()
+        if loop is not None and not loop.is_closed():
+            loop.call_soon_threadsafe(event.set)
+        elif loop is None:
+            event.set()
 
 
 def resolve_token_auto_refresh_config(settings: Optional[dict[str, Any]]) -> tuple[bool, int]:
@@ -1929,6 +1932,85 @@ def save_site_settings(settings: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+def sync_token_auto_refresh_schedule(
+    settings: Optional[dict[str, Any]] = None, now: datetime | None = None,
+) -> dict[str, Any]:
+    """持久化绝对执行时间;重启/保存无关设置不延后,变更周期或重新启用才重新计时。"""
+    now = now or datetime.utcnow()
+    with auth_lock:
+        source = settings if settings is not None else load_site_settings()
+        enabled, interval = resolve_token_auto_refresh_config(source)
+        stored = _read_json_file(TOKEN_AUTO_REFRESH_STATE_FILE, {})
+        stored = stored if isinstance(stored, dict) else {}
+        state = dict(stored)
+        changed = (stored.get("enabled"), stored.get("interval_hours")) != (enabled, interval)
+        next_run = parse_stored_datetime(stored.get("next_run_at"))
+        if not enabled:
+            next_run = None
+        elif changed or next_run is None:
+            next_run = now + timedelta(hours=interval)
+        state.update(
+            enabled=enabled, interval_hours=interval,
+            next_run_at=next_run.isoformat() if next_run else None,
+        )
+        if state != stored:
+            _write_json_file(TOKEN_AUTO_REFRESH_STATE_FILE, state)
+        return state
+
+
+def complete_token_auto_refresh_schedule(schedule: dict[str, Any]) -> None:
+    """完成后安排下一轮,但不覆盖任务执行期间保存的新配置/计划。"""
+    with auth_lock:
+        now = datetime.utcnow()
+        current = sync_token_auto_refresh_schedule(now=now)
+        if all(current.get(key) == schedule.get(key) for key in ("enabled", "interval_hours", "next_run_at")):
+            current["next_run_at"] = (now + timedelta(hours=current["interval_hours"])).isoformat()
+        current["last_completed_at"] = now.isoformat()
+        _write_json_file(TOKEN_AUTO_REFRESH_STATE_FILE, current)
+
+
+def get_token_auto_refresh_schedule_fields(settings: dict[str, Any]) -> dict[str, Any]:
+    schedule = sync_token_auto_refresh_schedule(settings)
+    # API 时间携带 UTC 标识,避免浏览器误当成本地时间。
+    return {
+        "token_auto_refresh_next_run_at": (schedule["next_run_at"] + "Z") if schedule.get("next_run_at") else None,
+        "token_auto_refresh_last_completed_at": (schedule["last_completed_at"] + "Z") if schedule.get("last_completed_at") else None,
+    }
+
+
+async def run_token_auto_refresh_loop() -> None:
+    """始终启动调度,由持久化站点设置决定是否执行,每分钟校准绝对时间。"""
+    event = _token_auto_refresh_event
+    if event is None:
+        raise RuntimeError("Token auto-refresh event is not initialized")
+    while True:
+        try:
+            event.clear()
+            schedule = sync_token_auto_refresh_schedule()
+            next_run = parse_stored_datetime(schedule.get("next_run_at"))
+            remaining = (next_run - datetime.utcnow()).total_seconds() if next_run else 60
+            if schedule["enabled"] and remaining <= 0:
+                # 与手动全量刷新共享任务状态,避免两轮全量任务重叠。
+                if not get_account_health_check_state()["running"]:
+                    logger.info("Token auto-refresh: executing scheduled health check")
+                    await run_account_health_check_task(secrets.token_urlsafe(12))
+                    complete_token_auto_refresh_schedule(schedule)
+                    continue
+                remaining = 60
+            try:
+                await asyncio.wait_for(event.wait(), timeout=min(60, max(0, remaining)))
+            except asyncio.TimeoutError:
+                pass
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Token auto-refresh loop iteration failed")
+            try:
+                await asyncio.wait_for(event.wait(), timeout=3600)
+            except asyncio.TimeoutError:
+                pass
+
+
 def get_admin_login_path(settings: Optional[dict[str, Any]] = None) -> str:
     source = settings or load_site_settings()
     return normalize_admin_login_path(source.get("admin_login_path"))
@@ -3082,8 +3164,12 @@ def update_account_health_check_state(**payload: Any) -> dict[str, Any]:
 
 
 async def run_account_health_check_task(task_id: str) -> None:
-    accounts_data = load_accounts_data()
-    account_ids = list(accounts_data.keys())
+    try:
+        accounts_data = load_accounts_data()
+        account_ids = list(accounts_data.keys())
+    except Exception as exc:
+        update_account_health_check_state(running=False, completed_at=datetime.utcnow().isoformat(), error=str(exc))
+        raise
     update_account_health_check_state(
         task_id=task_id,
         running=True,
@@ -3114,6 +3200,9 @@ async def run_account_health_check_task(task_id: str) -> None:
                 results[email_id] = record
 
             update_account_health_check_state(checked=index, results=dict(results))
+    except asyncio.CancelledError:
+        update_account_health_check_state(running=False, completed_at=datetime.utcnow().isoformat(), error="任务已取消", results=dict(results))
+        raise
     except Exception as exc:
         update_account_health_check_state(running=False, completed_at=datetime.utcnow().isoformat(), error=str(exc), results=dict(results))
         raise
@@ -3127,7 +3216,11 @@ def start_account_health_check() -> dict[str, Any]:
         return current_state
 
     task_id = secrets.token_urlsafe(12)
-    update_account_health_check_state(task_id=task_id)
+    # 在创建协程前占用运行状态,避免连续请求启动多个全量刷新任务。
+    update_account_health_check_state(
+        task_id=task_id, running=True, total=0, checked=0, results={},
+        started_at=datetime.utcnow().isoformat(), completed_at=None, error="",
+    )
     asyncio.create_task(run_account_health_check_task(task_id))
     return get_account_health_check_state()
 
@@ -3715,69 +3808,27 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     cleanup_expired_open_access()
     cleanup_expired_admin_login_attempts()
 
-    # 后台自动刷新 refresh_token:按站点设置里的开关与间隔(可前端修改)周期调用
-    # refresh_all_account_health(),每次都会真实执行 OAuth 刷新(顺带把轮换出的
-    # 新 token 落盘,见 get_access_token)。环境变量仅作进程启动时的初始默认。
-    auto_refresh_task: asyncio.Task | None = None
+    # 开关关闭时也保留调度任务,允许设置页直接重新启用。
+    global _token_auto_refresh_event, _token_auto_refresh_loop
+    _token_auto_refresh_event = asyncio.Event()
+    _token_auto_refresh_loop = asyncio.get_running_loop()
+    sync_token_auto_refresh_schedule()
+    auto_refresh_task = asyncio.create_task(run_token_auto_refresh_loop())
 
-    async def _auto_refresh_loop() -> None:
-        global _token_auto_refresh_event
-        _token_auto_refresh_event = asyncio.Event()
-        logger.info("Token auto-refresh loop started (env enabled=%s)", TOKEN_AUTO_REFRESH_ENABLED)
-        while True:
-            try:
-                enabled, interval_hours = resolve_token_auto_refresh_config(load_site_settings())
-                if enabled:
-                    logger.info(
-                        "Token auto-refresh: 将于 %s 小时后执行(配置变更会即时唤醒)",
-                        interval_hours,
-                    )
-                else:
-                    logger.info("Token auto-refresh: 已禁用,等待配置唤醒")
-                try:
-                    # 等待到计划时刻;配置变更(Event 被 set)会提前返回并重新计时
-                    await asyncio.wait_for(
-                        _token_auto_refresh_event.wait(),
-                        timeout=interval_hours * 3600,
-                    )
-                    _token_auto_refresh_event.clear()
-                    logger.info("Token auto-refresh: 检测到配置变更,重新计算调度")
-                    continue
-                except asyncio.TimeoutError:
-                    pass
-                # 执行前再确认一次当前设置,避免旧快照下多刷一次
-                enabled, _ = resolve_token_auto_refresh_config(load_site_settings())
-                if not enabled:
-                    logger.info("Token auto-refresh: 到点但已被禁用,跳过本轮")
-                    continue
-                await refresh_all_account_health()
-            except asyncio.CancelledError:
-                logger.info("Token auto-refresh loop cancelled")
-                raise
-            except Exception as exc:
-                logger.exception("Token auto-refresh loop iteration failed: %s", exc)
-                try:
-                    await asyncio.wait_for(_token_auto_refresh_event.wait(), timeout=3600)
-                    _token_auto_refresh_event.clear()
-                except asyncio.TimeoutError:
-                    pass
-
-    if TOKEN_AUTO_REFRESH_ENABLED:
-        auto_refresh_task = asyncio.create_task(_auto_refresh_loop())
-
-    yield
-
-    # 应用关闭
-    logger.info("Shutting down Microsoft-Email-Manager...")
-    if auto_refresh_task is not None:
+    try:
+        yield
+    finally:
+        logger.info("Shutting down Microsoft-Email-Manager...")
         auto_refresh_task.cancel()
         try:
             await auto_refresh_task
         except asyncio.CancelledError:
             pass
-    logger.info("Closing IMAP connection pool...")
-    imap_pool.close_all_connections()
-    logger.info("Application shutdown complete.")
+        _token_auto_refresh_event = None
+        _token_auto_refresh_loop = None
+        logger.info("Closing IMAP connection pool...")
+        imap_pool.close_all_connections()
+        logger.info("Application shutdown complete.")
 
 
 app = FastAPI(
@@ -4019,6 +4070,7 @@ async def get_site_settings(request: Request):
     admin_path = site_settings.get("admin_login_path") or DEFAULT_ADMIN_LOGIN_PATH
     return {
         **site_settings,
+        **get_token_auto_refresh_schedule_fields(site_settings),
         "admin_login_url": f"{get_request_origin(request)}{admin_path}",
     }
 
@@ -4026,11 +4078,14 @@ async def get_site_settings(request: Request):
 @app.put("/api/site-settings")
 async def update_site_settings(payload: SiteSettingsPayload, request: Request):
     require_authenticated(request)
-    saved = save_site_settings(payload.dict())
-    # 若刷新开关/间隔发生变化,唤醒后台调度循环立即重新计时(而非等满旧周期)
-    wake_token_auto_refresh_scheduler()
+    previous_config = resolve_token_auto_refresh_config(load_site_settings())
+    saved = save_site_settings(payload.model_dump())
+    schedule_fields = get_token_auto_refresh_schedule_fields(saved)
+    if resolve_token_auto_refresh_config(saved) != previous_config:
+        wake_token_auto_refresh_scheduler()
     return {
         **saved,
+        **schedule_fields,
         "admin_login_url": f"{get_request_origin(request)}{saved['admin_login_path']}",
     }
 
