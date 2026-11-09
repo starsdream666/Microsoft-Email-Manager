@@ -5473,6 +5473,14 @@
             border-bottom: 1px solid #f1f5f9;
         }
         .refresh-result-row:hover { background: #f8fafc; }
+        .refresh-result-info { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+        .refresh-result-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+        .refresh-result-health { color: #64748b; }
+        .refresh-result-times { flex: 0 0 auto; color: #64748b; line-height: 1.7; }
+        @media (max-width: 640px) {
+            .refresh-result-row { flex-wrap: wrap; align-items: flex-start; }
+            .refresh-result-times { flex-basis: 100%; }
+        }
         .refresh-result-badge {
             font-size: 11px;
             padding: 2px 8px;
@@ -6724,7 +6732,7 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h3 class="font-semibold">Token 刷新管理</h3>
-                                <p class="text-sm" style="color: #64748b;">全量/单账号刷新 OAuth Refresh Token 并回存轮换结果，避免微软约 90 天静默过期。刷新同时执行健康探活。</p>
+                                <p class="text-sm" style="color: #64748b;">刷新异常时实时读取收件箱，读取成功后重试一次；读取失败则暂停该邮箱刷新并等待人工检查。暂停的账号可在账户管理中单独复检。</p>
                             </div>
                             <div class="flex gap-2">
                                 <button class="btn btn-secondary btn-sm" type="button" onclick="loadTokenRefreshSnapshot(true)">
@@ -6757,6 +6765,10 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
                                 <div class="refresh-stat-value" id="refreshStatNever" style="color:#d97706;">0</div>
                             </div>
                             <div class="refresh-stat-card">
+                                <div class="refresh-stat-label">待人工检查（已暂停）</div>
+                                <div class="refresh-stat-value refresh-stat-value--danger" id="refreshStatReview">0</div>
+                            </div>
+                            <div class="refresh-stat-card">
                                 <div class="refresh-stat-label">状态</div>
                                 <div class="refresh-stat-value" id="refreshStatRunning">空闲</div>
                             </div>
@@ -6773,7 +6785,7 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
                                     <span></span>
                                     重试失败
                                 </button>
-                                <button class="btn btn-danger btn-sm hidden" type="button" onclick="tokenRefreshStop()" id="tokenRefreshStopBtn" style="display:none;">
+                                <button class="btn btn-danger btn-sm" type="button" onclick="tokenRefreshStop()" id="tokenRefreshStopBtn" style="display:none;">
                                     <span></span>
                                     停止任务
                                 </button>
@@ -6805,6 +6817,7 @@ example3@outlook.com----password3----client_id3----refresh_token3"></textarea>
                                     <option value="all">全部状态</option>
                                     <option value="success">成功</option>
                                     <option value="failed">失败</option>
+                                    <option value="review">待人工检查</option>
                                     <option value="never">未刷新</option>
                                     <option value="running">刷新中</option>
                                 </select>
@@ -9911,6 +9924,8 @@ example3@live.com----password3----client_id3----refresh_token3`;
                 imap_error: { label: '降级', color: '#b45309' },
                 graph_error: { label: '降级', color: '#b45309' },
                 auth_error: { label: '异常', color: '#b91c1c' },
+                manual_review: { label: '失效 · 待人工检查', color: '#b91c1c' },
+                refresh_error: { label: '取信正常 · 刷新异常', color: '#b45309' },
                 config_error: { label: '配置异常', color: '#b91c1c' },
                 error: { label: '异常', color: '#b91c1c' },
                 unchecked: { label: '未检查', color: '#64748b' }
@@ -10025,12 +10040,12 @@ example3@live.com----password3----client_id3----refresh_token3`;
             try {
                 const res = await apiRequest('/accounts/refresh-one', {
                     method: 'POST',
-                    body: JSON.stringify({ email: emailId })
+                    body: JSON.stringify({ email: emailId, recheck: true })
                 });
                 const rec = (res && res.record) || {};
-                const ok = rec.status === 'healthy';
+                const ok = !rec.manual_review_required && getTokenRefreshStatus(rec) === 'success';
                 showNotification(
-                    ok ? `刷新成功: ${emailId}` : `刷新未通过: ${emailId} - ${rec.summary || rec.detail || '未知'}`,
+                    ok ? `刷新成功: ${emailId}` : `${rec.manual_review_required ? '已暂停，待人工检查' : '刷新未通过'}: ${emailId} - ${rec.summary || rec.detail || '未知'}`,
                     ok ? 'success' : 'warning'
                 );
                 if (typeof loadAccounts === 'function') loadAccounts();
@@ -10098,6 +10113,8 @@ example3@live.com----password3----client_id3----refresh_token3`;
         // ==================== Token 刷新管理页 ====================
         let tokenRefreshPollTimer = null;
         let tokenRefreshRetryRunning = false;
+        let tokenRefreshStopRequested = false;
+        let tokenRefreshStopPending = false;
         let tokenRefreshSnapshotVersion = 0;
 
         function setTokenRefreshRunningUI(running) {
@@ -10107,8 +10124,14 @@ example3@live.com----password3----client_id3----refresh_token3`;
             const statusEl = document.getElementById('refreshStatRunning');
             const progressWrap = document.getElementById('tokenRefreshProgressWrap');
             if (allBtn) allBtn.disabled = running;
-            if (stopBtn) stopBtn.style.display = running ? '' : 'none';
-            if (statusEl) statusEl.textContent = running ? '刷新中...' : '空闲';
+            const stopping = tokenRefreshRetryRunning ? tokenRefreshStopRequested
+                : !!(window.__tokenRefreshState || {}).stop_requested;
+            if (stopBtn) {
+                stopBtn.style.display = running ? '' : 'none';
+                stopBtn.disabled = stopping || tokenRefreshStopPending;
+                stopBtn.textContent = stopping ? '正在停止…' : '停止任务';
+            }
+            if (statusEl) statusEl.textContent = running ? (stopping ? '等待当前账号完成…' : '刷新中...') : '空闲';
             if (retryBtn) retryBtn.disabled = running || tokenRefreshRetryRunning;
             if (progressWrap) progressWrap.style.display = running ? '' : 'none';
         }
@@ -10127,9 +10150,13 @@ example3@live.com----password3----client_id3----refresh_token3`;
                 return {
                     email: a.email,
                     status: a.refreshStatus || 'never',
-                    summary: a.healthSummary || '',
+                    summary: a.refreshMessage || (a.refreshStatus === 'success' ? '验证成功（轮换结果未记录）' : a.healthSummary || ''),
                     detail: a.healthDetail || '',
-                    checkedAt: a.healthCheckedAt || ''
+                    healthSummary: a.healthSummary || '',
+                    checkedAt: a.lastRefreshAt || a.healthCheckedAt || '',
+                    succeededAt: a.lastRefreshSuccessAt || '',
+                    updatedAt: a.refreshTokenUpdatedAt || '',
+                    tokenRotated: a.tokenRotated
                 };
             }).filter(e => {
                 if (searchText && !e.email.toLowerCase().includes(searchText)) return false;
@@ -10144,13 +10171,13 @@ example3@live.com----password3----client_id3----refresh_token3`;
 
             const badgeClass = (status) => {
                 if (status === 'success') return 'refresh-result-badge--success';
-                if (status === 'failed') return 'refresh-result-badge--failed';
+                if (status === 'failed' || status === 'review') return 'refresh-result-badge--failed';
                 if (status === 'never') return 'refresh-result-badge--skipped';
                 return 'refresh-result-badge--running';
             };
             const badgeText = (status) => {
                 const map = {
-                    success: '已刷新', failed: '失败', never: '未刷新', running: '刷新中'
+                    success: '验证成功', failed: '失败', review: '待人工检查', never: '未刷新', running: '刷新中'
                 };
                 return map[status] || status;
             };
@@ -10158,9 +10185,16 @@ example3@live.com----password3----client_id3----refresh_token3`;
             container.innerHTML = entries.map(e => `
                 <div class="refresh-result-row">
                     <span class="refresh-result-badge ${badgeClass(e.status)}">${badgeText(e.status)}</span>
-                    <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(e.email)}">${escapeHtml(e.email)}</span>
-                    <span class="text-sm" style="color:#64748b; flex:0 0 auto; max-width:40%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(e.detail || '')}">${escapeHtml(e.summary || '')}</span>
-                    <span class="text-sm" style="color:#94a3b8; flex:0 0 auto;">${escapeHtml(e.checkedAt || '')}</span>
+                    <div class="refresh-result-info">
+                        <div class="refresh-result-email" title="${escapeHtml(e.email)}">${escapeHtml(e.email)}</div>
+                        <div class="text-sm">${escapeHtml(e.summary || (e.tokenRotated == null ? '轮换结果未记录' : ''))}</div>
+                        <div class="text-sm refresh-result-health" title="${escapeHtml(e.detail)}">邮箱健康：${escapeHtml(e.healthSummary || '未检查')}</div>
+                    </div>
+                    <div class="refresh-result-times text-sm">
+                        <div>最近尝试：${escapeHtml(formatTokenRefreshTime(e.checkedAt))}</div>
+                        <div>最近成功：${escapeHtml(formatTokenRefreshTime(e.succeededAt))}</div>
+                        <div>Token 更新：${escapeHtml(formatTokenRefreshTime(e.updatedAt))}</div>
+                    </div>
                 </div>
             `).join('');
         }
@@ -10169,9 +10203,24 @@ example3@live.com----password3----client_id3----refresh_token3`;
         function normalizeRefreshStatus(rawStatus) {
             const s = String(rawStatus || '').toLowerCase();
             if (s === 'healthy') return 'success';
+            if (s === 'manual_review') return 'review';
+            if (s === 'refresh_error') return 'failed';
             if (s === 'auth_error' || s === 'error' || s === 'graph_error' || s === 'imap_error' || s === 'config_error') return 'failed';
             if (s === 'running') return 'running';
             return 'never';
+        }
+
+        function formatTokenRefreshTime(value) {
+            if (!value) return '未记录';
+            const text = String(value);
+            const date = new Date(/[zZ]$|[+-]\d{2}:\d{2}$/.test(text) ? text : text + 'Z');
+            return Number.isNaN(date.getTime()) ? '未记录' : date.toLocaleString();
+        }
+
+        function getTokenRefreshStatus(record) {
+            if (record.manual_review_required || record.status === "manual_review") return "review";
+            return ['success', 'failed'].includes(record.refresh_status)
+                ? record.refresh_status : normalizeRefreshStatus(record.status);
         }
 
         function mergeTokenRefreshAccount(account, result) {
@@ -10183,10 +10232,25 @@ example3@live.com----password3----client_id3----refresh_token3`;
             const savedTime = parseTime(account.health_checked_at);
             const resultTime = parseTime(result && result.checked_at);
             // 已结束任务的 results 是历史快照;只有更新的结果才可覆盖持久化记录。
-            const useResult = result && (resultTime > savedTime || (!savedTime && !account.status));
+            const savedSequence = Number(account.refresh_sequence) || 0;
+            const resultSequence = Number(result && result.refresh_sequence) || 0;
+            const ordered = savedSequence > 0 && resultSequence > 0;
+            const useResult = result && (ordered ? resultSequence > savedSequence
+                : resultTime > savedTime || (!savedTime && !account.status));
+            const refresh = result && (ordered ? resultSequence > savedSequence
+                : parseTime(result.last_refresh_at) > parseTime(account.last_refresh_at)) ? result : account;
+            const hasRefresh = ['success', 'failed'].includes(refresh.refresh_status);
+            const review = !!refresh.manual_review_required || refresh.status === 'manual_review';
             return {
                 email: account.email,
-                refreshStatus: normalizeRefreshStatus(useResult ? result.status : account.status),
+                refreshStatus: review ? 'review' : hasRefresh ? refresh.refresh_status : normalizeRefreshStatus(useResult ? result.status : account.status),
+                tokenRotated: hasRefresh ? refresh.token_rotated : null,
+                refreshMessage: review ? '已暂停刷新，等待人工检查' : hasRefresh ? refresh.refresh_message || '' : '',
+                lastRefreshAt: hasRefresh ? refresh.last_refresh_at || '' : '',
+                lastRefreshSuccessAt: [account.last_refresh_success_at, result && result.last_refresh_success_at]
+                    .filter(Boolean).sort((a, b) => parseTime(b) - parseTime(a))[0] || '',
+                refreshTokenUpdatedAt: [account.refresh_token_updated_at, result && result.refresh_token_updated_at]
+                    .filter(Boolean).sort((a, b) => parseTime(b) - parseTime(a))[0] || '',
                 healthSummary: (useResult ? result.summary : account.health_summary) || '',
                 healthDetail: (useResult ? result.detail : account.health_detail) || '',
                 healthCheckedAt: (useResult ? result.checked_at : account.health_checked_at) || '',
@@ -10199,6 +10263,7 @@ example3@live.com----password3----client_id3----refresh_token3`;
             document.getElementById('refreshStatSuccess').textContent = String(accounts.filter(a => a.refreshStatus === 'success').length);
             document.getElementById('refreshStatFailed').textContent = String(accounts.filter(a => a.refreshStatus === 'failed').length);
             document.getElementById('refreshStatNever').textContent = String(accounts.filter(a => a.refreshStatus === 'never').length);
+            document.getElementById('refreshStatReview').textContent = String(accounts.filter(a => a.refreshStatus === 'review').length);
         }
 
         async function loadTokenRefreshSnapshot(showReloadMessage = false) {
@@ -10227,9 +10292,10 @@ example3@live.com----password3----client_id3----refresh_token3`;
                     document.getElementById('tokenRefreshProgressBar').style.width = pct + '%';
                     scheduleTokenRefreshPoll();
                 } else {
-                    const pct = total > 0 ? 100 : 0;
+                    const completed = state.stopped ? checked : total;
+                    const pct = total > 0 ? Math.round(completed / total * 100) : 0;
                     document.getElementById('tokenRefreshProgressBar').style.width = pct + '%';
-                    document.getElementById('tokenRefreshProgressText').textContent = `${total}/${total}`;
+                    document.getElementById('tokenRefreshProgressText').textContent = `${completed}/${total}`;
                     stopTokenRefreshPoll();
                 }
                 renderTokenRefreshResults();
@@ -10257,6 +10323,15 @@ example3@live.com----password3----client_id3----refresh_token3`;
                 health_summary: a.health_summary || '',
                 health_detail: a.health_detail || '',
                 health_checked_at: a.health_checked_at || '',
+                refresh_sequence: a.refresh_sequence,
+                manual_review_required: a.manual_review_required,
+                manual_review_reason: a.manual_review_reason,
+                refresh_status: a.refresh_status,
+                token_rotated: a.token_rotated,
+                refresh_message: a.refresh_message || '',
+                last_refresh_at: a.last_refresh_at || '',
+                last_refresh_success_at: a.last_refresh_success_at || '',
+                refresh_token_updated_at: a.refresh_token_updated_at || '',
             }));
         }
 
@@ -10296,6 +10371,10 @@ example3@live.com----password3----client_id3----refresh_token3`;
             const accounts = window.__tokenRefreshAccounts || [];
 
             let targets = [];
+            if (filterValue === 'review') {
+                showNotification('待人工检查的账号已暂停，请在账户管理中完成处理后单独复检', 'info');
+                return;
+            }
             if (filterValue === 'never') {
                 targets = accounts.filter(a => a.refreshStatus === 'never').map(a => a.email);
             } else if (filterValue === 'failed') {
@@ -10308,6 +10387,7 @@ example3@live.com----password3----client_id3----refresh_token3`;
                 showNotification('没有需要刷新的账号(失败/未刷新)', 'info');
                 return;
             }
+            tokenRefreshStopRequested = false;
             tokenRefreshRetryRunning = true;
             ++tokenRefreshSnapshotVersion; // 丢弃重试开始前尚未返回的旧快照
             stopTokenRefreshPoll();
@@ -10318,18 +10398,18 @@ example3@live.com----password3----client_id3----refresh_token3`;
             showNotification(`开始刷新 ${targets.length} 个${label}账号...`, 'info');
             try {
                 for (let i = 0; i < targets.length; i++) {
+                    if (tokenRefreshStopRequested) break;
                     try {
                         const response = await apiRequest('/accounts/refresh-one', {
                             method: 'POST',
                             body: JSON.stringify({ email: targets[i] })
                         });
                         const record = response.record || {};
-                        const status = normalizeRefreshStatus(record.status);
+                        const status = getTokenRefreshStatus(record);
                         if (status === 'success') succeeded++;
                         else failed++;
                         window.__tokenRefreshAccounts = (window.__tokenRefreshAccounts || []).map(a => a.email === targets[i] ? {
-                            ...a, refreshStatus: status, healthSummary: record.summary || '',
-                            healthDetail: record.detail || '', healthCheckedAt: record.checked_at || '',
+                            ...a, ...mergeTokenRefreshAccount({email: a.email}, record),
                         } : a);
                         renderTokenRefreshStats();
                         renderTokenRefreshResults();
@@ -10345,11 +10425,15 @@ example3@live.com----password3----client_id3----refresh_token3`;
                     if (bar) bar.style.width = (targets.length ? Math.round((i + 1) / targets.length * 100) : 0) + '%';
                     if (txt) txt.textContent = `${i + 1}/${targets.length}`;
                 }
-                showNotification(`刷新完成: 成功 ${succeeded} 个，失败 ${failed} 个`, failed ? 'warning' : 'success');
+                const stopped = tokenRefreshStopRequested && succeeded + failed < targets.length;
+                showNotification(stopped
+                    ? `已停止: 成功 ${succeeded} 个，失败 ${failed} 个，剩余 ${targets.length - succeeded - failed} 个未执行`
+                    : `刷新完成: 成功 ${succeeded} 个，失败 ${failed} 个`, stopped ? 'info' : failed ? 'warning' : 'success');
             } catch (error) {
                 showNotification('刷新失败: ' + error.message, 'error');
             } finally {
                 tokenRefreshRetryRunning = false;
+                tokenRefreshStopRequested = false;
                 setTokenRefreshRunningUI(false);
                 renderTokenRefreshRetryBtn();
                 await loadTokenRefreshSnapshot(false);
@@ -10357,8 +10441,30 @@ example3@live.com----password3----client_id3----refresh_token3`;
         }
 
         async function tokenRefreshStop() {
-            // 目标项目健康检查任务无停止接口,提示用户(任务自然短)
-            showNotification('后台刷新任务无法中途停止(每账号刷新通常数秒),请稍候', 'warning');
+            if (tokenRefreshRetryRunning) {
+                tokenRefreshStopRequested = true;
+                setTokenRefreshRunningUI(true);
+                showNotification('已请求停止，当前账号完成后不再刷新后续账号', 'info');
+                return;
+            }
+            const current = window.__tokenRefreshState || {};
+            if (!current.running || current.stop_requested || tokenRefreshStopPending) return;
+            tokenRefreshStopPending = true;
+            setTokenRefreshRunningUI(true);
+            try {
+                const state = await apiRequest('/accounts/health-check/stop', {
+                    method: 'POST', body: JSON.stringify({task_id: current.task_id}),
+                });
+                ++tokenRefreshSnapshotVersion;
+                window.__tokenRefreshState = state;
+                showNotification(state.running ? '已请求停止，正在等待当前账号完成' : '任务已结束', 'info');
+            } catch (error) {
+                showNotification('停止失败: ' + error.message, 'error');
+            } finally {
+                tokenRefreshStopPending = false;
+                setTokenRefreshRunningUI(!!(window.__tokenRefreshState || {}).running);
+                await loadTokenRefreshSnapshot(false);
+            }
         }
 
         function renderTokenRefreshRetryBtn() {
@@ -10367,7 +10473,10 @@ example3@live.com----password3----client_id3----refresh_token3`;
             const filterValue = filter ? filter.value : 'all';
             let count = 0;
             let label = '重试失败';
-            if (filterValue === 'never') {
+            if (filterValue === 'review') {
+                count = 0;
+                label = '请在账户管理中单独复检';
+            } else if (filterValue === 'never') {
                 count = accounts.filter(a => a.refreshStatus === 'never').length;
                 label = '刷新未刷新';
             } else if (filterValue === 'failed') {
@@ -10404,7 +10513,9 @@ example3@live.com----password3----client_id3----refresh_token3`;
                 const running = !!state.running;
                 summaryEl.textContent = running
                     ? `正在执行: 已处理 ${checked}/${total} 个账号...`
-                    : (total > 0 ? `上次任务完成: 共 ${total} 个账号` : (state.error ? '任务异常: ' + state.error : ''));
+                    : (state.stopped ? `上次任务已停止: 已处理 ${checked}/${total} 个账号`
+                        : state.error ? '任务异常: ' + state.error : total > 0 ? `上次任务完成: 共 ${total} 个账号` : '');
+                if (Number(state.skipped) > 0) summaryEl.textContent += `，已跳过 ${state.skipped} 个待人工检查账号`;
             }
         }
         // ==================== /Token 刷新管理页 ====================
@@ -10445,6 +10556,7 @@ example3@live.com----password3----client_id3----refresh_token3`;
                                 <h4>${account.email_id}</h4>
                                 <p>接入方式: <strong>${authMethodLabel}</strong> · 健康状态: <strong style="color: ${health.color};">${health.label}</strong> · ${health.score} 分</p>
                                 <p style="color: #64748b;">${escapeHtml(health.summary)} · 上次检查：${escapeHtml(health.checkedAt)}</p>
+                                ${account.manual_review_required ? `<p style="color:#b91c1c; overflow-wrap:anywhere;">${escapeHtml(account.manual_review_reason || account.health_detail || '请人工检查邮箱')}</p>` : ''}
                                 <div class="account-tags">${categoryHtml}</div>
                                 ${tagsHtml}
                             </div>
@@ -10467,9 +10579,9 @@ example3@live.com----password3----client_id3----refresh_token3`;
                                 <span></span>
                                 导出
                             </button>
-                            <button class="btn btn-secondary btn-sm" data-icon="refresh" onclick="refreshSingleAccount('${account.email_id}')" title="立即刷新此账号的 Refresh Token 并回存轮换结果">
+                            <button class="btn btn-secondary btn-sm" data-icon="refresh" onclick="refreshSingleAccount('${account.email_id}')" title="${account.manual_review_required ? '人工处理后复检，成功后恢复自动刷新' : '立即刷新此账号的 Refresh Token 并回存轮换结果'}">
                                 <span></span>
-                                刷新 Token
+                                ${account.manual_review_required ? '复检并恢复刷新' : '刷新 Token'}
                             </button>
                             <button class="btn btn-danger btn-sm" data-icon="clear" onclick="deleteAccount('${account.email_id}')">
                                 <span></span>

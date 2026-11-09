@@ -20,3 +20,7 @@ data/
 *.bak
 MODIFICATION_NOTES.md
 REVIEW_FIX_PLAN.md
+
+# 审查/审计产物与代理记忆(不随源码提交)
+outputs/
+.workbuddy-ai/

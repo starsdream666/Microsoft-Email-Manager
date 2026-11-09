@@ -38,7 +38,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, PrivateAttr
 
 
 
@@ -93,6 +93,9 @@ ENABLE_API_DOCS = str(os.getenv("ENABLE_API_DOCS", "")).strip().lower() in {"1",
 TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token"
 IMAP_OAUTH_SCOPE = "https://outlook.office.com/IMAP.AccessAsUser.All offline_access"
 GRAPH_OAUTH_SCOPE = "https://graph.microsoft.com/Mail.Read offline_access"
+GRAPH_DEFAULT_TOKEN_SCOPE = "https://graph.microsoft.com/.default"
+GRAPH_TOKEN_SCOPE_CACHE_LIMIT = 2048
+_graph_token_scope_cache: dict[str, tuple[str, str]] = {}
 GRAPH_API_BASE_URL = "https://graph.microsoft.com/v1.0"
 COMMON_TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 DEFAULT_ACCOUNT_AUTH_METHOD = "imap"
@@ -279,6 +282,8 @@ logger = logging.getLogger(__name__)
 
 class AccountCredentials(BaseModel):
     """账户凭证模型"""
+    _refresh_result: dict[str, Any] = PrivateAttr(default_factory=dict)
+    _source_version: Optional[str] = PrivateAttr(default=None)
     email: EmailStr
     refresh_token: str
     client_id: str
@@ -414,6 +419,21 @@ class AccountInfo(BaseModel):
     health_score: int = 0
     health_summary: str = "未检查"
     health_checked_at: Optional[str] = None
+    health_detail: str = ""
+    manual_review_required: bool = False
+    manual_review_reason: str = ""
+    manual_review_at: Optional[str] = None
+    mailbox_check_status: str = "unknown"
+    mailbox_checked_at: Optional[str] = None
+    recovery_attempted: bool = False
+    refresh_retry_count: int = 0
+    refresh_sequence: int = 0
+    refresh_status: Optional[str] = None
+    token_rotated: Optional[bool] = None
+    refresh_message: str = ""
+    last_refresh_at: Optional[str] = None
+    last_refresh_success_at: Optional[str] = None
+    refresh_token_updated_at: Optional[str] = None
 
 
 class AccountListResponse(BaseModel):
@@ -541,12 +561,10 @@ class IMAPConnectionPool:
         Raises:
             Exception: 连接创建失败
         """
+        imap_client = None
         try:
-            # 设置全局socket超时
-            socket.setdefaulttimeout(SOCKET_TIMEOUT)
-
-            # 创建SSL IMAP连接
-            imap_client = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
+            # 限制本次连接超时，不修改进程内其他连接的全局默认值。
+            imap_client = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT, timeout=SOCKET_TIMEOUT)
 
             # 设置连接超时
             imap_client.sock.settimeout(CONNECTION_TIMEOUT)
@@ -559,6 +577,11 @@ class IMAPConnectionPool:
             return imap_client
 
         except Exception as e:
+            if imap_client is not None:
+                try:
+                    imap_client.shutdown()
+                except Exception:
+                    pass
             logger.error(f"Failed to create IMAP connection for {email}: {e}")
             raise
 
@@ -593,9 +616,16 @@ class IMAPConnectionPool:
                     logger.debug(f"Reused existing IMAP connection for {email}")
                     return connection
                 except Exception:
-                    # 连接已失效，需要创建新连接
+                    # 连接已失效，立即关闭并创建新连接，避免复用失败连接导致健康检查误报。
                     logger.debug(f"Existing connection invalid for {email}, creating new one")
-                    self.connection_count[email] -= 1
+                    self.connection_count[email] = max(0, self.connection_count[email] - 1)
+                    try:
+                        connection.logout()
+                    except Exception:
+                        try:
+                            connection.shutdown()
+                        except Exception:
+                            pass
             except Empty:
                 # 池中没有可用连接
                 pass
@@ -917,8 +947,16 @@ def validate_catalog_references(category_key: str | None, tag_keys: list[str], c
         raise HTTPException(status_code=400, detail=f"Unknown tag_keys: {', '.join(invalid_tag_keys)}")
 
 
+def account_credential_version(account: dict[str, Any] | None) -> str:
+    """凭据快照摘要；旧数据无需迁移，新写入带版本以识别删除后重新创建。"""
+    if not isinstance(account, dict):
+        return "missing"
+    values = [account.get(key) for key in ("client_id", "refresh_token", "auth_method", "credential_revision")]
+    return hashlib.sha256(json.dumps(values, ensure_ascii=True).encode("utf-8")).hexdigest()
+
+
 def build_account_credentials_from_data(email_id: str, account_data: dict[str, Any]) -> AccountCredentials:
-    return AccountCredentials(
+    credentials = AccountCredentials(
         email=email_id,
         refresh_token=str(account_data["refresh_token"]),
         client_id=str(account_data["client_id"]),
@@ -927,6 +965,8 @@ def build_account_credentials_from_data(email_id: str, account_data: dict[str, A
         tag_keys=normalize_account_tag_keys(account_data.get("tag_keys"), account_data.get("tags", [])),
         tags=normalize_account_tag_keys(account_data.get("tag_keys"), account_data.get("tags", [])),
     )
+    credentials._source_version = account_credential_version(account_data)
+    return credentials
 
 
 def get_account_cache_key(credentials: AccountCredentials, folder: str, page: int, page_size: int) -> str:
@@ -1270,7 +1310,13 @@ async def save_account_credentials(email_id: str, credentials: AccountCredential
         with auth_lock:
             accounts = _read_json_file(ACCOUNTS_FILE, {})
             accounts = accounts if isinstance(accounts, dict) else {}
+            previous = accounts.get(email_id)
+            if credentials._source_version is not None and account_credential_version(previous) != credentials._source_version:
+                raise HTTPException(status_code=409, detail="账户凭据在验证期间已更新，请重新加载后再保存")
+            previous = previous if isinstance(previous, dict) else {}
             accounts[email_id] = {
+                **previous,
+                "credential_revision": secrets.token_hex(16),
                 'refresh_token': credentials.refresh_token,
                 'client_id': credentials.client_id,
                 'auth_method': normalize_account_auth_method(getattr(credentials, 'auth_method', DEFAULT_ACCOUNT_AUTH_METHOD)),
@@ -1280,25 +1326,36 @@ async def save_account_credentials(email_id: str, credentials: AccountCredential
                     getattr(credentials, 'tags', []),
                 ),
             }
+            updated_at = credentials._refresh_result.get("refresh_token_updated_at")
+            if not updated_at and isinstance(previous, dict) and previous.get("refresh_token") == credentials.refresh_token:
+                updated_at = previous.get("refresh_token_updated_at")
+            if updated_at:
+                accounts[email_id]["refresh_token_updated_at"] = updated_at
+            else:
+                accounts[email_id].pop("refresh_token_updated_at", None)
             _write_json_file(ACCOUNTS_FILE, accounts)
+            credentials._source_version = account_credential_version(accounts[email_id])
         logger.info(f"Account credentials saved for {email_id}")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error saving account credentials: {e}")
         raise HTTPException(status_code=500, detail="Failed to save account")
 
 
 async def persist_rotated_refresh_token(email_id: str, new_refresh_token: str,
-                                        expected_current_refresh_token: str = "") -> bool:
-    """微软在刷新时可能轮换 refresh_token,将其落盘,避免 90 天静默过期。
+                                        expected_current_refresh_token: str = "", *,
+                                        expected_version: Optional[str] = None) -> bool:
+    """微软在刷新时可能轮换 refresh_token，将新值安全落盘供后续请求使用。
 
-    仅更新 accounts.json 中的 refresh_token,保留 auth_method/category_key/tag_keys 等其余字段。
+    更新 refresh_token、轮换时间和凭据版本，保留分类、标签等其余字段。
 
     采用 compare-and-set 语义防并发覆盖:只有当磁盘中该账号当前的 refresh_token
     仍等于本次 OAuth 请求所使用的旧 token(expected_current_refresh_token)时,才允许写入
-    响应返回的新 token。若期间管理员已重新导入/更新了同一账号(磁盘 token 与 expected
-    不一致),说明本次刷新基于过期快照,放弃写入以免覆盖新凭据。
+    响应返回的新 token。有版本快照时同时校验版本，防止 client_id 改变或同值重新导入。
+    期间账号被更新就放弃写入，避免覆盖新凭据。
     """
-    token_value = str(new_refresh_token or "").strip()
+    token_value = new_refresh_token.strip() if isinstance(new_refresh_token, str) else ""
     if not token_value:
         return False
     expected_value = str(expected_current_refresh_token or "").strip()
@@ -1309,6 +1366,8 @@ async def persist_rotated_refresh_token(email_id: str, new_refresh_token: str,
             account = accounts.get(email_id)
             if not account or not isinstance(account, dict):
                 logger.warning("Rotated refresh_token skipped for %s: 账号不存在", email_id)
+                return False
+            if expected_version is not None and account_credential_version(account) != expected_version:
                 return False
             current = str(account.get("refresh_token") or "").strip()
             if expected_value and current != expected_value:
@@ -1323,6 +1382,8 @@ async def persist_rotated_refresh_token(email_id: str, new_refresh_token: str,
             if current == token_value:
                 return False
             account["refresh_token"] = token_value
+            account["credential_revision"] = secrets.token_hex(16)
+            account["refresh_token_updated_at"] = datetime.utcnow().isoformat()
             _write_json_file(ACCOUNTS_FILE, accounts)
         logger.info("Rotated refresh_token persisted for %s (length=%d)", email_id, len(token_value))
         return True
@@ -1388,6 +1449,8 @@ async def get_all_accounts(
                 health_score=max(0, min(int(health_record.get("score", 0) or 0), 100)),
                 health_summary=str(health_record.get("summary") or "未检查"),
                 health_checked_at=health_record.get("checked_at"),
+                health_detail=str(health_record.get("detail") or ""),
+                **get_token_refresh_fields(health_record, account_info),
             )
             all_accounts.append(account)
 
@@ -1481,11 +1544,15 @@ async def get_all_accounts(
 # Use a re-entrant lock so nested reads/writes do not deadlock the request thread.
 auth_lock = threading.RLock()
 account_health_check_lock = threading.RLock()
+_health_check_sequence = 0
 account_health_check_state: dict[str, Any] = {
     "task_id": None,
     "running": False,
+    "stop_requested": False,
+    "stopped": False,
     "total": 0,
     "checked": 0,
+    "skipped": 0,
     "results": {},
     "started_at": None,
     "completed_at": None,
@@ -1998,7 +2065,9 @@ async def run_token_auto_refresh_loop() -> None:
                     continue
                 remaining = 60
             try:
-                await asyncio.wait_for(event.wait(), timeout=min(60, max(0, remaining)))
+                # 直接等待当前任务，避免事件唤醒与取消竞争时丢失取消信号。
+                async with asyncio.timeout(min(60, max(0, remaining))):
+                    await event.wait()
             except asyncio.TimeoutError:
                 pass
         except asyncio.CancelledError:
@@ -2006,7 +2075,8 @@ async def run_token_auto_refresh_loop() -> None:
         except Exception:
             logger.exception("Token auto-refresh loop iteration failed")
             try:
-                await asyncio.wait_for(event.wait(), timeout=3600)
+                async with asyncio.timeout(3600):
+                    await event.wait()
             except asyncio.TimeoutError:
                 pass
 
@@ -2505,24 +2575,77 @@ def build_account_health_record(status: str, score: int, summary: str, detail: s
     }
 
 
+def get_token_refresh_fields(record: dict[str, Any], account: dict[str, Any] | None = None) -> dict[str, Any]:
+    """兼容旧健康记录；缺少轮换信息时保持未知，不推断成已更新。"""
+    return {
+        "manual_review_required": bool(record.get("manual_review_required", False)),
+        "manual_review_reason": str(record.get("manual_review_reason") or ""),
+        "manual_review_at": record.get("manual_review_at"),
+        "mailbox_check_status": str(record.get("mailbox_check_status") or "unknown"),
+        "mailbox_checked_at": record.get("mailbox_checked_at"),
+        "recovery_attempted": bool(record.get("recovery_attempted", False)),
+        "refresh_retry_count": int(record.get("refresh_retry_count") or 0),
+        "refresh_sequence": int(record.get("refresh_sequence") or 0),
+        "refresh_status": record.get("refresh_status") if record.get("refresh_status") in {"success", "failed"} else None,
+        "token_rotated": record.get("token_rotated") if isinstance(record.get("token_rotated"), bool) else None,
+        "refresh_message": str(record.get("refresh_message") or ""),
+        "last_refresh_at": record.get("last_refresh_at"),
+        "last_refresh_success_at": record.get("last_refresh_success_at"),
+        "refresh_token_updated_at": (account or {}).get("refresh_token_updated_at") or record.get("refresh_token_updated_at"),
+    }
+
+
 def get_account_health_record(email_id: str) -> dict[str, Any]:
     data = load_account_health_data()
     record = data.get("accounts", {}).get(email_id, {})
     if not isinstance(record, dict):
-        return build_account_health_record("unchecked", 0, "未检查")
+        return {**build_account_health_record("unchecked", 0, "未检查"), **get_token_refresh_fields({})}
     return {
         "status": str(record.get("status") or "unchecked"),
         "score": max(0, min(int(record.get("score", 0) or 0), 100)),
         "summary": str(record.get("summary") or "未检查"),
         "detail": str(record.get("detail") or ""),
         "checked_at": record.get("checked_at"),
+        **get_token_refresh_fields(record),
     }
 
 
-def save_account_health_record(email_id: str, record: dict[str, Any]) -> None:
-    data = load_account_health_data()
-    data.setdefault("accounts", {})[email_id] = record
-    save_account_health_data(data)
+def next_health_check_sequence(email_id: str) -> int:
+    """单进程中按发起顺序分配序号，重启后接续该账号已持久化的序号。"""
+    global _health_check_sequence
+    with auth_lock:
+        previous = get_account_health_record(email_id)
+        _health_check_sequence = max(_health_check_sequence, int(previous.get("refresh_sequence") or 0)) + 1
+        return _health_check_sequence
+
+
+def save_account_health_record(email_id: str, record: dict[str, Any], *,
+                               expected_version: Optional[str] = None) -> dict[str, Any]:
+    with auth_lock:
+        data = load_account_health_data()
+        previous = data.setdefault("accounts", {}).get(email_id, {})
+        previous = previous if isinstance(previous, dict) else {}
+        if expected_version is not None:
+            account = load_accounts_data().get(email_id)
+            if account_credential_version(account) != expected_version:
+                # 不让删除/重新导入之前的请求污染当前记录或重建已删除记录。
+                return get_account_health_record(email_id)
+        sequence = int(record.get("refresh_sequence") or 0)
+        previous_sequence = int(previous.get("refresh_sequence") or 0)
+        if sequence and previous_sequence:
+            stale = sequence < previous_sequence
+        else:
+            incoming_at = parse_stored_datetime(record.get("last_refresh_at") or record.get("checked_at"))
+            previous_at = parse_stored_datetime(previous.get("last_refresh_at") or previous.get("checked_at"))
+            stale = bool(incoming_at and previous_at and incoming_at < previous_at)
+        merged = dict(previous if stale else record)
+        for key in ("last_refresh_success_at", "refresh_token_updated_at"):
+            times = [value for value in (previous.get(key), record.get(key)) if parse_stored_datetime(value)]
+            if times:
+                merged[key] = max(times, key=parse_stored_datetime)
+        data["accounts"][email_id] = merged
+        save_account_health_data(data)
+        return merged
 
 
 def remove_account_health_record(email_id: str) -> None:
@@ -2795,99 +2918,157 @@ def make_session_response(
     return response
 
 
-async def get_access_token(credentials: AccountCredentials) -> str:
-    auth_method = normalize_account_auth_method(credentials.auth_method)
-    base_request_data = {
-        "client_id": credentials.client_id,
-        "grant_type": "refresh_token",
-        "refresh_token": credentials.refresh_token,
-    }
+def graph_token_cache_key(client_id: str, refresh_token: str) -> str:
+    return hashlib.sha256(f"{client_id}\n{refresh_token}".encode("utf-8")).hexdigest()
 
+
+def remember_graph_token_scope(credentials: AccountCredentials, refresh_token: str, token_url: str, scope: str) -> None:
+    key = graph_token_cache_key(credentials.client_id, refresh_token)
+    with auth_lock:
+        _graph_token_scope_cache.pop(key, None)
+        _graph_token_scope_cache[key] = (token_url, scope)
+        while len(_graph_token_scope_cache) > GRAPH_TOKEN_SCOPE_CACHE_LIMIT:
+            _graph_token_scope_cache.pop(next(iter(_graph_token_scope_cache)))
+
+
+def extract_refresh_token(payload: Any) -> str:
+    token = payload.get("refresh_token") if isinstance(payload, dict) else None
+    return token.strip() if isinstance(token, str) else ""
+
+
+def is_token_scope_retryable(response: httpx.Response) -> bool:
+    if response.status_code not in {400, 401, 403}:
+        return False
+    try:
+        payload = response.json()
+    except ValueError:
+        return False
+    if not isinstance(payload, dict):
+        return False
+    detail = str(payload.get("error_description") or "").lower()
+    if "security interrupt" in detail and ("compromised" in detail or "collecting proof" in detail):
+        return False
+    if str(payload.get("error") or "").lower() in {"invalid_scope", "consent_required", "interaction_required"}:
+        return True
+    return any(marker in detail for marker in (
+        "aadsts90023", "aadsts70011", "no applicable permissions",
+        "requested are unauthorized or expired", "consent", "invalid scope",
+    ))
+
+
+async def request_access_token_response(credentials: AccountCredentials, prefer_rotation: bool = False) -> tuple[dict[str, Any], str, str]:
+    auth_method = normalize_account_auth_method(credentials.auth_method)
     if auth_method == "graph":
         token_urls = [TOKEN_URL, COMMON_TOKEN_URL]
-        request_attempts = [
-            {**base_request_data, "scope": GRAPH_OAUTH_SCOPE},
-            {**base_request_data, "scope": "offline_access openid profile email https://graph.microsoft.com/Mail.Read"},
-            {**base_request_data, "scope": "offline_access https://graph.microsoft.com/.default"},
-            dict(base_request_data),
+        scopes = [GRAPH_DEFAULT_TOKEN_SCOPE, ""] if prefer_rotation else [
+            GRAPH_OAUTH_SCOPE,
+            "offline_access openid profile email https://graph.microsoft.com/Mail.Read",
+            "offline_access https://graph.microsoft.com/.default",
+            "",
         ]
     else:
         token_urls = [TOKEN_URL]
-        request_attempts = [
-            {**base_request_data, "scope": IMAP_OAUTH_SCOPE},
-            dict(base_request_data),
-        ]
+        scopes = [IMAP_OAUTH_SCOPE, ""]
+    attempts = [(url, scope) for url in token_urls for scope in scopes]
+    if auth_method == "graph" and not prefer_rotation:
+        with auth_lock:
+            preferred = _graph_token_scope_cache.get(graph_token_cache_key(credentials.client_id, credentials.refresh_token))
+        if preferred in attempts:
+            attempts.remove(preferred)
+            attempts.insert(0, preferred)
 
+    successful_response = None
+    last_response = None
+    failed_urls = set()
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for token_url, scope in attempts:
+            if token_url in failed_urls:
+                continue
+            data = {"client_id": credentials.client_id, "grant_type": "refresh_token", "refresh_token": credentials.refresh_token}
+            if scope:
+                data["scope"] = scope
+            try:
+                response = await client.post(token_url, data=data)
+                payload = response.json() if response.is_success else None
+            except (httpx.RequestError, ValueError):
+                if successful_response is not None:
+                    return successful_response
+                raise
+            if response.is_success:
+                if not isinstance(payload, dict) or not isinstance(payload.get("access_token"), str) or not payload["access_token"].strip():
+                    if successful_response is not None:
+                        return successful_response
+                    raise HTTPException(status_code=502, detail="OAuth 响应缺少有效 access_token")
+                result = (payload, token_url, scope)
+                # 刷新任务优先争取轮换；原始授权 scope 的回退失败不能推翻已成功的验证。
+                if not prefer_rotation or extract_refresh_token(payload):
+                    return result
+                if successful_response is None:
+                    successful_response = result
+                if not scope:
+                    return successful_response
+                continue
+            if successful_response is not None:
+                return successful_response
+            last_response = response
+            if response.status_code == 429 or response.status_code >= 500:
+                raise HTTPException(status_code=503, detail="OAuth 服务暂时不可用，请稍后重试")
+            if auth_method == "graph" and not is_token_scope_retryable(response):
+                failed_urls.add(token_url)
+    if successful_response is not None:
+        return successful_response
+    detail = extract_graph_error_detail(last_response) if last_response is not None else "Authentication failed"
+    raise HTTPException(status_code=401, detail=detail)
+
+
+async def get_access_token(credentials: AccountCredentials, *, prefer_rotation: bool = False, persist_rotation: bool = True) -> str:
+    attempted_at = datetime.utcnow().isoformat()
+    credentials._refresh_result = {
+        "refresh_status": "failed", "token_rotated": False,
+        "last_refresh_at": attempted_at, "refresh_message": "Token 刷新失败",
+    }
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            last_error_response: httpx.Response | None = None
-
-            for token_url in token_urls:
-                for token_request_data in request_attempts:
-                    response = await client.post(token_url, data=token_request_data)
-                    if response.is_success:
-                        token_data = response.json()
-                        access_token = token_data.get("access_token")
-                        if not access_token:
-                            logger.error(f"No access token in response for {credentials.email}")
-                            raise HTTPException(
-                                status_code=401,
-                                detail="Failed to obtain access token from response",
-                            )
-
-                        # 微软可能在刷新时轮换 refresh_token:若响应带新 token,立即回存,
-                        # 否则旧 refresh_token 会在约 90 天静默过期,导致账号无法再刷新。
-                        # 传 expected=本次请求所用旧 token,CAS 防覆盖管理员并发保存的新凭据。
-                        rotated = str(token_data.get("refresh_token") or "").strip()
-                        if rotated and rotated != credentials.refresh_token:
-                            try:
-                                await persist_rotated_refresh_token(
-                                    credentials.email,
-                                    rotated,
-                                    expected_current_refresh_token=credentials.refresh_token,
-                                )
-                            except Exception:
-                                logger.exception("Failed to persist rotated refresh_token for %s", credentials.email)
-
-                        logger.info(
-                            "Successfully obtained %s access token for %s via %s",
-                            auth_method,
-                            credentials.email,
-                            token_url,
-                        )
-                        return access_token
-
-                    last_error_response = response
-                    detail = extract_graph_error_detail(response)
-                    logger.warning(
-                        "Token attempt failed for %s via %s: HTTP %s %s",
-                        credentials.email,
-                        token_url,
-                        response.status_code,
-                        detail,
-                    )
-
-            if last_error_response is not None:
-                detail = extract_graph_error_detail(last_error_response)
-                if last_error_response.status_code == 400:
-                    raise HTTPException(status_code=401, detail=detail or "Invalid refresh token or client credentials")
-                raise HTTPException(status_code=401, detail=detail or "Authentication failed")
-
-            raise HTTPException(status_code=401, detail="Authentication failed")
-
-    except httpx.HTTPStatusError as e:
-        logger.error(f"HTTP {e.response.status_code} error getting access token for {credentials.email}: {e}")
-        if e.response.status_code == 400:
-            raise HTTPException(status_code=401, detail="Invalid refresh token or client credentials")
-        raise HTTPException(status_code=401, detail="Authentication failed")
-    except httpx.RequestError as e:
-        logger.error(f"Request error getting access token for {credentials.email}: {e}")
-        raise HTTPException(status_code=500, detail="Network error during token acquisition")
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error getting access token for {credentials.email}: {e}")
-        raise HTTPException(status_code=500, detail="Token acquisition failed")
+        token_data, token_url, scope = await request_access_token_response(credentials, prefer_rotation)
+        previous_token = credentials.refresh_token
+        rotated = extract_refresh_token(token_data)
+        changed = bool(rotated and rotated != previous_token)
+        if changed:
+            # 新账号验证/重新导入先保留在请求凭证，注册成功后统一保存。
+            # 已有账号刷新仍通过 CAS 写回；写入失败不能报告成功。
+            if persist_rotation and not await persist_rotated_refresh_token(
+                credentials.email, rotated, expected_current_refresh_token=previous_token,
+                **({"expected_version": credentials._source_version} if credentials._source_version is not None else {})):
+                message = "已获取新 Token，但保存失败或账户凭据已变化，请重试"
+                credentials._refresh_result["refresh_message"] = message
+                if prefer_rotation:
+                    raise HTTPException(status_code=500, detail=message)
+                # 普通取信仍可使用已获取的 access_token；不会把写回失败标记为刷新成功。
+                logger.warning("Token rotation not saved for %s", credentials.email)
+                return token_data["access_token"]
+            credentials.refresh_token = rotated
+            if persist_rotation and credentials._source_version is not None:
+                current = load_accounts_data().get(credentials.email)
+                if current and current.get("refresh_token") == rotated and current.get("client_id") == credentials.client_id:
+                    credentials._source_version = account_credential_version(current)
+            credentials._refresh_result["refresh_token_updated_at"] = datetime.utcnow().isoformat()
+        if normalize_account_auth_method(credentials.auth_method) == "graph" and not prefer_rotation:
+            remember_graph_token_scope(credentials, previous_token, token_url, scope)
+            remember_graph_token_scope(credentials, credentials.refresh_token, token_url, scope)
+        credentials._refresh_result.update({
+            "refresh_status": "success", "token_rotated": changed,
+            "last_refresh_success_at": datetime.utcnow().isoformat(),
+            "refresh_message": "刷新成功，Token 已更新" if changed else "验证成功，Token 未轮换，继续使用原 Token",
+        })
+        return token_data["access_token"]
+    except httpx.RequestError:
+        error = HTTPException(status_code=503, detail="Network error during token acquisition")
+    except HTTPException as exc:
+        error = exc
+    except Exception:
+        logger.exception("Token acquisition failed for %s", credentials.email)
+        error = HTTPException(status_code=500, detail="Token acquisition failed")
+    credentials._refresh_result["refresh_message"] = str(error.detail)
+    raise error
 
 
 def build_graph_headers(access_token: str) -> dict[str, str]:
@@ -3004,7 +3185,14 @@ def strip_html_tags(content: str) -> str:
     return html_lib.unescape(re.sub(r"<[^>]+>", " ", content)).strip()
 
 
-async def evaluate_account_health(credentials: AccountCredentials) -> dict[str, Any]:
+async def evaluate_account_health(credentials: AccountCredentials, *, persist_rotation: bool = True, prefer_rotation: bool = True) -> dict[str, Any]:
+    credentials._refresh_result = {}
+    sequence = next_health_check_sequence(credentials.email)
+    record = await probe_account_health(credentials, persist_rotation=persist_rotation, prefer_rotation=prefer_rotation)
+    return {**record, **credentials._refresh_result, "refresh_sequence": sequence}
+
+
+async def probe_account_health(credentials: AccountCredentials, *, persist_rotation: bool = True, prefer_rotation: bool = True) -> dict[str, Any]:
     missing_fields = [
         field_name
         for field_name, field_value in {
@@ -3022,7 +3210,7 @@ async def evaluate_account_health(credentials: AccountCredentials) -> dict[str, 
         )
 
     try:
-        access_token = await get_access_token(credentials)
+        access_token = await get_access_token(credentials, prefer_rotation=prefer_rotation, persist_rotation=persist_rotation)
     except HTTPException as exc:
         return build_account_health_record(
             "auth_error",
@@ -3071,7 +3259,9 @@ async def evaluate_account_health(credentials: AccountCredentials) -> dict[str, 
         connection = None
         try:
             connection = imap_pool.get_connection(credentials.email, access_token)
-            connection.noop()
+            status, _ = connection.noop()
+            if status != "OK":
+                raise RuntimeError("IMAP NOOP 返回失败")
             return build_account_health_record(
                 "healthy",
                 100,
@@ -3103,7 +3293,7 @@ async def validate_account_credentials(credentials: AccountCredentials) -> dict[
     credentials.category_key = normalize_account_category_key(credentials.category_key)
     credentials.tag_keys = normalize_account_tag_keys(credentials.tag_keys, credentials.tags)
     credentials.tags = list(credentials.tag_keys)
-    record = await evaluate_account_health(credentials)
+    record = await evaluate_account_health(credentials, persist_rotation=False, prefer_rotation=False)
     if record.get("status") != "healthy":
         detail = str(record.get("detail") or record.get("summary") or "Account validation failed")
         status_code = 401 if record.get("status") == "auth_error" else 400
@@ -3111,11 +3301,148 @@ async def validate_account_credentials(credentials: AccountCredentials) -> dict[
     return record
 
 
-async def refresh_account_health(email_id: str) -> dict[str, Any]:
-    credentials = await get_account_credentials(email_id)
-    record = await evaluate_account_health(credentials)
-    save_account_health_record(email_id, record)
+def merge_refresh_attempt_result(record: dict[str, Any], outcome: dict[str, Any]) -> dict[str, Any]:
+    """同一恢复流程可有多次 OAuth 请求；保留顺序、轮换事实与最后成功时间。"""
+    merged = {**record, **outcome}
+    merged.setdefault("manual_review_required", False)
+    merged.setdefault("manual_review_reason", "")
+    merged.setdefault("manual_review_at", None)
+    merged.setdefault("mailbox_check_status", "unknown")
+    merged.setdefault("mailbox_checked_at", None)
+    merged.setdefault("recovery_attempted", False)
+    merged.setdefault("refresh_retry_count", 0)
+    merged["last_refresh_at"] = record.get("last_refresh_at") or outcome.get("last_refresh_at")
+    merged["token_rotated"] = bool(record.get("token_rotated") or outcome.get("token_rotated"))
+    for key in ("last_refresh_success_at", "refresh_token_updated_at"):
+        values = [value for value in (record.get(key), outcome.get(key)) if parse_stored_datetime(value)]
+        if values:
+            merged[key] = max(values, key=parse_stored_datetime)
+    return merged
+
+
+def mailbox_review_reason(detail: str) -> str:
+    text = str(detail or "")
+    lowered = text.lower()
+    if "security interrupt" in lowered and ("compromised" in lowered or "collecting proof" in lowered):
+        return "微软要求账号安全验证，请登录微软官方账户完成安全检查后再人工复检。原始错误：" + text
+    return "实际邮件读取失败，已暂停此账号后续批量和定时刷新，请人工检查。原因：" + text
+
+
+def mark_mailbox_for_review(record: dict[str, Any], reason: str) -> dict[str, Any]:
+    return {
+        **record, "status": "manual_review", "score": 0,
+        "summary": "失效邮箱，待人工检查", "detail": reason,
+        "manual_review_required": True, "manual_review_reason": reason,
+        "manual_review_at": datetime.utcnow().isoformat(),
+        "checked_at": datetime.utcnow().isoformat(),
+    }
+
+
+def read_imap_mailbox_for_verification(credentials: AccountCredentials, access_token: str) -> None:
+    """独立连接，读取最新一封邮件头；空收件箱也算读取成功，不复用缓存/旧会话。"""
+    connection = None
+    try:
+        connection = imap_pool._create_connection(credentials.email, access_token)
+        status, counts = connection.select('"INBOX"', readonly=True)
+        if status != "OK" or not counts or counts[0] is None:
+            raise RuntimeError("IMAP 无法打开收件箱")
+        count = int(counts[0])
+        if count < 0:
+            raise RuntimeError("IMAP 返回无效邮件数量")
+        if count:
+            status, messages = connection.fetch(str(count), "(BODY.PEEK[HEADER.FIELDS (SUBJECT FROM DATE)])")
+            if status != "OK" or not any(
+                isinstance(item, tuple) and len(item) > 1 and isinstance(item[1], bytes)
+                for item in (messages or [])
+            ):
+                raise RuntimeError("IMAP 无法读取邮件头")
+    finally:
+        if connection is not None:
+            try:
+                connection.logout()
+            except Exception:
+                try:
+                    connection.shutdown()
+                except Exception:
+                    pass
+
+
+async def verify_mailbox_readability(credentials: AccountCredentials) -> dict[str, Any]:
+    """只访问远程邮件接口；HTTP/IMAP 的拒绝和协议错误不能伪装成空邮箱。"""
+    try:
+        access_token = await get_access_token(credentials, prefer_rotation=False)
+        if normalize_account_auth_method(credentials.auth_method) == "graph":
+            payload = await graph_api_get(access_token, "/me/mailFolders/inbox/messages",
+                                          params={"$top": 1, "$select": "id,subject"})
+            if not isinstance(payload, dict) or not isinstance(payload.get("value"), list):
+                raise RuntimeError("Graph 邮件列表响应无效")
+        else:
+            await asyncio.to_thread(read_imap_mailbox_for_verification, credentials, access_token)
+        return {"readable": True, "detail": "收件箱实时读取成功", "checked_at": datetime.utcnow().isoformat()}
+    except Exception as exc:
+        detail = str(exc.detail) if isinstance(exc, HTTPException) else str(exc)
+        return {"readable": False, "detail": detail, "checked_at": datetime.utcnow().isoformat()}
+
+
+async def recover_failed_account_refresh(credentials: AccountCredentials, record: dict[str, Any]) -> dict[str, Any]:
+    initial_error = str(record.get("detail") or record.get("summary") or "刷新失败")
+    record = {**record, "recovery_attempted": True, "refresh_retry_count": 0}
+    verification = await verify_mailbox_readability(credentials)
+    record = merge_refresh_attempt_result(record, credentials._refresh_result)
+    record.update(mailbox_check_status="readable" if verification["readable"] else "unreadable",
+                  mailbox_checked_at=verification["checked_at"])
+    if not verification["readable"]:
+        details = f"首次检查：{initial_error}；实际取信复核：{verification['detail']}"
+        return mark_mailbox_for_review(record, mailbox_review_reason(details))
+
+    # 仅一次重试，邮件已真实读通，不再用 NOOP 决定这次重试的结果。
+    record["refresh_retry_count"] = 1
+    try:
+        await get_access_token(credentials, prefer_rotation=True)
+        record = merge_refresh_attempt_result(record, credentials._refresh_result)
+        if record["token_rotated"]:
+            record["refresh_message"] = "复核后刷新成功，本轮 Token 已更新"
+        record.update(status="healthy", score=100, summary="邮件读取正常，Token 重试成功", detail="",
+                      checked_at=datetime.utcnow().isoformat(), manual_review_required=False,
+                      manual_review_reason="", manual_review_at=None)
+    except Exception as exc:
+        record = merge_refresh_attempt_result(record, credentials._refresh_result)
+        detail = str(exc.detail) if isinstance(exc, HTTPException) else str(exc)
+        record.update(status="refresh_error", score=60, summary="邮件可读取，但 Token 重试失败",
+                      detail=detail, checked_at=datetime.utcnow().isoformat())
     return record
+
+
+async def refresh_account_health(email_id: str, *, force: bool = False) -> dict[str, Any]:
+    previous = get_account_health_record(email_id)
+    if previous["manual_review_required"] and not force:
+        return previous
+    try:
+        credentials = await get_account_credentials(email_id)
+    except HTTPException:
+        account = load_accounts_data().get(email_id)
+        if account is None:
+            raise
+        record = mark_mailbox_for_review({
+            **build_account_health_record("config_error", 0, "账户配置不完整"),
+            "refresh_sequence": next_health_check_sequence(email_id),
+            "refresh_status": "failed", "last_refresh_at": datetime.utcnow().isoformat(),
+        }, "账户凭据无法加载，请检查 client_id、Refresh Token 和邮箱格式后重新导入")
+        return save_account_health_record(email_id, record, expected_version=account_credential_version(account))
+    record = await evaluate_account_health(credentials)
+    expected = getattr(credentials, "_source_version", None)
+    if expected is not None and account_credential_version(load_accounts_data().get(email_id)) != expected:
+        return get_account_health_record(email_id)
+    if (record.get("status") != "healthy" or record.get("refresh_status") == "failed"
+            or (force and previous["manual_review_required"])):
+        record = await recover_failed_account_refresh(credentials, record)
+    if force and previous["manual_review_required"] and record.get("status") != "healthy" and not record.get("manual_review_required"):
+        record.update(status="manual_review", manual_review_required=True,
+                      manual_review_reason=record.get("detail") or previous["manual_review_reason"],
+                      manual_review_at=previous["manual_review_at"])
+    return save_account_health_record(
+        email_id, record, expected_version=getattr(credentials, "_source_version", None),
+    )
 
 
 async def refresh_all_account_health() -> dict[str, Any]:
@@ -3148,8 +3475,11 @@ def get_account_health_check_state() -> dict[str, Any]:
         return {
             "task_id": account_health_check_state.get("task_id"),
             "running": bool(account_health_check_state.get("running")),
+            "stop_requested": bool(account_health_check_state.get("stop_requested")),
+            "stopped": bool(account_health_check_state.get("stopped")),
             "total": int(account_health_check_state.get("total", 0) or 0),
             "checked": int(account_health_check_state.get("checked", 0) or 0),
+            "skipped": int(account_health_check_state.get("skipped", 0) or 0),
             "results": dict(account_health_check_state.get("results", {})),
             "started_at": account_health_check_state.get("started_at"),
             "completed_at": account_health_check_state.get("completed_at"),
@@ -3170,11 +3500,16 @@ async def run_account_health_check_task(task_id: str) -> None:
     except Exception as exc:
         update_account_health_check_state(running=False, completed_at=datetime.utcnow().isoformat(), error=str(exc))
         raise
+    current_state = get_account_health_check_state()
+    pending_stop = current_state["task_id"] == task_id and current_state["stop_requested"]
     update_account_health_check_state(
         task_id=task_id,
         running=True,
+        stop_requested=pending_stop,
+        stopped=False,
         total=len(account_ids),
         checked=0,
+        skipped=0,
         results={},
         started_at=datetime.utcnow().isoformat(),
         completed_at=None,
@@ -3182,13 +3517,18 @@ async def run_account_health_check_task(task_id: str) -> None:
     )
 
     if not account_ids:
-        update_account_health_check_state(running=False, completed_at=datetime.utcnow().isoformat())
+        update_account_health_check_state(running=False, stop_requested=False, completed_at=datetime.utcnow().isoformat())
         return
 
     results: dict[str, Any] = {}
+    skipped = 0
     try:
         for index, email_id in enumerate(account_ids, start=1):
+            if get_account_health_check_state()["stop_requested"]:
+                break
             try:
+                if get_account_health_record(email_id)["manual_review_required"]:
+                    skipped += 1
                 results[email_id] = await refresh_account_health(email_id)
             except HTTPException as exc:
                 record = build_account_health_record("error", 10, "健康检查失败", str(exc.detail))
@@ -3199,7 +3539,7 @@ async def run_account_health_check_task(task_id: str) -> None:
                 save_account_health_record(email_id, record)
                 results[email_id] = record
 
-            update_account_health_check_state(checked=index, results=dict(results))
+            update_account_health_check_state(checked=index, skipped=skipped, results=dict(results))
     except asyncio.CancelledError:
         update_account_health_check_state(running=False, completed_at=datetime.utcnow().isoformat(), error="任务已取消", results=dict(results))
         raise
@@ -3207,7 +3547,11 @@ async def run_account_health_check_task(task_id: str) -> None:
         update_account_health_check_state(running=False, completed_at=datetime.utcnow().isoformat(), error=str(exc), results=dict(results))
         raise
 
-    update_account_health_check_state(running=False, completed_at=datetime.utcnow().isoformat(), error="", results=dict(results))
+    stopped = get_account_health_check_state()["stop_requested"] and len(results) < len(account_ids)
+    update_account_health_check_state(
+        running=False, stopped=stopped, stop_requested=False,
+        completed_at=datetime.utcnow().isoformat(), error="", results=dict(results),
+    )
 
 
 def start_account_health_check() -> dict[str, Any]:
@@ -3218,11 +3562,22 @@ def start_account_health_check() -> dict[str, Any]:
     task_id = secrets.token_urlsafe(12)
     # 在创建协程前占用运行状态,避免连续请求启动多个全量刷新任务。
     update_account_health_check_state(
-        task_id=task_id, running=True, total=0, checked=0, results={},
+        task_id=task_id, running=True, stop_requested=False, stopped=False, total=0, checked=0, skipped=0, results={},
         started_at=datetime.utcnow().isoformat(), completed_at=None, error="",
     )
     asyncio.create_task(run_account_health_check_task(task_id))
     return get_account_health_check_state()
+
+
+def request_account_health_check_stop(task_id: Optional[str] = None) -> dict[str, Any]:
+    """协作停止：当前账号完成刷新和保存，下一账号开始前退出。"""
+    with account_health_check_lock:
+        state = get_account_health_check_state()
+        if state["running"]:
+            if task_id and state["task_id"] != task_id:
+                raise HTTPException(status_code=409, detail="刷新任务已变化，请刷新状态后再停止")
+            return update_account_health_check_state(stop_requested=True)
+        return state
 
 
 # ============================================================================
@@ -4511,11 +4866,12 @@ async def register_account(credentials: AccountCredentials, request: Request):
         credentials.tag_keys = normalize_account_tag_keys(credentials.tag_keys, credentials.tags)
         credentials.tags = list(credentials.tag_keys)
         validate_catalog_references(credentials.category_key, credentials.tag_keys, load_account_classifications_data())
+        credentials._source_version = account_credential_version(load_accounts_data().get(credentials.email))
         health_record = await validate_account_credentials(credentials)
 
         # 保存凭证
         await save_account_credentials(credentials.email, credentials)
-        save_account_health_record(credentials.email, health_record)
+        save_account_health_record(credentials.email, health_record, expected_version=credentials._source_version)
 
         return AccountResponse(
             email_id=credentials.email,
@@ -4541,6 +4897,12 @@ async def get_accounts_health_check_status(request: Request):
     return get_account_health_check_state()
 
 
+@app.post("/accounts/health-check/stop")
+async def stop_accounts_health_check(payload: dict[str, Any], request: Request):
+    require_authenticated(request, allow_api_key=True)
+    return request_account_health_check_stop(str(payload.get("task_id") or "").strip() or None)
+
+
 @app.post("/accounts/refresh-one")
 async def refresh_single_account(payload: dict[str, Any], request: Request):
     """立即刷新单个账号的 OAuth token(健康检查语义:刷新 + 探活 + 回存轮换 token)。"""
@@ -4549,7 +4911,7 @@ async def refresh_single_account(payload: dict[str, Any], request: Request):
     if not email_id:
         raise HTTPException(status_code=400, detail="email 不能为空")
     try:
-        record = await refresh_account_health(email_id)
+        record = await refresh_account_health(email_id, force=payload.get("recheck") is True)
     except HTTPException as exc:
         raise HTTPException(status_code=exc.status_code, detail=str(exc.detail))
     except Exception as exc:
