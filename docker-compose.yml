@@ -1,6 +1,6 @@
 services:
   microsoft-email-manager:
-    image: maishanhub/microsoft-email-manager:main
+    image: starsdream666/microsoft-email-manager:main
     container_name: microsoft-email-manager
     ports:
       - "8073:8000"
